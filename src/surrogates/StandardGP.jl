@@ -11,7 +11,7 @@ struct StandardGP <: AbstractSurrogate
     gpx:AbstractGPs.FiniteGP
 end
 
-function update!(model::StandardGP, xs, ys, noise, ::StaticHyperparams)
+function update!(model::StandardGP, xs, ys, noise)
     gpx = model.gp(ColVecs(xs), noise...)
     updated_gpx = posterior(gpx,ys)
     return StandardGP(model.gp, updated_gpx)

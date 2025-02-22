@@ -28,7 +28,7 @@ include("bayesian_opt.jl")
 include("optimizer.jl")
 
 # Public API exports
-export BOProblem, bayesian_optimize!, update!
+export BOProblem, optimize!, update!
 export posterior_mean, posterior_var
 export optimize_acquisition!
 

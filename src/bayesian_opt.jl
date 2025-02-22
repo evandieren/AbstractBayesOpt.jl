@@ -18,10 +18,9 @@ struct BOProblem{T<:AbstractSurrogate,F<:Function,A<:AbstractAcquisition}
     max_iter::Int
     iter::Int
     noise
-    hyperparams_optim
 end
 
-function BOProblem(f, domain, prior::AbstractSurrogate, acqf::AbstractAcquisition, max_iter, noise, hyperparams_optim)
+function BOProblem(f, domain, prior::AbstractSurrogate, acqf::AbstractAcquisition, max_iter, noise)
     # Infer input types.
     #domain_type = typeof(domain[:lb])
     domain_eltype = eltype(domain[:lb])
@@ -35,7 +34,7 @@ function BOProblem(f, domain, prior::AbstractSurrogate, acqf::AbstractAcquisitio
     xs = ElasticArray{domain_eltype}(undef, dim, 0)
     ys = ElasticArray{output_type}(undef, 0)
     # Initialize the posterior with prior
-    BOProblem(f, domain, xs, ys, prior, acqf,max_iter, 0, noise, hyperparams_optim)
+    BOProblem(f, domain, xs, ys, prior, acqf,max_iter, 0, noise)
 end
 
 function update!(p::BOProblem, x, y, i::Int)
@@ -46,12 +45,12 @@ function update!(p::BOProblem, x, y, i::Int)
     # Could create some issues if we have the same point twice.
 
     # Update the surrogate
-    gp_udated = update!(p.gp,p.xs, p.ys, p.noise, p.hyperparams_optim)
+    gp_udated = update!(p.gp,p.xs, p.ys, p.noise)
     acqf_updated = update!(p.acqf,p.ys)
 
     #Is this really necessary? Why not returning p directly with the updated xs,ys and gp?
     # Do we need to create a new object everytime?
-    return BOProblem(p.f, p.domain, p.xs, p.ys, gp_udated, acqf_updated,p.max_iter,i,p.noise, p.hyperparams_optim)
+    return BOProblem(p.f, p.domain, p.xs, p.ys, gp_udated, acqf_updated,p.max_iter,i,p.noise)
 end
 
 function stop_criteria(p::BOProblem)
@@ -61,7 +60,7 @@ end
 
 # Looping routine
 
-function bayesian_optimize!(p::BOProblem)
+function optimize!(p::BOProblem)
     """
     This function implements the EGO framework: 
         While some criterion is not met, (1) optimize the acquisition function to obtain 
