@@ -1,5 +1,3 @@
-# src/Abstract.jl
-module Abstract
 """
     Abstract
 
@@ -9,7 +7,6 @@ Reason: Use abstraction to cover the future addition of gradients, and keep the 
 seperated from their implementation (e.g. using AbstractGP.jl and kernelfunctions.jl) in folders acquisition/ and surrogates/
 """
 
-
 # Abstract Acquisition function
 abstract type AbstractAcquisition end
 abstract type AbstractSurrogate <: AbstractGPs.AbstractGP end
@@ -17,5 +14,3 @@ abstract type AbstractDomain end
 
 function update! end
 function optimize_acquisition! end
-
-end  # module Abstract
