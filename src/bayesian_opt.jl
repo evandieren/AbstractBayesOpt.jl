@@ -15,14 +15,26 @@ struct BOProblem{T<:AbstractSurrogate,F<:Function,A<:AbstractAcquisition}
     acqf::A
     max_iter::Int
     iter::Int
-    noise
+    noise::Float64
 end
 
-function BOProblem(f, domain, prior::AbstractSurrogate, acqf::AbstractAcquisition, max_iter, noise)
+function print_info(p::BOProblem)
+    println("== Printing information about the BOProblem ==")
+    println("Target function: ",p.f)
+    println("Domain: ",p.domain)
+    println("xs: ",p.xs)
+    println("ys: ",p.ys)
+    println("Surrogate: ",p.gp.gp)
+    println("ACQF: ",p.acqf)
+    println("max_iter: ",p.max_iter)
+    println("noise: ",p.noise)
+end
+
+function BOProblem(f::Function, domain::AbstractDomain, prior::AbstractSurrogate, acqf::AbstractAcquisition, max_iter::Int, noise::Float64)
     # Infer input types.
     #domain_type = typeof(domain[:lb])
-    domain_eltype = eltype(domain[:lb])
-    dim = size(domain[:lb])[1]
+    domain_eltype = eltype(domain.lower)
+    dim = size(domain.lower)[1]
 
     # Dry run to determine output type. In the future should check
     # for type stability in f.
@@ -52,7 +64,7 @@ function update!(p::BOProblem, x, y, i::Int)
 end
 
 function stop_criteria(p::BOProblem)
-    return p.i > p.max_iter
+    return p.iter > p.max_iter
 end
 
 
@@ -70,7 +82,7 @@ function optimize(p::BOProblem)
         x_cand = optimize_acquisition!(p.acqf,p.gp,p.domain)
         y_cand = p.f(x_cand)
         i +=1 
-        p = update(p, x_cand, y_cand, i)
+        p = update!(p, x_cand, y_cand, i)
     end
     return p
 end

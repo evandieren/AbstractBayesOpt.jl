@@ -5,6 +5,9 @@ using AbstractGPs, KernelFunctions
 using ElasticArrays
 using ForwardDiff
 using Optim
+using FillArrays
+using Statistics
+using SpecialFunctions
 
 # Interface definitions
 include("abstract.jl")
@@ -25,7 +28,7 @@ include("acquisition/ExpectedImprovement.jl")
 include("acquisition/ProbabilityImprovement.jl")
 
 # Core Bayesian Optimization framework
-export optimize
+export optimize, print_info
 include("bayesian_opt.jl")
 
 # Optimization tools
