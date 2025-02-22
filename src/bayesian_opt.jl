@@ -1,5 +1,3 @@
-module bayesian_opt
-
 """
 This module contains the structures and functions for the Bayesian Optimization framework.
 
@@ -60,7 +58,7 @@ end
 
 # Looping routine
 
-function optimize!(p::BOProblem)
+function optimize(p::BOProblem)
     """
     This function implements the EGO framework: 
         While some criterion is not met, (1) optimize the acquisition function to obtain 
@@ -75,7 +73,4 @@ function optimize!(p::BOProblem)
         p = update(p, x_cand, y_cand, i)
     end
     return p
-end
-
-
 end

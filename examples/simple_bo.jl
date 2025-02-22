@@ -1,7 +1,7 @@
-using BayesOpt
 using AbstractGPs
 using KernelFunctions
-using Plots
+
+using BayesOpt
 
 import Random
 Random.seed!(1234)

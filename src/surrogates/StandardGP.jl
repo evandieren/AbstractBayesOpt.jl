@@ -8,7 +8,7 @@ Reason: This is a simple wrapper around AbstractGPs that implements the Abstract
 
 struct StandardGP <: AbstractSurrogate
     gp::AbstractGPs.GP
-    gpx:AbstractGPs.FiniteGP
+    gpx::AbstractGPs.FiniteGP
 end
 
 function update!(model::StandardGP, xs, ys, noise)

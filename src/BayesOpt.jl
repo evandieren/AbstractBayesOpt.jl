@@ -6,22 +6,26 @@ using ElasticArrays
 using ForwardDiff
 using Optim
 
-
 # Interface definitions
-include("Abstract.jl")
+include("abstract.jl")
+export AbstractAcquisition, AbstractSurrogate, AbstractDomain
 
 # Domain implementations
 include("domains.jl")
+export ContinuousDomain
 
 # Surrogate models
+export StandardGP, posterior_mean, posterior_var
 include("surrogates/StandardGP.jl")
 # include("surrogates/GradientGP.jl") # not implemented yet
 
 # Acquisition functions
+export ExpectedImprovement, ei, ProbabilityImprovement, pi
 include("acquisition/ExpectedImprovement.jl")
 include("acquisition/ProbabilityImprovement.jl")
 
 # Core Bayesian Optimization framework
+export optimize
 include("bayesian_opt.jl")
 
 # Optimization tools
@@ -29,17 +33,7 @@ include("optimizer.jl")
 
 # Public API exports
 export BOProblem, optimize!, update!
-export posterior_mean, posterior_var
+
 export optimize_acquisition!
-
-# Re-export key dependencies
-@reexport using .Abstract: AbstractSurrogate, AbstractAcquisition
-@reexport using .Domains: ContinuousDomain, CategoricalDomain
-@reexport using .Surrogates: StandardGP, GradientGP
-@reexport using .Acquisition: ExpectedImprovement, ProbabilityImprovement
-
-
-# Dependency interface exports (for extensibility)
-export AbstractGPs, KernelFunctions, AbstractSurrogate, AbstractAcquisition
 
 end
