@@ -12,12 +12,10 @@ seperated from their implementation (e.g. using AbstractGP.jl and kernelfunction
 
 # Abstract Acquisition function
 abstract type AbstractAcquisition end
-
-#function acquire end  # Generic acquisition interface
-# we either do acquire or we call the function directly, but need to require a constructor
-
-# Abstract Surrogates
 abstract type AbstractSurrogate <: AbstractGPs.AbstractGP end
-function update_model! end  # Model update
+abstract type AbstractDomain end
+
+function update! end
+function optimize_acquisition! end
 
 end  # module Abstract

@@ -5,23 +5,25 @@ This module contains the structures and functions for the Bayesian Optimization 
 
 BOProblem (struct) : structure containing the required information to run the Bayesian Optimization algorithm.
 BOProblem (function) : Initiate a BOProblem structure
+update (for BOProblem) : updates the BOProblem once you have new values x,y
 """
 
-struct BOProblem{S<:AbstractSurrogate,A::AbstractAcquisition}
-    f
-    domain
+struct BOProblem{T<:AbstractSurrogate,F<:Function,A<:AbstractAcquisition}
+    f::F
+    domain::AbstractDomain
     xs::AbstractMatrix
     ys::AbstractVector
-    prior::S
-    gp::S
+    gp::T
     acqf::A
+    max_iter::Int
+    iter::Int
     noise
     hyperparams_optim
 end
 
-function BOProblem(f, domain, prior::AbstractSurrogate, acqf_updated::AbstractAcquisition, noise, hyperparams_optim)
+function BOProblem(f, domain, prior::AbstractSurrogate, acqf::AbstractAcquisition, max_iter, noise, hyperparams_optim)
     # Infer input types.
-    domain_type = typeof(domain[:lb])
+    #domain_type = typeof(domain[:lb])
     domain_eltype = eltype(domain[:lb])
     dim = size(domain[:lb])[1]
 
@@ -33,45 +35,45 @@ function BOProblem(f, domain, prior::AbstractSurrogate, acqf_updated::AbstractAc
     xs = ElasticArray{domain_eltype}(undef, dim, 0)
     ys = ElasticArray{output_type}(undef, 0)
     # Initialize the posterior with prior
-    BOProblem(f, domain, xs, ys, prior, prior, acqf_updated, noise,
-              hyperparams_optim)
+    BOProblem(f, domain, xs, ys, prior, acqf,max_iter, 0, noise, hyperparams_optim)
 end
 
-function update(p::BOProblem, x, y)
+function update!(p::BOProblem, x, y, i::Int)
 
     # Add the obserbed data
     append!(p.xs, x)
     append!(p.ys, [y])
     # Could create some issues if we have the same point twice.
 
-    # Update the GP (finite GP)
-    gp_updated = update_model(p, p.xs, p.ys, p.noise, p.hyperparams_optim)
+    # Update the surrogate
+    gp_udated = update!(p.gp,p.xs, p.ys, p.noise, p.hyperparams_optim)
+    acqf_updated = update!(p.acqf,p.ys)
 
-    BOProblem(p.f, p.domain, p.xs, p.ys, p.prior, gp_updated,
-              p.acqf, p.noise, p.hyperparams_optim)
-    # Is this really necessary? Why not returning p directly with the updated xs,ys and gp?
+    #Is this really necessary? Why not returning p directly with the updated xs,ys and gp?
+    # Do we need to create a new object everytime?
+    return BOProblem(p.f, p.domain, p.xs, p.ys, gp_udated, acqf_updated,p.max_iter,i,p.noise, p.hyperparams_optim)
 end
 
-function update_model(p::BOProblem{<:AbstractSurrogate,<:AbstractAcquisition}, xs, ys, noise, ::StaticHyperparams)
-    gpx = p.prior.gp(ColVecs(xs), noise...) # This fits the AbstractGPs.GP defined in GPSurrogates amd returns a FiniteGP
-    posterior(gpx, ys) # This calls AbstractGPs.posterior
+function stop_criteria(p::BOProblem)
+    return p.i > p.max_iter
 end
 
-function bayesian_optimize!(p::BOProblem, acqf_options)
+
+# Looping routine
+
+function bayesian_optimize!(p::BOProblem)
     """
     This function implements the EGO framework: 
         While some criterion is not met, (1) optimize the acquisition function to obtain 
         the new best candidate, (2) query the target function f, (3) update the GP and the overall optimization state. 
 
     """
-
+    i = 0
     while !stop_criteria(p)
-        _, x_cand, _ = optimize_function(x -> p.acqf(x, p.gp),
-                                                p.domain,
-                                                BBoxOptimizer();
-                                                optim_options=acqf_optim_options)
+        x_cand = optimize_acquisition!(p.acqf,p.gp,p.domain)
         y_cand = p.f(x_cand)
-        p = update(p, x_cand, y_cand)
+        i +=1 
+        p = update(p, x_cand, y_cand, i)
     end
     return p
 end
