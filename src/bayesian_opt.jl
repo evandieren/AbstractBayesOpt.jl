@@ -16,6 +16,7 @@ struct BOProblem{T<:AbstractSurrogate,F<:Function,A<:AbstractAcquisition}
     max_iter::Int
     iter::Int
     noise::Float64
+    flag::Bool
 end
 
 function print_info(p::BOProblem)
@@ -44,10 +45,10 @@ function BOProblem(f::Function, domain::AbstractDomain, prior::AbstractSurrogate
     xs = ElasticArray{domain_eltype}(undef, dim, 0)
     ys = ElasticArray{output_type}(undef, 0)
     # Initialize the posterior with prior
-    BOProblem(f, domain, xs, ys, prior, acqf,max_iter, 0, noise)
+    BOProblem(f, domain, xs, ys, prior, acqf, max_iter, 0, noise, false)
 end
 
-function update!(p::BOProblem, x, y, i::Int)
+function update!(p::BOProblem, x::AbstractVector, y::Float64, i::Int)
 
     # Add the obserbed data
     append!(p.xs, x)
@@ -55,12 +56,18 @@ function update!(p::BOProblem, x, y, i::Int)
     # Could create some issues if we have the same point twice.
 
     # Update the surrogate
-    gp_udated = update!(p.gp,p.xs, p.ys, p.noise)
+    gp_udated = nothing
+    try
+        gp_udated = update!(p.gp,vec(p.xs), p.ys, p.noise)
+    catch
+        println("We reached ill-conditioning, returning NON-UPDATED GP, but updated xs, ys. Killing BO loop.")
+        return BOProblem(p.f, p.domain, p.xs, p.ys, p.gp, p.acqf,p.max_iter,i,p.noise, true)
+    end
     acqf_updated = update!(p.acqf,p.ys)
 
     #Is this really necessary? Why not returning p directly with the updated xs,ys and gp?
     # Do we need to create a new object everytime?
-    return BOProblem(p.f, p.domain, p.xs, p.ys, gp_udated, acqf_updated,p.max_iter,i,p.noise)
+    return BOProblem(p.f, p.domain, p.xs, p.ys, gp_udated, acqf_updated,p.max_iter,i,p.noise, p.flag)
 end
 
 function stop_criteria(p::BOProblem)
@@ -78,10 +85,17 @@ function optimize(p::BOProblem)
 
     """
     i = 0
-    while !stop_criteria(p)
+    while !stop_criteria(p) & !p.flag 
+        try
+            println("Iteration #",i+1,", current min val: ",minimum(p.ys))
+        catch
+            println("Iteration #",i+1," current min val: NA")
+        end
         x_cand = optimize_acquisition!(p.acqf,p.gp,p.domain)
+        println("New candidate found: ",x_cand)
         y_cand = p.f(x_cand)
-        i +=1 
+        println("New value found: ",y_cand)
+        i +=1
         p = update!(p, x_cand, y_cand, i)
     end
     return p

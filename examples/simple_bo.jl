@@ -1,5 +1,11 @@
+"""
+This short example shows a 1D optimization of a function using the Bayesian Optimization framework.
+"""
+
 using AbstractGPs
 using KernelFunctions
+using Plots
+using Distributions
 
 using BayesOpt
 
@@ -7,7 +13,7 @@ import Random
 Random.seed!(1234)
 
 # Objective Function
-f(x) = sin(sum(abs, x)) + sum(abs2, x) * cos(sum(abs, x))
+f(x) = sin(sum(x.+1)) + sin((10.0 / 3.0) * sum(x .+1))
 
 # function branin(x)
 #     x1 = x[1]
@@ -23,28 +29,29 @@ f(x) = sin(sum(abs, x)) + sum(abs2, x) * cos(sum(abs, x))
 #     y = term1 + term2 + s;
 # end
 
-lower = [-5.0]
+lower = [-10.0]
 upper = [10.0]
 domain = ContinuousDomain(lower, upper)
 
 kernel = Matern32Kernel()
 prior_gp = AbstractGPs.GP(kernel)
 model = StandardGP(prior_gp)
-x_train = [[0.0], [1.5], [2.5], [3.5]]
+#x_train = [[1.0], [1.5]]
+
+n_train = 10
+x_train = sort(rand(Uniform(lower[1], upper[1]),n_train))
+println(x_train)
+
 y_train = f.(x_train)
 model = update!(model, x_train, y_train, 0.0)
 
-println(x_train)
-println(y_train)
 
-acqf = ExpectedImprovement(0.1, minimum(y_train))
+# ξ not implemented for acqf yet.
+acqf = ExpectedImprovement(0, minimum(y_train))
 
-
-test = acqf(model,x_train[1])
-println(test)
-
+# This maximises the function
 problem = BOProblem(
-    f,
+    x -> -f(x),
     domain,
     model,
     acqf,
@@ -54,12 +61,15 @@ problem = BOProblem(
 
 print_info(problem)
 
-#@info "Starting Bayesian Optimization..."
-#result = optimize(problem)
+@info "Starting Bayesian Optimization..."
+result = optimize(problem)
 
-#println(result.xs)
+xs = vec(result.xs)
+ys =vec(-result.ys)
 
-#println(result.ys)
+println("Optimal point: ",result.xs[argmin(result.xs)])
+println("Optimal value: ",minimum(-result.ys))
 
-#println("Optimal point",xs[argmin(ys)])
-#println("Optimal value",min(ys))
+plot_domain = collect(lower[1]:0.01:upper[1])
+plot(plot_domain,f.(plot_domain))
+scatter!(xs,ys)

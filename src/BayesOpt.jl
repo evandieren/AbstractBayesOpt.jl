@@ -8,6 +8,8 @@ using Optim
 using FillArrays
 using Statistics
 using SpecialFunctions
+using Plots
+using Distributions
 
 # Interface definitions
 include("abstract.jl")
@@ -18,25 +20,20 @@ include("domains.jl")
 export ContinuousDomain
 
 # Surrogate models
-export StandardGP, posterior_mean, posterior_var
 include("surrogates/StandardGP.jl")
+export StandardGP, posterior_mean, posterior_var
 # include("surrogates/GradientGP.jl") # not implemented yet
 
 # Acquisition functions
-export ExpectedImprovement, ei, ProbabilityImprovement, pi
 include("acquisition/ExpectedImprovement.jl")
 include("acquisition/ProbabilityImprovement.jl")
+export ExpectedImprovement, ei, ProbabilityImprovement, pi
 
 # Core Bayesian Optimization framework
-export optimize, print_info
 include("bayesian_opt.jl")
+export optimize, print_info, update!, BOProblem
 
 # Optimization tools
 include("optimizer.jl")
-
-# Public API exports
-export BOProblem, optimize!, update!
-
-export optimize_acquisition!
 
 end
