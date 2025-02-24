@@ -43,29 +43,29 @@ x_train = sort(rand(Uniform(lower[1], upper[1]),n_train))
 println(x_train)
 
 y_train = f.(x_train)
-model = update!(model, x_train, -y_train, 0.0) # *-1 because we want to minimise f(x)
+model = update!(model, x_train, y_train, 0.0) # *-1 because we want to minimise f(x)
 
 # ξ not implemented for acqf yet.
 acqf = ExpectedImprovement(0, maximum(-y_train))
 
 # This maximises the function
 problem = BOProblem(
-    x -> -f(x),
-    domain,
-    model,
-    x_train,
-    -y_train,
-    acqf,
-    30,
-    0.0
-)
+                    f,
+                    domain,
+                    model,
+                    x_train,
+                    y_train,
+                    acqf,
+                    30,
+                    0.0
+                    )
 
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
 result = optimize(problem)
 xs = vec(result.xs)
-ys = -vec(result.ys)
+ys = vec(result.ys)
 
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
@@ -86,4 +86,4 @@ post_mean, post_var = mean_and_var(result.gp.gpx(plot_domain))
 post_var[post_var .< 0] .= 0
 
 plot!(plot_domain, f.(plot_domain), label="target function")
-plot!(plot_domain, -post_mean; label="GP", ribbon=sqrt.(post_var))
+plot!(plot_domain, post_mean; label="GP", ribbon=sqrt.(post_var))

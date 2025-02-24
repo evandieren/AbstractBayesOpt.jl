@@ -8,9 +8,9 @@ function (pi::ProbabilityImprovement)(surrogate::AbstractSurrogate, x)
     max(σ²,0) == 0 && return float(μ > pi.best_y)
 
     z = (μ .- pi.best_y) ./ σ
-    return normcdf.(z)
+    return -normcdf.(z)
 end
 
 function update!(acqf::ProbabilityImprovement,ys::AbstractVector)
-    ProbabilityImprovement(maximum(ys))
+    ProbabilityImprovement(minimum(ys))
 end

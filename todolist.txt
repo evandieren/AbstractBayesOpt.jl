@@ -1,0 +1,4 @@
+- Fix the max min using the acquisition function.
+- Try in 2D
+- Do hyperparameter optimization on x_train, y_train
+- Implement the gradients
