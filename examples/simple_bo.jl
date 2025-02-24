@@ -34,19 +34,20 @@ upper = [10.0]
 domain = ContinuousDomain(lower, upper)
 
 kernel = Matern32Kernel()
-prior_gp = AbstractGPs.GP(kernel)
-model = StandardGP(prior_gp)
-#x_train = [[1.0], [1.5]]
+prior_gp = AbstractGPs.GP(kernel) # Creates GP(0,k)
+model = StandardGP(prior_gp) # Instantiates the StandardGP (gives it the prior).
 
 n_train = 10
 x_train = sort(rand(Uniform(lower[1], upper[1]),n_train))
 println(x_train)
 
-y_train = f.(x_train)
-model = update!(model, x_train, y_train, 0.0) # *-1 because we want to minimise f(x)
+σ² = 1e-10
+y_train = f.(x_train) + σ².* randn(n_train);
+# Conditioning: 
+# We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed anyway)
+model = update!(model, x_train, y_train, σ²)
 
-# ξ not implemented for acqf yet.
-acqf = ExpectedImprovement(0, maximum(-y_train))
+acqf = ExpectedImprovement(1e-1, maximum(-y_train))
 
 # This maximises the function
 problem = BOProblem(
@@ -56,8 +57,8 @@ problem = BOProblem(
                     x_train,
                     y_train,
                     acqf,
-                    30,
-                    0.0
+                    100,
+                    σ²
                     )
 
 print_info(problem)

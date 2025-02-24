@@ -15,7 +15,7 @@ function (ei::ExpectedImprovement)(surrogate::StandardGP, x)
 
 
     σ = sqrt(max(σ²,0))
-    γ = (μ - ei.best_y - ei.ξ) / σ
+    γ = (μ - (ei.best_y - ei.ξ)) / σ # we are substracting ξ because we are minimising.
 
     return - σ * (γ * normcdf(γ,1) + normpdf(γ,1))
 end
