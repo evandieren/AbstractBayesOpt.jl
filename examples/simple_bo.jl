@@ -13,25 +13,25 @@ import Random
 Random.seed!(1234)
 
 # Objective Function
-#f(x) = sin(sum(x.+1)) + sin((10.0 / 3.0) * sum(x .+1))
+f(x) = sin(sum(x.+1)) + sin((10.0 / 3.0) * sum(x .+1))
 
-function f(x)
-    x1 = x[1]
-    x2 = x[2]
-    b = 5.1 / (4*pi^2);
-    c = 5/pi;
-    r = 6;
-    a = 1;
-    s = 10;
-    t = 1 / (8*pi);
-    term1 = a * (x2 - b*x1^2 + c*x1 - r)^2;
-    term2 = s*(1-t)*cos(x1);
-    y = term1 + term2 + s;
-end
+# function f(x)
+#     x1 = x[1]
+#     x2 = x[2]
+#     b = 5.1 / (4*pi^2);
+#     c = 5/pi;
+#     r = 6;
+#     a = 1;
+#     s = 10;
+#     t = 1 / (8*pi);
+#     term1 = a * (x2 - b*x1^2 + c*x1 - r)^2;
+#     term2 = s*(1-t)*cos(x1);
+#     y = term1 + term2 + s;
+# end
 
-problem_dim = 2
-lower = [-10.0, -10.0]
-upper = [10.0, 10.0]
+problem_dim = 1
+lower = [-10.0]#, -10.0]
+upper = [10.0]#, 10.0]
 domain = ContinuousDomain(lower, upper)
 
 kernel = Matern32Kernel()
@@ -78,18 +78,23 @@ println("Optimal value: ",minimum(ys))
 
 plot_domain = collect(lower[1]:0.01:upper[1])
 
-scatter(
-    xs,
-    ys;
-    xlim=(lower[1], upper[1]),
-    xlabel="x",
-    ylabel="y",
-    title="posterior (default parameters)",
-    label="Train Data",
-)
-
 post_mean, post_var = mean_and_var(result.gp.gpx(plot_domain))
 post_var[post_var .< 0] .= 0
 
-plot!(plot_domain, f.(plot_domain), label="target function")
-plot!(plot_domain, post_mean; label="GP", ribbon=sqrt.(post_var))
+plot(plot_domain, f.(plot_domain),
+        label="target function",
+        xlim=(lower[1], upper[1]),
+        xlabel="x",
+        ylabel="y",
+        title="posterior (default parameters)")
+plot!(plot_domain, post_mean; label="GP", ribbon=sqrt.(post_var),color="green")
+scatter!(
+    xs[1:n_train],
+    ys[1:n_train];
+    label="Train Data"
+)
+scatter!(
+    xs[n_train+1:end],
+    ys[n_train+1:end];
+    label="Candidates"
+)

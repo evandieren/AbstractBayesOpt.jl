@@ -13,11 +13,10 @@ function (ei::ExpectedImprovement)(surrogate::StandardGP, x)
     max(σ²,0) == 0 && return max(μ - ei.best_y,0.0)
 
 
-
     σ = sqrt(max(σ²,0))
-    γ = (μ - (ei.best_y - ei.ξ)) / σ # we are substracting ξ because we are minimising.
+    Δ = (ei.best_y - ei.ξ) -μ # we are substracting ξ because we are minimising.
 
-    return - σ * (γ * normcdf(γ,1) + normpdf(γ,1))
+    return Δ*normcdf(Δ/σ,1) + σ*normpdf(Δ,1)
 end
 
 function update!(acqf::ExpectedImprovement,ys::AbstractVector)
