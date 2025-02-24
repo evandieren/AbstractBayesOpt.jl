@@ -11,8 +11,8 @@ struct ContinuousDomain <: AbstractDomain
     function ContinuousDomain(lower::Vector{Float64}, upper::Vector{Float64})
 
         #Sanity check
-        length(lower) == length(upper)
-        all(lower .<= upper)
+        length(lower) == length(upper) || throw(ArgumentError("Bounds mismatch"))
+        all(lower .<= upper) || throw(ArgumentError("Invalid bounds"))
         # Creates the structure
         new(lower, upper, collect(zip(lower, upper)))
     end

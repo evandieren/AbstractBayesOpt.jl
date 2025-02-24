@@ -9,7 +9,7 @@ update (for BOProblem) : updates the BOProblem once you have new values x,y
 struct BOProblem{T<:AbstractSurrogate,F<:Function,A<:AbstractAcquisition}
     f::F
     domain::AbstractDomain
-    xs::AbstractVector
+    xs
     ys::AbstractVector
     gp::T
     acqf::A
@@ -31,7 +31,7 @@ function print_info(p::BOProblem)
     println("noise: ",p.noise)
 end
 
-function BOProblem(f::Function, domain::AbstractDomain, prior::AbstractSurrogate,x_train::AbstractVector, y_train::AbstractVector, acqf::AbstractAcquisition, max_iter::Int, noise::Float64)
+function BOProblem(f::Function, domain::AbstractDomain, prior::AbstractSurrogate,x_train, y_train::AbstractVector, acqf::AbstractAcquisition, max_iter::Int, noise::Float64)
     # Infer input types.
     #domain_type = typeof(domain[:lb])
     domain_eltype = eltype(domain.lower)
@@ -44,7 +44,15 @@ function BOProblem(f::Function, domain::AbstractDomain, prior::AbstractSurrogate
     output_type = typeof(f(Zeros{domain_eltype}(dim)))
 
     #xs = ElasticArray{domain_eltype}(undef, dim, 0)
-    xs = ElasticArray{domain_eltype}(x_train)
+    xs = ElasticArray{domain_eltype}(undef, dim, 0)
+    for x in x_train
+        append!(xs,x)
+    end
+    println("Append OK",size(xs))
+    #ElasticArray{domain_eltype}(x_train)
+
+    println(xs isa AbstractVector)
+    println(xs isa AbstractMatrix)
 
     #ys = ElasticArray{output_type}(undef, 0)
     ys = ElasticArray{output_type}(y_train)
