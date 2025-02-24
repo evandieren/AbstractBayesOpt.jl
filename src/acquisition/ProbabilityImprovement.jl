@@ -12,5 +12,5 @@ function (pi::ProbabilityImprovement)(surrogate::AbstractSurrogate, x)
 end
 
 function update!(acqf::ProbabilityImprovement,ys::AbstractVector)
-    ProbabilityImprovement(minimum(ys))
+    ProbabilityImprovement(maximum(ys))
 end

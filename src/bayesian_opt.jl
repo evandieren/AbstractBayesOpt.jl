@@ -9,7 +9,7 @@ update (for BOProblem) : updates the BOProblem once you have new values x,y
 struct BOProblem{T<:AbstractSurrogate,F<:Function,A<:AbstractAcquisition}
     f::F
     domain::AbstractDomain
-    xs::AbstractMatrix
+    xs::AbstractVector
     ys::AbstractVector
     gp::T
     acqf::A
@@ -31,10 +31,11 @@ function print_info(p::BOProblem)
     println("noise: ",p.noise)
 end
 
-function BOProblem(f::Function, domain::AbstractDomain, prior::AbstractSurrogate, acqf::AbstractAcquisition, max_iter::Int, noise::Float64)
+function BOProblem(f::Function, domain::AbstractDomain, prior::AbstractSurrogate,x_train::AbstractVector, y_train::AbstractVector, acqf::AbstractAcquisition, max_iter::Int, noise::Float64)
     # Infer input types.
     #domain_type = typeof(domain[:lb])
     domain_eltype = eltype(domain.lower)
+    println(domain_eltype)
     dim = size(domain.lower)[1]
 
     # Dry run to determine output type. In the future should check
@@ -42,8 +43,12 @@ function BOProblem(f::Function, domain::AbstractDomain, prior::AbstractSurrogate
     # output_type = Base.return_types(f, (domain_type,))[1]
     output_type = typeof(f(Zeros{domain_eltype}(dim)))
 
-    xs = ElasticArray{domain_eltype}(undef, dim, 0)
-    ys = ElasticArray{output_type}(undef, 0)
+    #xs = ElasticArray{domain_eltype}(undef, dim, 0)
+    xs = ElasticArray{domain_eltype}(x_train)
+
+    #ys = ElasticArray{output_type}(undef, 0)
+    ys = ElasticArray{output_type}(y_train)
+
     # Initialize the posterior with prior
     BOProblem(f, domain, xs, ys, prior, acqf, max_iter, 0, noise, false)
 end
@@ -51,23 +56,39 @@ end
 function update!(p::BOProblem, x::AbstractVector, y::Float64, i::Int)
 
     # Add the obserbed data
+
     append!(p.xs, x)
     append!(p.ys, [y])
     # Could create some issues if we have the same point twice.
 
+
     # Update the surrogate
-    gp_udated = nothing
+    gp_updated = nothing
+    old_xs = nothing
+    old_ys = nothing
     try
-        gp_udated = update!(p.gp,vec(p.xs), p.ys, p.noise)
+        # test for ill-conditioning
+        gp_updated = update!(p.gp,vec(p.xs), p.ys, p.noise)
     catch
-        println("We reached ill-conditioning, returning NON-UPDATED GP, but updated xs, ys. Killing BO loop.")
-        return BOProblem(p.f, p.domain, p.xs, p.ys, p.gp, p.acqf,p.max_iter,i,p.noise, true)
+        println("We reached ill-conditioning, returning NON-UPDATED GP. Killing BO loop.")
+
+
+        # Issue: the gp_update in the try is updating the p.gp.gpx as it tries to create the posterior.
+        # if it fails, it keeps the added x and y and overwrites the old structure, which I want to keep if it fails...
+        # so now its a bit bruteforce but I try to recreate the previous GP structure. Maybe copying it every type would help.
+        
+        old_xs = p.xs[1:(length(p.xs)-1)]
+        old_ys = p.ys[1:(length(p.ys)-1)]
+        old_gp = update!(p.gp, vec(old_xs), old_ys, p.noise)
+        println("Final # points for posterior: ",length(old_gp.gpx.data.x))
+        return BOProblem(p.f, p.domain, old_xs, old_ys, old_gp, p.acqf,p.max_iter,i,p.noise, true)
     end
+
     acqf_updated = update!(p.acqf,p.ys)
 
     #Is this really necessary? Why not returning p directly with the updated xs,ys and gp?
     # Do we need to create a new object everytime?
-    return BOProblem(p.f, p.domain, p.xs, p.ys, gp_udated, acqf_updated,p.max_iter,i,p.noise, p.flag)
+    return BOProblem(p.f, p.domain, p.xs, p.ys, gp_updated, acqf_updated,p.max_iter,i,p.noise, p.flag)
 end
 
 function stop_criteria(p::BOProblem)
@@ -87,7 +108,7 @@ function optimize(p::BOProblem)
     i = 0
     while !stop_criteria(p) & !p.flag 
         try
-            println("Iteration #",i+1,", current min val: ",minimum(p.ys))
+            println("Iteration #",i+1,", current min val: ",minimum(-p.ys))
         catch
             println("Iteration #",i+1," current min val: NA")
         end

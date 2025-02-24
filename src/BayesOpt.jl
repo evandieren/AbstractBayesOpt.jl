@@ -1,6 +1,5 @@
 module BayesOpt
 
-using Reexport
 using AbstractGPs, KernelFunctions
 using ElasticArrays
 using ForwardDiff

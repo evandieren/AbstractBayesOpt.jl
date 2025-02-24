@@ -8,7 +8,7 @@ Reason: This is a simple wrapper around AbstractGPs that implements the Abstract
 
 struct StandardGP <: AbstractSurrogate
     gp::AbstractGPs.GP
-    gpx#::AbstractGPs.FiniteGP
+    gpx
 end
 
 function StandardGP(gp::AbstractGPs.GP)
@@ -18,6 +18,7 @@ end
 function update!(model::StandardGP, xs::AbstractVector, ys::AbstractVector, noise)
     gpx = model.gp(xs, noise...)
     updated_gpx = posterior(gpx,ys)
+    println("# points in posterior: ",length(updated_gpx.data.x))
     return StandardGP(model.gp, updated_gpx)
 end
 

@@ -21,5 +21,5 @@ function (ei::ExpectedImprovement)(surrogate::StandardGP, x)
 end
 
 function update!(acqf::ExpectedImprovement,ys::AbstractVector)
-    ExpectedImprovement(acqf.ξ, minimum(ys))
+    ExpectedImprovement(acqf.ξ, maximum(ys))
 end
