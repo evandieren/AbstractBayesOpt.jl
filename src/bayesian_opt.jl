@@ -9,7 +9,7 @@ update (for BOProblem) : updates the BOProblem once you have new values x,y
 struct BOProblem{T<:AbstractSurrogate,F<:Function,A<:AbstractAcquisition}
     f::F
     domain::AbstractDomain
-    xs
+    xs::AbstractVector
     ys::AbstractVector
     gp::T
     acqf::A
@@ -31,7 +31,7 @@ function print_info(p::BOProblem)
     println("noise: ",p.noise)
 end
 
-function BOProblem(f::Function, domain::AbstractDomain, prior::AbstractSurrogate,x_train, y_train::AbstractVector, acqf::AbstractAcquisition, max_iter::Int, noise::Float64)
+function BOProblem(f::Function, domain::AbstractDomain, prior::AbstractSurrogate,x_train::AbstractVector, y_train::AbstractVector, acqf::AbstractAcquisition, max_iter::Int, noise::Float64)
     """
     Initialize the Bayesian Optimization problem.
     """

@@ -107,34 +107,38 @@ ax4 = Axis(fig[2, 2], title="Acquisition function (EI)", xlabel="X-axis", ylabel
 #GLMakie.contour!(ax1, x_grid, y_grid, grid_values, colormap=:viridis, levels=200)
 x1_coords = hcat(xs...)[1,:]
 x2_coords = hcat(xs...)[2,:]
+
+# True function evaluation
 GLMakie.surface!(ax1,x_grid, y_grid,fill(0f0, size(grid_values));
                  color=grid_values, shading = NoShading)
 GLMakie.scatter!(ax1, x1_coords, x2_coords)
+GLMakie.scatter!(ax1, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],color="green")
 Colorbar(fig[1, 1][1, 2],scale=log10,
          limits = (minimum(grid_values),maximum(grid_values)))
 
+# Posterior mean
 GLMakie.surface!(ax2,x_grid, y_grid,fill(0f0, size(grid_mean));
                  color=grid_mean, shading = NoShading,
                  colorrange = (minimum(grid_values),maximum(grid_values)))
 GLMakie.scatter!(ax2, x1_coords, x2_coords)
+GLMakie.scatter!(ax2, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],color="green")
 Colorbar(fig[1, 2][1, 2],scale=log10,
          limits = (minimum(grid_values),maximum(grid_values)))
+
+# Posterior variance
 GLMakie.surface!(ax3,x_grid, y_grid,fill(0f0, size(grid_std));
                  color=grid_std, shading = NoShading)
 GLMakie.scatter!(ax3, x1_coords, x2_coords)
+GLMakie.scatter!(ax3, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],color="green")
 Colorbar(fig[2, 1][1, 2],limits = (minimum(grid_std),maximum(grid_std)))
 
-
+# Acquisition function
 GLMakie.surface!(ax4,x_grid, y_grid,fill(0f0, size(grid_acqf)); 
                  color=grid_acqf, shading = NoShading)
 GLMakie.scatter!(ax4, x1_coords, x2_coords)
+GLMakie.scatter!(ax4, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],color="green")
 Colorbar(fig[2, 2][1, 2],limits = (minimum(grid_acqf),maximum(grid_acqf)))
-
-
 
 #savefig(fig,"output_example_2D.png")
 GLMakie.activate!(inline=true)
 display(fig)
-
-#Makie.save("2D_BO.png",fig)
-empty!(fig);
