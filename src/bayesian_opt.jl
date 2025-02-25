@@ -57,7 +57,7 @@ function update!(p::BOProblem, x::AbstractVector, y::Float64, i::Int)
     old_ys = nothing
     try
         # test for ill-conditioning
-        gp_updated = update!(p.gp,vec(p.xs), p.ys, p.noise)
+        gp_updated = update!(p.gp,p.xs, p.ys, p.noise)
     catch
         println("We reached ill-conditioning, returning NON-UPDATED GP. Killing BO loop.")
 
@@ -68,7 +68,7 @@ function update!(p::BOProblem, x::AbstractVector, y::Float64, i::Int)
         
         old_xs = p.xs[1:(length(p.xs)-1)]
         old_ys = p.ys[1:(length(p.ys)-1)]
-        old_gp = update!(p.gp, vec(old_xs), old_ys, p.noise)
+        old_gp = update!(p.gp, old_xs, old_ys, p.noise)
         println("Final # points for posterior: ",length(old_gp.gpx.data.x))
         return BOProblem(p.f, p.domain, old_xs, old_ys, old_gp, p.acqf,p.max_iter,i,p.noise, true)
     end
