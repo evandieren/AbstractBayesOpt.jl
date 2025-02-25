@@ -1,3 +1,3 @@
-- Try in 2D
 - Do hyperparameter optimization on x_train, y_train
 - Implement the gradients
+- Do an error plot if we assume f(x) to be known.

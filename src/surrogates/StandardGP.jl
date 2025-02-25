@@ -18,14 +18,13 @@ end
 function update!(model::StandardGP, xs::AbstractVector, ys::AbstractVector, noise)
     gpx = model.gp(xs, noise...)
     updated_gpx = posterior(gpx,ys)
-    println("# points in posterior: ",length(updated_gpx.data.x))
     return StandardGP(model.gp, updated_gpx)
 end
 
 function posterior_mean(model,x)
-    Statistics.mean(model.gpx(x))[1]
+    Statistics.mean(model.gpx([x]))[1]
 end
 
 function posterior_var(model,x)
-    Statistics.var(model.gpx(x))[1]
+    Statistics.var(model.gpx([x]))[1]
 end

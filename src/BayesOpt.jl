@@ -1,7 +1,6 @@
 module BayesOpt
 
 using AbstractGPs, KernelFunctions
-using ElasticArrays
 using ForwardDiff
 using Optim
 using FillArrays
@@ -9,6 +8,7 @@ using Statistics
 using SpecialFunctions
 using Plots
 using Distributions
+using GLMakie
 
 # Interface definitions
 include("abstract.jl")

@@ -32,31 +32,12 @@ function print_info(p::BOProblem)
 end
 
 function BOProblem(f::Function, domain::AbstractDomain, prior::AbstractSurrogate,x_train, y_train::AbstractVector, acqf::AbstractAcquisition, max_iter::Int, noise::Float64)
-    # Infer input types.
-    #domain_type = typeof(domain[:lb])
-    domain_eltype = eltype(domain.lower)
-    println(domain_eltype)
-    dim = size(domain.lower)[1]
-
-    # Dry run to determine output type. In the future should check
-    # for type stability in f.
-    # output_type = Base.return_types(f, (domain_type,))[1]
-    output_type = typeof(f(Zeros{domain_eltype}(dim)))
-
-    #xs = ElasticArray{domain_eltype}(undef, dim, 0)
-    xs = ElasticArray{domain_eltype}(undef, dim, 0)
-    for x in x_train
-        append!(xs,x)
-    end
-    println("Append OK",size(xs))
-    #ElasticArray{domain_eltype}(x_train)
-
-    println(xs isa AbstractVector)
-    println(xs isa AbstractMatrix)
-
-    #ys = ElasticArray{output_type}(undef, 0)
-    ys = ElasticArray{output_type}(y_train)
-
+    """
+    Initialize the Bayesian Optimization problem.
+    """
+    
+    xs = x_train
+    ys = y_train
     # Initialize the posterior with prior
     BOProblem(f, domain, xs, ys, prior, acqf, max_iter, 0, noise, false)
 end
@@ -65,7 +46,7 @@ function update!(p::BOProblem, x::AbstractVector, y::Float64, i::Int)
 
     # Add the obserbed data
 
-    append!(p.xs, x)
+    append!(p.xs, [x])
     append!(p.ys, [y])
     # Could create some issues if we have the same point twice.
 
@@ -116,14 +97,14 @@ function optimize(p::BOProblem)
     i = 0
     while !stop_criteria(p) & !p.flag 
         try
-            println("Iteration #",i+1,", current min val: ",minimum(-p.ys))
+            println("Iteration #",i+1,", current min val: ",minimum(p.ys))
         catch
             println("Iteration #",i+1," current min val: NA")
         end
         x_cand = optimize_acquisition!(p.acqf,p.gp,p.domain)
-        println("New candidate found: ",x_cand)
+        println("New point acquired: ",x_cand)
         y_cand = p.f(x_cand)
-        println("New value found: ",y_cand)
+        println("New value probed: ",y_cand)
         i +=1
         p = update!(p, x_cand, y_cand, i)
     end

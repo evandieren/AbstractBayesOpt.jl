@@ -1,5 +1,7 @@
 """
 This short example shows a 1D optimization of a function using the Bayesian Optimization framework.
+
+f : R² → R
 """
 
 using AbstractGPs
@@ -15,44 +17,31 @@ Random.seed!(1234)
 # Objective Function
 f(x) = sin(sum(x.+1)) + sin((10.0 / 3.0) * sum(x .+1))
 
-# function f(x)
-#     x1 = x[1]
-#     x2 = x[2]
-#     b = 5.1 / (4*pi^2);
-#     c = 5/pi;
-#     r = 6;
-#     a = 1;
-#     s = 10;
-#     t = 1 / (8*pi);
-#     term1 = a * (x2 - b*x1^2 + c*x1 - r)^2;
-#     term2 = s*(1-t)*cos(x1);
-#     y = term1 + term2 + s;
-# end
-
 problem_dim = 1
-lower = [-10.0]#, -10.0]
-upper = [10.0]#, 10.0]
+lower = [-10.0]
+upper = [10.0]
 domain = ContinuousDomain(lower, upper)
 
 kernel = Matern32Kernel()
-prior_gp = AbstractGPs.GP(kernel) # Creates GP(0,k)
+prior_gp = AbstractGPs.GP(kernel) # Creates GP(0,k) for the prior
 model = StandardGP(prior_gp) # Instantiates the StandardGP (gives it the prior).
 
-n_train = 10
-#x_train = sort(rand(Uniform(lower[1], upper[1]),n_train*2))
-
 # Generate uniform random samples
+n_train = 10
 x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
 
 println(x_train)
 
-σ² = 0.0 # 1e-10
+σ² = 1e-3 # 1e-10
 y_train = f.(x_train) + σ².* randn(n_train);
+println(y_train)
 # Conditioning: 
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed anyway)
 model = update!(model, x_train, y_train, σ²)
 
-acqf = ExpectedImprovement(1e-1, minimum(y_train))
+# Init of the acquisition function
+ξ = 1e-1
+acqf = ExpectedImprovement(ξ, minimum(y_train))
 
 # This maximises the function
 problem = BOProblem(
@@ -70,8 +59,8 @@ print_info(problem)
 
 @info "Starting Bayesian Optimization..."
 result = optimize(problem)
-xs = vec(result.xs)
-ys = vec(result.ys)
+xs = reduce(vcat,result.xs)
+ys = result.ys
 
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
@@ -86,7 +75,8 @@ plot(plot_domain, f.(plot_domain),
         xlim=(lower[1], upper[1]),
         xlabel="x",
         ylabel="y",
-        title="posterior (default parameters)")
+        title="BayesOpt, EI ξ=$(ξ), σ²=$(σ²)",
+        legend=:outertopright)
 plot!(plot_domain, post_mean; label="GP", ribbon=sqrt.(post_var),color="green")
 scatter!(
     xs[1:n_train],
@@ -97,4 +87,9 @@ scatter!(
     xs[n_train+1:end],
     ys[n_train+1:end];
     label="Candidates"
+)
+scatter!(
+    [xs[argmin(ys)]],
+    [minimum(ys)];
+    label="Best candidate"
 )
