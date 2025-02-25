@@ -45,9 +45,8 @@ end
 function update!(p::BOProblem, x::AbstractVector, y::Float64, i::Int)
 
     # Add the obserbed data
-
-    append!(p.xs, [x])
-    append!(p.ys, [y])
+    push!(p.xs, x)
+    push!(p.ys, y)
     # Could create some issues if we have the same point twice.
 
 
