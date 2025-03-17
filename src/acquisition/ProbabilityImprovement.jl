@@ -1,16 +1,23 @@
 struct ProbabilityImprovement <: AbstractAcquisition
+    ξ::Float64
     best_y::Float64
 end
+
+normcdf(μ, σ²) = 1 / 2 * (1 + erf(μ / √(2σ²)))
 
 function (pi::ProbabilityImprovement)(surrogate::AbstractSurrogate, x)
     μ = posterior_mean(surrogate, x)
     σ² = posterior_var(surrogate, x)
-    max(σ²,0) == 0 && return float(μ > pi.best_y)
+    Δ = (ei.best_y - ei.ξ) - μ # we are substracting ξ because we are minimising.
+    
+    max(σ²,0) == 0 && return max(Δ,0.0)
 
-    z = (μ .- pi.best_y) ./ σ
-    return -normcdf.(z)
+    σ = sqrt(σ²)
+
+    z = (pi.best_y .- μ) ./ σ
+    return normcdf(Δ/σ,1)
 end
 
 function update!(acqf::ProbabilityImprovement,ys::AbstractVector)
-    ProbabilityImprovement(minimum(ys))
+    ProbabilityImprovement(acqf.ξ, minimum(ys))
 end

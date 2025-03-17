@@ -1,5 +1,5 @@
 struct ExpectedImprovement <: AbstractAcquisition
-    ξ::Float64 # not implemented yet
+    ξ::Float64
     best_y::Float64
 end
 
@@ -13,7 +13,7 @@ function (ei::ExpectedImprovement)(surrogate::StandardGP, x)
 
     max(σ²,0) == 0 && return max(Δ,0.0)
 
-    σ = sqrt(max(σ²,0))
+    σ = sqrt(σ²)
 
     return Δ*normcdf(Δ/σ,1) + σ*normpdf(Δ,1)
 end
