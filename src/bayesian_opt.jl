@@ -102,7 +102,7 @@ function optimize(p::BOProblem)
         end
         x_cand = optimize_acquisition!(p.acqf,p.gp,p.domain)
         println("New point acquired: ",x_cand)
-        y_cand = p.f(x_cand)
+        y_cand = p.f(x_cand) + p.noise^2*randn()
         println("New value probed: ",y_cand)
         i +=1
         p = update!(p, x_cand, y_cand, i)
