@@ -33,7 +33,7 @@ x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
 println(x_train)
 
 σ² = 1e-3 # 1e-10
-y_train = f.(x_train) + σ².* randn(n_train);
+y_train = f.(x_train) + sqrt(σ²).* randn(n_train);
 println(y_train)
 # Conditioning: 
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed anyway)
@@ -51,7 +51,7 @@ problem = BOProblem(
                     x_train,
                     y_train,
                     acqf,
-                    30,
+                    60,
                     σ²
                     )
 

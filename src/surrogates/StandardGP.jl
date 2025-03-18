@@ -15,8 +15,8 @@ function StandardGP(gp::AbstractGPs.GP)
     StandardGP(gp,nothing)
 end
 
-function update!(model::StandardGP, xs::AbstractVector, ys::AbstractVector, noise)
-    gpx = model.gp(xs, noise...)
+function update!(model::StandardGP, xs::AbstractVector, ys::AbstractVector, noise_var)
+    gpx = model.gp(xs, noise_var...)
     updated_gpx = posterior(gpx,ys)
     return StandardGP(model.gp, updated_gpx)
 end

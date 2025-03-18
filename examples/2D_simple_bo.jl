@@ -50,7 +50,7 @@ model = StandardGP(prior_gp) # Instantiates the StandardGP (gives it the prior).
 n_train = 10
 x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
 σ² = 1e-2
-y_train = f.(x_train) + σ².* randn(n_train)
+y_train = f.(x_train) + sqrt(σ²).* randn(n_train)
 println(y_train)
 
 #x_train = hcat(x_train...) # easier for AbstractGPs to work with Abstract Matrices

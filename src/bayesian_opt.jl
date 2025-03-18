@@ -6,7 +6,7 @@ BOProblem (function) : Initiate a BOProblem structure
 update (for BOProblem) : updates the BOProblem once you have new values x,y
 """
 
-struct BOProblem{T<:AbstractSurrogate,F<:Function,A<:AbstractAcquisition}
+mutable struct BOProblem{T<:AbstractSurrogate,F<:Function,A<:AbstractAcquisition}
     f::F
     domain::AbstractDomain
     xs::AbstractVector
@@ -65,18 +65,24 @@ function update!(p::BOProblem, x::AbstractVector, y::Float64, i::Int)
         # if it fails, it keeps the added x and y and overwrites the old structure, which I want to keep if it fails...
         # so now its a bit bruteforce but I try to recreate the previous GP structure. Maybe copying it every type would help.
         
-        old_xs = p.xs[1:(length(p.xs)-1)]
-        old_ys = p.ys[1:(length(p.ys)-1)]
-        old_gp = update!(p.gp, old_xs, old_ys, p.noise)
         println("Final # points for posterior: ",length(old_gp.gpx.data.x))
-        return BOProblem(p.f, p.domain, old_xs, old_ys, old_gp, p.acqf,p.max_iter,i,p.noise, true)
+        p.xs = p.xs[1:(length(p.xs)-1)]
+        p.ys = p.ys[1:(length(p.ys)-1)]
+        p.gp = update!(p.gp, old_xs, old_ys, p.noise)
+        p.flag = true
+        return p
     end
 
     acqf_updated = update!(p.acqf,p.ys)
 
     #Is this really necessary? Why not returning p directly with the updated xs,ys and gp?
     # Do we need to create a new object everytime?
-    return BOProblem(p.f, p.domain, p.xs, p.ys, gp_updated, acqf_updated,p.max_iter,i,p.noise, p.flag)
+    # return BOProblem(p.f, p.domain, p.xs, p.ys, gp_updated, acqf_updated,p.max_iter,i,p.noise, p.flag)
+
+    p.gp = gp_updated
+    p.acqf = acqf_updated
+    p.iter = i + 1
+    return p
 end
 
 function stop_criteria(p::BOProblem)
@@ -102,7 +108,7 @@ function optimize(p::BOProblem)
         end
         x_cand = optimize_acquisition!(p.acqf,p.gp,p.domain)
         println("New point acquired: ",x_cand)
-        y_cand = p.f(x_cand)
+        y_cand = p.f(x_cand) + sqrt(p.noise)*randn()
         println("New value probed: ",y_cand)
         i +=1
         p = update!(p, x_cand, y_cand, i)
