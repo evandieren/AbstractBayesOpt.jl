@@ -42,7 +42,7 @@ function BOProblem(f::Function, domain::AbstractDomain, prior::AbstractSurrogate
     BOProblem(f, domain, xs, ys, prior, acqf, max_iter, 0, noise, false)
 end
 
-function update!(p::BOProblem, x::AbstractVector, y::Float64, i::Int)
+function update!(p::BOProblem, x::AbstractVector, y::AbstractVector, i::Int)
 
     # Add the obserbed data
     push!(p.xs, x)
@@ -52,8 +52,6 @@ function update!(p::BOProblem, x::AbstractVector, y::Float64, i::Int)
 
     # Update the surrogate
     gp_updated = nothing
-    old_xs = nothing
-    old_ys = nothing
     try
         # test for ill-conditioning
         gp_updated = update!(p.gp,p.xs, p.ys, p.noise)
@@ -63,12 +61,11 @@ function update!(p::BOProblem, x::AbstractVector, y::Float64, i::Int)
 
         # Issue: the gp_update in the try is updating the p.gp.gpx as it tries to create the posterior.
         # if it fails, it keeps the added x and y and overwrites the old structure, which I want to keep if it fails...
-        # so now its a bit bruteforce but I try to recreate the previous GP structure. Maybe copying it every type would help.
-        
-        println("Final # points for posterior: ",length(old_gp.gpx.data.x))
+        # so now its a bit bruteforce but I try to recreate the previous GP structure. Maybe copying it every time would help.
         p.xs = p.xs[1:(length(p.xs)-1)]
         p.ys = p.ys[1:(length(p.ys)-1)]
-        p.gp = update!(p.gp, old_xs, old_ys, p.noise)
+        println("Final # points for posterior: ",length(p.xs))
+        p.gp = update!(p.gp, p.xs, p.ys, p.noise)
         p.flag = true
         return p
     end
@@ -102,13 +99,18 @@ function optimize(p::BOProblem)
     i = 0
     while !stop_criteria(p) & !p.flag 
         try
+            if isa(p.ys[1],Float64)
             println("Iteration #",i+1,", current min val: ",minimum(p.ys))
+            else
+                println("Iteration #",i+1,", current min val: ",minimum(hcat(p.ys...)[1,:]))
+            end
         catch
             println("Iteration #",i+1," current min val: NA")
         end
         x_cand = optimize_acquisition!(p.acqf,p.gp,p.domain)
         println("New point acquired: ",x_cand)
-        y_cand = p.f(x_cand) + sqrt(p.noise)*randn()
+        y_cand = p.f(x_cand)
+        y_cand = y_cand .+ sqrt(p.noise)*randn(length(y_cand))
         println("New value probed: ",y_cand)
         i +=1
         p = update!(p, x_cand, y_cand, i)

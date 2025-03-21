@@ -43,11 +43,10 @@ upper = [2.0,3.0] #[10.0, 15.0]
 domain = ContinuousDomain(lower, upper)
 
 kernel = Matern32Kernel()
-prior_gp = AbstractGPs.GP(kernel) # Creates GP(0,k)
-model = StandardGP(prior_gp) # Instantiates the StandardGP (gives it the prior).
+model = StandardGP(kernel) # Instantiates the StandardGP (gives it the prior).
 
 # Generate uniform random samples
-n_train = 10
+n_train = 20
 x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
 σ² = 1e-2
 y_train = f.(x_train) + sqrt(σ²).* randn(n_train)

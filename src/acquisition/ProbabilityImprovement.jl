@@ -3,8 +3,6 @@ struct ProbabilityImprovement <: AbstractAcquisition
     best_y::Float64
 end
 
-normcdf(μ, σ²) = 1 / 2 * (1 + erf(μ / √(2σ²)))
-
 function (pi::ProbabilityImprovement)(surrogate::AbstractSurrogate, x)
     μ = posterior_mean(surrogate, x)
     σ² = posterior_var(surrogate, x)

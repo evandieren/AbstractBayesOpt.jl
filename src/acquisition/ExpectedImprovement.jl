@@ -3,10 +3,7 @@ struct ExpectedImprovement <: AbstractAcquisition
     best_y::Float64
 end
 
-normpdf(μ, σ²) = 1 / √(2π * σ²) * exp(-μ^2 / (2 * σ²))
-normcdf(μ, σ²) = 1 / 2 * (1 + erf(μ / √(2σ²)))
-
-function (ei::ExpectedImprovement)(surrogate::StandardGP, x)
+function (ei::ExpectedImprovement)(surrogate::AbstractSurrogate, x)
     μ = posterior_mean(surrogate, x)
     σ² = posterior_var(surrogate, x)
     Δ = (ei.best_y - ei.ξ) - μ # we are substracting ξ because we are minimising.
@@ -19,5 +16,9 @@ function (ei::ExpectedImprovement)(surrogate::StandardGP, x)
 end
 
 function update!(acqf::ExpectedImprovement,ys::AbstractVector)
-    ExpectedImprovement(acqf.ξ, minimum(ys))
+    if isa(ys[1],Float64) # we are in 1d
+        ExpectedImprovement(acqf.ξ, minimum(reduce(vcat,ys)))
+    else 
+        ExpectedImprovement(acqf.ξ, minimum(hcat(ys...)[1,:]))
+    end
 end

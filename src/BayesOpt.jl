@@ -20,13 +20,16 @@ export ContinuousDomain
 
 # Surrogate models
 include("surrogates/StandardGP.jl")
-export StandardGP, posterior_mean, posterior_var
-# include("surrogates/GradientGP.jl") # not implemented yet
+export StandardGP, prep_input, posterior_mean, posterior_var
+
+include("surrogates/GradientGP.jl") # not implemented yet
+export GradientGP, gradKernel, prep_input, posterior_mean, posterior_var
 
 # Acquisition functions
+include("acquisition/acq_utils.jl")
 include("acquisition/ExpectedImprovement.jl")
 include("acquisition/ProbabilityImprovement.jl")
-export ExpectedImprovement, ei, ProbabilityImprovement, pi
+export normcdf, normpdf, ExpectedImprovement, ei, ProbabilityImprovement, pi
 
 # Core Bayesian Optimization framework
 include("bayesian_opt.jl")

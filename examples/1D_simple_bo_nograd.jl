@@ -22,9 +22,8 @@ lower = [-10.0]
 upper = [10.0]
 domain = ContinuousDomain(lower, upper)
 
-kernel = Matern32Kernel()
-prior_gp = AbstractGPs.GP(kernel) # Creates GP(0,k) for the prior
-model = StandardGP(prior_gp) # Instantiates the StandardGP (gives it the prior).
+kernel = RBFKernel()
+model = StandardGP(kernel) # Instantiates the StandardGP (gives it the prior).
 
 # Generate uniform random samples
 n_train = 10
@@ -34,14 +33,15 @@ println(x_train)
 
 σ² = 1e-3 # 1e-10
 y_train = f.(x_train) + sqrt(σ²).* randn(n_train);
+y_train = map(x -> [x], y_train)
 println(y_train)
 # Conditioning: 
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed anyway)
 model = update!(model, x_train, y_train, σ²)
 
 # Init of the acquisition function
-ξ = 1e-1
-acqf = ExpectedImprovement(ξ, minimum(y_train))
+ξ = 1e-3
+acqf = ExpectedImprovement(ξ, minimum(reduce(vcat,y_train)))
 
 # This maximises the function
 problem = BOProblem(
@@ -51,7 +51,7 @@ problem = BOProblem(
                     x_train,
                     y_train,
                     acqf,
-                    60,
+                    10,
                     σ²
                     )
 
@@ -60,15 +60,22 @@ print_info(problem)
 @info "Starting Bayesian Optimization..."
 result = optimize(problem)
 xs = reduce(vcat,result.xs)
-ys = result.ys
+ys = reduce(vcat,result.ys)
 
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
 
 plot_domain = collect(lower[1]:0.01:upper[1])
 
+plot_domain = prep_input(model,plot_domain)
+
 post_mean, post_var = mean_and_var(result.gp.gpx(plot_domain))
-post_var[post_var .< 0] .= 0
+
+if isa(model, GradientGP)
+    post_mean = reshape(post_mean, :, d+1)[:,1] # This returns f(x) to match the StandardGP
+    post_var = reshape(post_var, :, d+1)[:,1]
+    post_var[post_var .< 0] .= 0
+end
 
 plot(plot_domain, f.(plot_domain),
         label="target function",
@@ -77,7 +84,7 @@ plot(plot_domain, f.(plot_domain),
         ylabel="y",
         title="BayesOpt, EI ξ=$(ξ), σ²=$(σ²)",
         legend=:outertopright)
-plot!(plot_domain, post_mean; label="GP", ribbon=sqrt.(post_var),color="green")
+plot!(plot_domain, post_mean; label="GP", ribbon=sqrt.(post_var),ribbon_scale=2,color="green")
 scatter!(
     xs[1:n_train],
     ys[1:n_train];
@@ -93,3 +100,4 @@ scatter!(
     [minimum(ys)];
     label="Best candidate"
 )
+savefig("gp_RBF.pdf")

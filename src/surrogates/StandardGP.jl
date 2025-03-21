@@ -11,20 +11,22 @@ struct StandardGP <: AbstractSurrogate
     gpx
 end
 
-function StandardGP(gp::AbstractGPs.GP)
+function StandardGP(kernel::Kernel)
+    """
+    Initialises the model
+    """
+    gp = AbstractGPs.GP(kernel) # Creates GP(0,k) for the prior
     StandardGP(gp,nothing)
 end
 
-function update!(model::StandardGP, xs::AbstractVector, ys::AbstractVector, noise_var)
+function update!(model::StandardGP, xs::AbstractVector, ys::AbstractVector, noise_var::Float64)
     gpx = model.gp(xs, noise_var...)
-    updated_gpx = posterior(gpx,ys)
+    updated_gpx = posterior(gpx,reduce(vcat,ys))
     return StandardGP(model.gp, updated_gpx)
 end
 
-function posterior_mean(model,x)
-    Statistics.mean(model.gpx([x]))[1]
-end
+prep_input(model::StandardGP,x::AbstractVector) = x
 
-function posterior_var(model,x)
-    Statistics.var(model.gpx([x]))[1]
-end
+posterior_mean(model::StandardGP,x) = Statistics.mean(model.gpx([x]))[1]
+
+posterior_var(model::StandardGP,x) = Statistics.var(model.gpx([x]))[1]
