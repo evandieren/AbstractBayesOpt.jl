@@ -59,8 +59,8 @@ problem = BOProblem(
                     f_val_grad,
                     domain,
                     model,
-                    x_train,
-                    y_train,
+                    copy(x_train),
+                    copy(y_train),
                     acqf,
                     20,
                     σ²
