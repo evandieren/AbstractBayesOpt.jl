@@ -8,6 +8,7 @@ using AbstractGPs
 using KernelFunctions
 using Plots
 using Distributions
+using ForwardDiff
 using GLMakie
 
 using BayesOpt
@@ -39,27 +40,31 @@ himmelblau(x::AbstractVector) = (x[1]^2 + x[2] -11)^2 + (x[1]+x[2]^2-7)^2
 
 f(x) = himmelblau(x)
 
-problem_dim = 2
+∇f(x) = ForwardDiff.gradient(f, x)
+
+f_val_grad(x) = [f(x); ∇f(x)]
+
+d = 2
 lower = [-6,-6.0] #[-5.0, 0.0]
 upper = [6.0,6.0] #[10.0, 15.0]
 domain = ContinuousDomain(lower, upper)
 
-kernel = Matern52Kernel()
-model = StandardGP(kernel) # Instantiates the StandardGP (gives it the prior).
+RBF_kernel(x1, x2; l=1.0) = exp(-0.5 * sum(abs2, x1 - x2) / l^2)
+
+grad_kernel = gradKernel(RBF_kernel)
+model = GradientGP(grad_kernel,d+1)
 
 # Generate uniform random samples
 n_train = 10
-x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
-σ² = 0.0 #1e-2
-y_train = f.(x_train) + sqrt(σ²).* randn(n_train)
-y_train = map(x -> [x], y_train)
-
-println(y_train)
-
-#x_train = hcat(x_train...) # easier for AbstractGPs to work with Abstract Matrices
-
+x_train = [lower .+ (upper .- lower) .* rand(d) for _ in 1:n_train]
 println(x_train)
 
+σ² = 1e-3
+val_grad = f_val_grad.(x_train)
+# Create flattened output
+y_train = [val_grad[i] + sqrt(σ²)*randn(d+1) for i = eachindex(val_grad)]
+
+println(y_train)
 
 # Conditioning: 
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed)
@@ -67,17 +72,17 @@ model = update!(model, x_train, y_train, σ²)
 
 # Init of the acquisition function
 ξ = 1e-3
-acqf = ExpectedImprovement(ξ, minimum(y_train)[1])
+acqf = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
 
 # This maximises the function
 problem = BOProblem(
-                    f,
+                    f_val_grad, # because we probe both the function value and its gradients.
                     domain,
                     model,
-                    x_train,
-                    y_train,
+                    copy(x_train),
+                    copy(y_train),
                     acqf,
-                    10,
+                    20,
                     σ²
                     )
 
@@ -85,8 +90,8 @@ print_info(problem)
 
 @info "Starting Bayesian Optimization..."
 result = optimize(problem)
-xs = result.xs
-ys = result.ys
+xs = result.xs #reduce(vcat,result.xs)
+ys = hcat(result.ys...)[1,:]
 
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
@@ -97,8 +102,8 @@ x_grid = range(domain.lower[1], domain.upper[1], length=plot_grid_size)
 y_grid = range(domain.lower[2], domain.upper[2], length=plot_grid_size)
 
 grid_values = [f([x,y]) for x in x_grid, y in y_grid]
-grid_mean = [mean(result.gp.gpx([[x,y]]))[1] for x in x_grid, y in y_grid]
-grid_std = sqrt.([var(result.gp.gpx([[x,y]]))[1] for x in x_grid, y in y_grid])
+grid_mean = [mean(result.gp.gpx([([x,y],1)]))[1] for x in x_grid, y in y_grid]
+grid_std = sqrt.([var(result.gp.gpx([([x,y],1)]))[1] for x in x_grid, y in y_grid])
 grid_acqf = [result.acqf(result.gp,[x,y]) for x in x_grid, y in y_grid]
 
 fig = Figure(;size=(1000, 600))

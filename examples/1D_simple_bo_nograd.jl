@@ -40,7 +40,7 @@ println(y_train)
 model = update!(model, x_train, y_train, σ²)
 
 # Init of the acquisition function
-ξ = 1e-3
+ξ = 1e-2
 acqf = ExpectedImprovement(ξ, minimum(reduce(vcat,y_train)))
 
 # This maximises the function
@@ -48,10 +48,10 @@ problem = BOProblem(
                     f,
                     domain,
                     model,
-                    x_train,
-                    y_train,
+                    copy(x_train),
+                    copy(y_train),
                     acqf,
-                    10,
+                    20,
                     σ²
                     )
 

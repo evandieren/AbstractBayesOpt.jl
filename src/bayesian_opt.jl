@@ -98,16 +98,16 @@ function optimize(p::BOProblem)
     """
     i = 0
     while !stop_criteria(p) & !p.flag 
-        try
-            if isa(p.ys[1],Float64)
-            println("Iteration #",i+1,", current min val: ",minimum(p.ys))
-            else
-                println("Iteration #",i+1,", current min val: ",minimum(hcat(p.ys...)[1,:]))
-            end
-        catch
-            println("Iteration #",i+1," current min val: NA")
+        #try
+        if isa(p.ys[1],Float64)
+        println("Iteration #",i+1,", current min val: ",minimum(p.ys))
+        else
+            println("Iteration #",i+1,", current min val: ",minimum(hcat(p.ys...)[1,:]))
         end
-        x_cand = optimize_acquisition!(p.acqf,p.gp,p.domain)
+        #catch
+        #    println("Iteration #",i+1," current min val: NA")
+        #end
+        x_cand = optimize_acquisition!(p.acqf,p.gp,p.domain) # There might be an issue here.
         println("New point acquired: ",x_cand)
         y_cand = p.f(x_cand)
         y_cand = y_cand .+ sqrt(p.noise)*randn(length(y_cand))

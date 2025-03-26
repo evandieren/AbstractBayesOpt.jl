@@ -13,11 +13,11 @@ struct GradientGP <: AbstractSurrogate
 end
 
 # We need to define a new type of kernel for multi-ouput GPs.
+
 struct gradKernel <: MOKernel 
     base_kernel
-    ∂ₓ_kernel
-    function gradKernel(Tk,∂ₓk)
-        return new(Tk,∂ₓk)
+    function gradKernel(Tk)
+        return new(Tk)
     end
 end
 
@@ -29,10 +29,17 @@ function (κ::gradKernel)((x, px)::Tuple{Any,Int}, (y, py)::Tuple{Any,Int})
     where if ``p = p' = 1`` returns ``k(\vec{x},\vec{x}')``, 
           if ``p = 1, p' \neq 1`` returns ``(\nabla_{\vec{x}'} k(\vec{x},\vec{x}'))_{p'}``, 
           if ``p \neq 1, p' = 1`` returns ``(\nabla_{\vec{x}} k(\vec{x}),\vec{x}')_{p}``,
-          and if ``p \neq 1, p' \neq 1``, returns ``(\nabla_x \nabla_{x'} k(\vec{x},\vec{x}')_{(p,p')}`` 
+          and if ``p \neq 1, p' \neq 1``, returns ``(\nabla_x \nabla_{x'} k(\vec{x},\vec{x}')_{(p,p')}``
+
+    Snippets given by Niklas Schmitz, EPFL.
     """
     (px > length(x) + 1 || py > length(y) + 1 || px < 1 || py < 1) &&
         error("`px` and `py` must be within the range of the number of outputs")
+    
+    onehot(n, i) = collect(1:n) .== i
+    
+    vi = onehot(length(x), px-1) # as px is 1 for func obvs, and goes from 2 to d+1 for gradients, so we need to substract 1
+    vj = onehot(length(y), py-1) # same for py.
 
     val = px == 1 && py == 1 # we are looking at f(x), f(y)
 
@@ -40,14 +47,16 @@ function (κ::gradKernel)((x, px)::Tuple{Any,Int}, (y, py)::Tuple{Any,Int})
     ∇_val_2 = (px == 1 && py != 1) # we are looking at f(x)-∇f(y)
 
     if val # we are just computing the usual matrix K
-        return κ.base_kernel(x,y)
+        κ.base_kernel(x,y)
     elseif ∇_val_1
-        return ForwardDiff.derivative(s-> κ.base_kernel([x[1:px-2]; s; x[px:end]], y),x[px-1]) # the px-1 is because the observations are labeled 1, so first element of gradient is px=2, so will be px-1
+        return ForwardDiff.derivative(h -> κ.base_kernel(x + h * vi, y), 0.)
+        #ForwardDiff.derivative(s-> κ.base_kernel([x[1:px-2]; s; x[px:end]], y),x[px-1]) # the px-1 is because the observations are labeled 1, so first element of gradient is px=2, so will be px-1
     elseif ∇_val_2 # we are looking at f(x)-∇f(y)
-        return ForwardDiff.derivative(s-> κ.base_kernel(x, [y[1:py-2]; s; y[py:end]]),y[py-1])
+        return ForwardDiff.derivative(h -> κ.base_kernel(x, y + h * vj), 0.)
+        #return ForwardDiff.derivative(s-> κ.base_kernel(x, [y[1:py-2]; s; y[py:end]]),y[py-1])
     else # we are looking at ∇f(x)-∇f(y), this avoids computing the entire hessian each time.
-    
-        return ForwardDiff.derivative(s-> κ.∂ₓ_kernel(x, [y[1:py-2]; s; y[py:end]],px-1),y[py-1])
+        return ForwardDiff.derivative(h1 -> ForwardDiff.derivative(h2 -> κ.base_kernel(x + h1 * vi, y + h2 * vj), 0.), 0.)
+        #ForwardDiff.derivative(s-> κ.∂ₓ_kernel(x, [y[1:py-2]; s; y[py:end]],px-1),y[py-1])
     end
 end
 

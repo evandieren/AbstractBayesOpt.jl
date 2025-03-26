@@ -27,10 +27,9 @@ lower = [-10.0]
 upper = [10.0]
 domain = ContinuousDomain(lower, upper)
 
-RBF_kernel(x, y) = exp(-norm(x .- y)^2/2)
-∂ₓRBF_kernel(x, y, i) = RBF_kernel(x, y)*(y[i] - x[i]) # partial deriv ∂/∂xᵢ k(x,y)
+RBF_kernel(x1, x2; l=1.0) = exp(-0.5 * sum(abs2, x1 - x2) / l^2)
 
-grad_kernel = gradKernel(RBF_kernel,∂ₓRBF_kernel) #gradKernel(matern52_kernel)
+grad_kernel = gradKernel(RBF_kernel) #gradKernel(matern52_kernel)
 
 model = GradientGP(grad_kernel,d+1)
 
@@ -52,7 +51,7 @@ println(y_train)
 model = update!(model, x_train, y_train, σ²)
 
 # Init of the acquisition function
-ξ = 0.5
+ξ = 1e-3
 acqf = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
 
 # This maximises the function
@@ -63,7 +62,7 @@ problem = BOProblem(
                     x_train,
                     y_train,
                     acqf,
-                    10,
+                    20,
                     σ²
                     )
 
