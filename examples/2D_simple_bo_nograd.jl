@@ -50,7 +50,7 @@ model = StandardGP(kernel) # Instantiates the StandardGP (gives it the prior).
 # Generate uniform random samples
 n_train = 10
 x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
-σ² = 0.0 #1e-2
+σ² = 0.0
 y_train = f.(x_train) + sqrt(σ²).* randn(n_train)
 y_train = map(x -> [x], y_train)
 
@@ -77,7 +77,7 @@ problem = BOProblem(
                     x_train,
                     y_train,
                     acqf,
-                    10,
+                    30,
                     σ²
                     )
 
@@ -145,3 +145,4 @@ Colorbar(fig[2, 2][1, 2],limits = (minimum(grid_acqf),maximum(grid_acqf)))
 #savefig(fig,"output_example_2D.png")
 GLMakie.activate!(inline=true)
 display(fig)
+save("gp_RBF_2D.png",fig)

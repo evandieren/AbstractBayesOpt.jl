@@ -59,7 +59,7 @@ n_train = 10
 x_train = [lower .+ (upper .- lower) .* rand(d) for _ in 1:n_train]
 println(x_train)
 
-σ² = 1e-3
+σ² = 0.0
 val_grad = f_val_grad.(x_train)
 # Create flattened output
 y_train = [val_grad[i] + sqrt(σ²)*randn(d+1) for i = eachindex(val_grad)]
@@ -82,7 +82,7 @@ problem = BOProblem(
                     copy(x_train),
                     copy(y_train),
                     acqf,
-                    20,
+                    30,
                     σ²
                     )
 
@@ -150,3 +150,4 @@ Colorbar(fig[2, 2][1, 2],limits = (minimum(grid_acqf),maximum(grid_acqf)))
 #savefig(fig,"output_example_2D.png")
 GLMakie.activate!(inline=true)
 display(fig)
+save("gradgp_RBF_2D.png",fig)

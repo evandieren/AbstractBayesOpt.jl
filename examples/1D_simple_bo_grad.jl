@@ -111,4 +111,4 @@ scatter!(
     [minimum(ys)];
     label="Best candidate"
 )
-savefig("gradgp_RBF.pdf")
+savefig("gradgp_RBF_1D.pdf")

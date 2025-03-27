@@ -40,7 +40,7 @@ println(y_train)
 model = update!(model, x_train, y_train, σ²)
 
 # Init of the acquisition function
-ξ = 1e-2
+ξ = 1e-3
 acqf = ExpectedImprovement(ξ, minimum(reduce(vcat,y_train)))
 
 # This maximises the function
@@ -100,4 +100,4 @@ scatter!(
     [minimum(ys)];
     label="Best candidate"
 )
-savefig("gp_RBF.pdf")
+savefig("gp_RBF_1D.pdf")
