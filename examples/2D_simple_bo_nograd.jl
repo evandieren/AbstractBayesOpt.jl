@@ -92,7 +92,7 @@ println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
 
 @info "Starting plotting procedure..."
-plot_grid_size = 500 # Grid for surface plot.
+plot_grid_size = 250 # Grid for surface plot.
 x_grid = range(domain.lower[1], domain.upper[1], length=plot_grid_size)
 y_grid = range(domain.lower[2], domain.upper[2], length=plot_grid_size)
 

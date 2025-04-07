@@ -17,20 +17,6 @@ import Random
 Random.seed!(1234)
 
 # Objective Function 
-# Branin
-function branin(x::AbstractVector)
-    x1 = x[1]
-    x2 = x[2]
-    b = 5.1 / (4*pi^2);
-    c = 5/pi;
-    r = 6;
-    a = 1;
-    s = 10;
-    t = 1 / (8*pi);
-    term1 = a * (x2 - b*x1^2 + c*x1 - r)^2;
-    term2 = s*(1-t)*cos(x1);
-    y = term1 + term2 + s;
-end
 
 # Rosenbrock
 rosenbrock(x::AbstractVector) = (1 - x[1])^2 + 100 * (x[2] - x[1]^2)^2
@@ -97,7 +83,7 @@ println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
 
 @info "Starting plotting procedure..."
-plot_grid_size = 500 # Grid for surface plot.
+plot_grid_size = 250 # Grid for surface plot.
 x_grid = range(domain.lower[1], domain.upper[1], length=plot_grid_size)
 y_grid = range(domain.lower[2], domain.upper[2], length=plot_grid_size)
 
