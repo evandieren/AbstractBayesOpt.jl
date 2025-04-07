@@ -17,5 +17,9 @@ function (pi::ProbabilityImprovement)(surrogate::AbstractSurrogate, x)
 end
 
 function update!(acqf::ProbabilityImprovement,ys::AbstractVector)
-    ProbabilityImprovement(acqf.ξ, minimum(ys))
+    if isa(ys[1],Float64) # we are in 1d
+        ProbabilityImprovement(acqf.ξ, minimum(reduce(vcat,ys)))
+    else 
+        ProbabilityImprovement(acqf.ξ, minimum(hcat(ys...)[1,:]))
+    end
 end
