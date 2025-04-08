@@ -9,6 +9,7 @@ using SpecialFunctions
 using Plots
 using Distributions
 using GLMakie
+using Distances
 
 # Interface definitions
 include("abstract.jl")
@@ -23,7 +24,7 @@ include("surrogates/StandardGP.jl")
 export StandardGP, prep_input, posterior_mean, posterior_var
 
 include("surrogates/GradientGP.jl") # not implemented yet
-export GradientGP, gradKernel, prep_input, posterior_mean, posterior_var
+export GradientGP, ApproxMatern52Kernel, gradKernel, prep_input, posterior_mean, posterior_var
 
 # Acquisition functions
 include("acquisition/acq_utils.jl")

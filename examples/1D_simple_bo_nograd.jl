@@ -22,7 +22,7 @@ lower = [-10.0]
 upper = [10.0]
 domain = ContinuousDomain(lower, upper)
 
-kernel = RBFKernel()
+kernel = Matern52Kernel()
 model = StandardGP(kernel) # Instantiates the StandardGP (gives it the prior).
 
 # Generate uniform random samples

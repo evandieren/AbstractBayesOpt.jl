@@ -35,9 +35,7 @@ lower = [-6,-6.0] #[-5.0, 0.0]
 upper = [6.0,6.0] #[10.0, 15.0]
 domain = ContinuousDomain(lower, upper)
 
-RBF_kernel(x1, x2; l=1.0) = exp(-0.5 * sum(abs2, x1 - x2) / l^2)
-
-grad_kernel = gradKernel(RBF_kernel)
+grad_kernel = gradKernel(ApproxMatern52Kernel())
 model = GradientGP(grad_kernel,d+1)
 
 # Generate uniform random samples
@@ -136,4 +134,4 @@ Colorbar(fig[2, 2][1, 2],limits = (minimum(grid_acqf),maximum(grid_acqf)))
 #savefig(fig,"output_example_2D.png")
 GLMakie.activate!(inline=true)
 display(fig)
-save("gradgp_RBF_2D.png",fig)
+save("gradgp_matern_2D.png",fig)

@@ -12,7 +12,6 @@ using ForwardDiff
 using BayesOpt
 using LinearAlgebra
 
-
 import Random
 Random.seed!(1234)
 
@@ -27,9 +26,7 @@ lower = [-10.0]
 upper = [10.0]
 domain = ContinuousDomain(lower, upper)
 
-RBF_kernel(x1, x2; l=1.0) = exp(-0.5 * sum(abs2, x1 - x2) / l^2)
-
-grad_kernel = gradKernel(RBF_kernel) #gradKernel(matern52_kernel)
+grad_kernel = gradKernel(ApproxMatern52Kernel())
 
 model = GradientGP(grad_kernel,d+1)
 
@@ -46,6 +43,7 @@ val_grad = f_val_grad.(x_train)
 y_train = [val_grad[i] + sqrt(σ²)*randn(d+1) for i = eachindex(val_grad)]
 
 println(y_train)
+
 # Conditioning: 
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed anyway)
 model = update!(model, x_train, y_train, σ²)
@@ -111,4 +109,4 @@ scatter!(
     [minimum(ys)];
     label="Best candidate"
 )
-savefig("gradgp_RBF_1D.pdf")
+savefig("gradgp_matern_1D.pdf")

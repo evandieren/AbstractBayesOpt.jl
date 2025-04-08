@@ -12,7 +12,28 @@ struct GradientGP <: AbstractSurrogate
     gpx
 end
 
-# We need to define a new type of kernel for multi-ouput GPs.
+
+# Need to approximate around d ≈ 0 because of differentiation issues.
+# We will use the squared euclidean distance because this is fine to differentiate when d ≈ 0.
+struct ApproxMatern52Kernel{M} <: KernelFunctions.SimpleKernel
+    metric::M
+end
+ApproxMatern52Kernel(; metric=Distances.SqEuclidean()) = ApproxMatern52Kernel(metric)
+KernelFunctions.metric(k::ApproxMatern52Kernel) = k.metric
+
+function KernelFunctions.kappa(k::ApproxMatern52Kernel, d²::Real)
+    if d² < 1e-10 # we do Taylor of order 2 around d = 0.
+        return 1.0 - (5.0/6.0) * d²
+    else
+        d = sqrt(d²)
+        return (1 + sqrt(5) * d + 5 * d² / 3) * exp(-sqrt(5) * d)
+    end
+end
+function Base.show(io::IO, k::ApproxMatern52Kernel)
+    return print(io, "Matern 5/2 Kernel, quadratic approximation around d=0 (metric = ", k.metric, ")")
+end
+
+
 
 struct gradKernel <: MOKernel 
     base_kernel
@@ -50,13 +71,10 @@ function (κ::gradKernel)((x, px)::Tuple{Any,Int}, (y, py)::Tuple{Any,Int})
         κ.base_kernel(x,y)
     elseif ∇_val_1
         return ForwardDiff.derivative(h -> κ.base_kernel(x + h * vi, y), 0.)
-        #ForwardDiff.derivative(s-> κ.base_kernel([x[1:px-2]; s; x[px:end]], y),x[px-1]) # the px-1 is because the observations are labeled 1, so first element of gradient is px=2, so will be px-1
     elseif ∇_val_2 # we are looking at f(x)-∇f(y)
         return ForwardDiff.derivative(h -> κ.base_kernel(x, y + h * vj), 0.)
-        #return ForwardDiff.derivative(s-> κ.base_kernel(x, [y[1:py-2]; s; y[py:end]]),y[py-1])
     else # we are looking at ∇f(x)-∇f(y), this avoids computing the entire hessian each time.
         return ForwardDiff.derivative(h1 -> ForwardDiff.derivative(h2 -> κ.base_kernel(x + h1 * vi, y + h2 * vj), 0.), 0.)
-        #ForwardDiff.derivative(s-> κ.∂ₓ_kernel(x, [y[1:py-2]; s; y[py:end]],px-1),y[py-1])
     end
 end
 
