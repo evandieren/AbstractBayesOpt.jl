@@ -1,7 +1,7 @@
 """
 This short example shows a 1D optimization of a function using the Bayesian Optimization framework.
 
-f : R² → R
+f : R → R
 """
 
 using AbstractGPs
@@ -22,22 +22,22 @@ lower = [-10.0]
 upper = [10.0]
 domain = ContinuousDomain(lower, upper)
 
-kernel = Matern52Kernel()
-model = StandardGP(kernel) # Instantiates the StandardGP (gives it the prior).
+σ² = 1e-3 # 1e-10
+
+kernel = RBFKernel()
+model = StandardGP(kernel, σ²) # Instantiates the StandardGP (gives it the prior).
 
 # Generate uniform random samples
 n_train = 10
 x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
 
 println(x_train)
-
-σ² = 1e-3 # 1e-10
 y_train = f.(x_train) + sqrt(σ²).* randn(n_train);
 y_train = map(x -> [x], y_train)
 println(y_train)
 # Conditioning: 
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed anyway)
-model = update!(model, x_train, y_train, σ²)
+model = update!(model, x_train, y_train)
 
 # Init of the acquisition function
 ξ = 1e-3
@@ -51,7 +51,7 @@ problem = BOProblem(
                     copy(x_train),
                     copy(y_train),
                     acqf,
-                    20,
+                    10,
                     σ²
                     )
 
@@ -84,7 +84,7 @@ plot(plot_domain, f.(plot_domain),
         ylabel="y",
         title="BayesOpt, EI ξ=$(ξ), σ²=$(σ²)",
         legend=:outertopright)
-plot!(plot_domain, post_mean; label="GP", ribbon=sqrt.(post_var),ribbon_scale=2,color="green")
+plot!(plot_domain, post_mean; label="GP", ribbon=sqrt.(abs.(post_var)),ribbon_scale=2,color="green")
 scatter!(
     xs[1:n_train],
     ys[1:n_train];

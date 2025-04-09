@@ -20,6 +20,7 @@ include("domains.jl")
 export ContinuousDomain
 
 # Surrogate models
+include("surrogates/surrogates_utils.jl")
 include("surrogates/StandardGP.jl")
 export StandardGP, prep_input, posterior_mean, posterior_var
 
@@ -35,8 +36,5 @@ export normcdf, normpdf, ExpectedImprovement, ei, ProbabilityImprovement, pi
 # Core Bayesian Optimization framework
 include("bayesian_opt.jl")
 export optimize, print_info, update!, BOProblem
-
-# Optimization tools
-include("optimizer.jl")
 
 end

@@ -1,7 +1,7 @@
 """
 This short example shows a 1D optimization of a function using the Bayesian Optimization framework.
 
-f : R² → R
+f : R → R
 """
 
 using AbstractGPs
@@ -28,7 +28,8 @@ domain = ContinuousDomain(lower, upper)
 
 grad_kernel = gradKernel(ApproxMatern52Kernel())
 
-model = GradientGP(grad_kernel,d+1)
+σ² = 1e-3
+model = GradientGP(grad_kernel,d+1,σ²)
 
 # Generate uniform random samples
 n_train = 10
@@ -36,8 +37,6 @@ x_train = [lower .+ (upper .- lower) .* rand(d) for _ in 1:n_train]
 
 
 println(x_train)
-
-σ² = 1e-3
 val_grad = f_val_grad.(x_train)
 # Create flattened output
 y_train = [val_grad[i] + sqrt(σ²)*randn(d+1) for i = eachindex(val_grad)]
@@ -46,7 +45,7 @@ println(y_train)
 
 # Conditioning: 
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed anyway)
-model = update!(model, x_train, y_train, σ²)
+model = update!(model, x_train, y_train)
 
 # Init of the acquisition function
 ξ = 1e-3
@@ -60,7 +59,7 @@ problem = BOProblem(
                     copy(x_train),
                     copy(y_train),
                     acqf,
-                    20,
+                    10,
                     σ²
                     )
 

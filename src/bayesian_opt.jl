@@ -43,40 +43,33 @@ function BOProblem(f::Function, domain::AbstractDomain, prior::AbstractSurrogate
 end
 
 function update!(p::BOProblem, x::AbstractVector, y::AbstractVector, i::Int)
-
+    prev_gp = copy(p.gp)
+    
+    # Update the surrogate
     # Add the obserbed data
     push!(p.xs, x)
     push!(p.ys, y)
     # Could create some issues if we have the same point twice.
-
-
-    # Update the surrogate
-    gp_updated = nothing
     try
         # test for ill-conditioning
-        gp_updated = update!(p.gp,p.xs, p.ys, p.noise)
+        p.gp = update!(p.gp,p.xs, p.ys)
     catch
         println("We reached ill-conditioning, returning NON-UPDATED GP. Killing BO loop.")
-
-
         # Issue: the gp_update in the try is updating the p.gp.gpx as it tries to create the posterior.
         # if it fails, it keeps the added x and y and overwrites the old structure, which I want to keep if it fails...
         # so now its a bit bruteforce but I try to recreate the previous GP structure. Maybe copying it every time would help.
+        p.gp = prev_gp
+        println(length(prev_gp.gpx.data.x))
         p.xs = p.xs[1:(length(p.xs)-1)]
         p.ys = p.ys[1:(length(p.ys)-1)]
         println("Final # points for posterior: ",length(p.xs))
-        p.gp = update!(p.gp, p.xs, p.ys, p.noise)
+        #p.gp = update!(p.gp, p.xs, p.ys)
         p.flag = true
         return p
     end
 
     acqf_updated = update!(p.acqf,p.ys)
 
-    #Is this really necessary? Why not returning p directly with the updated xs,ys and gp?
-    # Do we need to create a new object everytime?
-    # return BOProblem(p.f, p.domain, p.xs, p.ys, gp_updated, acqf_updated,p.max_iter,i,p.noise, p.flag)
-
-    p.gp = gp_updated
     p.acqf = acqf_updated
     p.iter = i + 1
     return p

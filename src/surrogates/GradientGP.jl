@@ -8,10 +8,12 @@ Reason: This is a simple wrapper around AbstractGPs that implements the Abstract
 
 struct GradientGP <: AbstractSurrogate
     gp::AbstractGPs.GP
+    noise_var::Float64
     p::Int
     gpx
 end
 
+Base.copy(s::GradientGP) = GradientGP(s.gp, s.noise_var ,s.p, copy(s.gpx))
 
 # Need to approximate around d ≈ 0 because of differentiation issues.
 # We will use the squared euclidean distance because this is fine to differentiate when d ≈ 0.
@@ -78,23 +80,23 @@ function (κ::gradKernel)((x, px)::Tuple{Any,Int}, (y, py)::Tuple{Any,Int})
     end
 end
 
-function GradientGP(kernel::gradKernel,p::Int)
+function GradientGP(kernel::gradKernel,p::Int,noise_var::Float64)
     """
     Initialises the model for Gradient GPs (multi-output GP)
     """
     gp = AbstractGPs.GP(kernel) # Creates GP(0,k) for the prior
-    GradientGP(gp,p,nothing)
+    GradientGP(gp,noise_var,p,nothing)
 end
 
-function update!(model::GradientGP, xs::AbstractVector, ys::AbstractVector, noise_var::Float64)
+function update!(model::GradientGP, xs::AbstractVector, ys::AbstractVector)
 
     x̃, ỹ = KernelFunctions.MOInputIsotopicByOutputs(xs, size(ys[1])[1]), vec(permutedims(reduce(hcat, ys)))
     # we could do something better for this, such as inserting the batch of new points in xs and ys which are already MOInputIsotopicByOutputs elements.
 
-    gpx = model.gp(x̃, noise_var...)
+    gpx = model.gp(x̃, model.noise_var...)
     updated_gpx = posterior(gpx,ỹ)
 
-    return GradientGP(model.gp,model.p, updated_gpx)
+    return GradientGP(model.gp, model.noise_var, model.p, updated_gpx)
 end
 
 prep_input(model::GradientGP, x::AbstractVector) = KernelFunctions.MOInputIsotopicByOutputs(x, model.p)

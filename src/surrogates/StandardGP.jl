@@ -8,21 +8,24 @@ Reason: This is a simple wrapper around AbstractGPs that implements the Abstract
 
 struct StandardGP <: AbstractSurrogate
     gp::AbstractGPs.GP
+    noise_var::Float64
     gpx
 end
 
-function StandardGP(kernel::Kernel)
+Base.copy(s::StandardGP) = StandardGP(s.gp, s.noise_var, copy(s.gpx))
+
+function StandardGP(kernel::Kernel,noise_var::Float64)
     """
     Initialises the model
     """
     gp = AbstractGPs.GP(kernel) # Creates GP(0,k) for the prior
-    StandardGP(gp,nothing)
+    StandardGP(gp, noise_var, nothing)
 end
 
-function update!(model::StandardGP, xs::AbstractVector, ys::AbstractVector, noise_var::Float64)
-    gpx = model.gp(xs, noise_var...)
+function update!(model::StandardGP, xs::AbstractVector, ys::AbstractVector)
+    gpx = model.gp(xs, model.noise_var...)
     updated_gpx = posterior(gpx,reduce(vcat,ys))
-    return StandardGP(model.gp, updated_gpx)
+    return StandardGP(model.gp, model.noise_var, updated_gpx)
 end
 
 prep_input(model::StandardGP,x::AbstractVector) = x
