@@ -41,7 +41,15 @@ model = update!(model, x_train, y_train)
 
 # Init of the acquisition function
 ξ = 1e-3
-acqf = ExpectedImprovement(ξ, minimum(reduce(vcat,y_train)))
+#acqf = ExpectedImprovement(ξ, minimum(reduce(vcat,y_train)))
+acqf = KnowledgeGradient(domain, [optimize_mean!(model, domain)[2]])
+
+#plot_domain = collect(lower[1]:0.1:upper[1])
+#acqf_dom = [acqf(model,x) for x in plot_domain]
+#plot(plot_domain,acqf_dom)
+
+#plot(plot_domain,f.(plot_domain))
+#line!(optimize_mean!(model, domain))
 
 # This maximises the function
 problem = BOProblem(
@@ -100,4 +108,4 @@ scatter!(
     [minimum(ys)];
     label="Best candidate"
 )
-savefig("gp_RBF_1D.pdf")
+savefig("gp_RBF_KG_1D.pdf")

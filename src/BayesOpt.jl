@@ -31,7 +31,8 @@ export GradientGP, ApproxMatern52Kernel, gradKernel, prep_input, posterior_mean,
 include("acquisition/acq_utils.jl")
 include("acquisition/ExpectedImprovement.jl")
 include("acquisition/ProbabilityImprovement.jl")
-export normcdf, normpdf, ExpectedImprovement, ei, ProbabilityImprovement, pi
+include("acquisition/KnowledgeGradient.jl")
+export normcdf, normpdf, optimize_mean!, ExpectedImprovement, ei, ProbabilityImprovement, pi, KnowledgeGradient, kg
 
 # Core Bayesian Optimization framework
 include("bayesian_opt.jl")

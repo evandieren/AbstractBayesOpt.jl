@@ -16,7 +16,7 @@ function (pi::ProbabilityImprovement)(surrogate::AbstractSurrogate, x)
     return normcdf(Δ/σ,1)
 end
 
-function update!(acqf::ProbabilityImprovement,ys::AbstractVector)
+function update!(acqf::ProbabilityImprovement,ys::AbstractVector, surrogate::AbstractSurrogate)
     if isa(ys[1],Float64) # we are in 1d
         ProbabilityImprovement(acqf.ξ, minimum(reduce(vcat,ys)))
     else 

@@ -68,7 +68,7 @@ function update!(p::BOProblem, x::AbstractVector, y::AbstractVector, i::Int)
         return p
     end
 
-    acqf_updated = update!(p.acqf,p.ys)
+    acqf_updated = update!(p.acqf,p.ys,p.gp)
 
     p.acqf = acqf_updated
     p.iter = i + 1

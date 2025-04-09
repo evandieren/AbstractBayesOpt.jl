@@ -3,11 +3,11 @@ normcdf(μ, σ²) = 1 / 2 * (1 + erf(μ / √(2σ²)))
 
 using Optim
 
+inner_optimizer = LBFGS(;linesearch = Optim.LineSearches.HagerZhang(linesearchmax=20))
+box_optimizer = Fminbox(inner_optimizer)
+
 function optimize_acquisition!(acqf::AbstractAcquisition, surrogate::AbstractSurrogate, domain::ContinuousDomain; n_restarts = 20)
     # We will use BFGS for now
-    inner_optimizer = LBFGS(;linesearch = Optim.LineSearches.HagerZhang(linesearchmax=20))
-    box_optimizer = Fminbox(inner_optimizer)
-
     best_acq = Inf
     best_x = nothing
 
@@ -21,8 +21,9 @@ function optimize_acquisition!(acqf::AbstractAcquisition, surrogate::AbstractSur
                                 domain.upper,
                                 initial_x,
                                 box_optimizer,
-                                Optim.Options(g_tol = 1e-5, f_tol = 2.2e-9)
-                                ; autodiff = :forward
+                                Optim.Options(g_tol = 1e-5, f_tol = 1e-3, x_tol = 1e-2)
+                                #Optim.Options(g_tol = 1e-5, f_tol = 2.2e-9,x_tol = 1e-4)
+                                #; autodiff = :forward
                                 )
         # Check if the current run is better (lower negative acqf)
         current_acq = Optim.minimum(result)
@@ -34,19 +35,43 @@ function optimize_acquisition!(acqf::AbstractAcquisition, surrogate::AbstractSur
     return best_x
 end
 
-#TODO Maybe switch to the Optim one later on
-# Gradient ascent for KG acquisition function
-function gradient_ascent(f, ∇f, x₀, lr, T, tol=1e-6)
-    x = copy(x0)
-    for t in 1:T
-        x_new = x + lr * ∇f(x)   # ascent step
-
-        if norm(x_new - x) < tol # indirectly linked to value of ∇f(x)
-            return x_new, f(x_new)
+function optimize_mean!(surrogate::AbstractSurrogate, domain::ContinuousDomain; n_restarts = 30)
+    # This will minimize the posterior mean of the surrogate. Similar to optimize_acquisition!
+    best_μ = Inf
+    best_x = nothing
+    for i in 1:n_restarts
+        # Generate a random starting point within the bounds
+        initial_x = [rand()*(u - l) + l for (l, u) in domain.bounds]
+        result = Optim.optimize(x -> posterior_mean(surrogate, x),
+                                domain.lower,
+                                domain.upper,
+                                initial_x,
+                                box_optimizer,
+                                Optim.Options(g_tol = 1e-5, f_tol = 2.2e-9)
+                                ; autodiff = :forward)
+        current_μ = Optim.minimum(result)
+        if current_μ < best_μ
+            best_μ = current_μ
+            best_x = Optim.minimizer(result)
         end
-
-        x = x_new
     end
-
-    return x, f(x)
+    return best_x, best_μ
 end
+
+# Here we will have a look when we will do the gradient approximate function.
+# #TODO Maybe switch to the Optim one later on
+# # Gradient ascent for KG acquisition function
+# function gradient_ascent(f, ∇f, x₀, lr, T, tol=1e-6)
+#     x = copy(x0)
+#     for t in 1:T
+#         x_new = x + lr * ∇f(x)   # ascent step
+
+#         if norm(x_new - x) < tol # indirectly linked to value of ∇f(x)
+#             return x_new, f(x_new)
+#         end
+
+#         x = x_new
+#     end
+
+#     return x, f(x)
+# end

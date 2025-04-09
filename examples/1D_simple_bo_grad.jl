@@ -49,7 +49,8 @@ model = update!(model, x_train, y_train)
 
 # Init of the acquisition function
 ξ = 1e-3
-acqf = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
+#acqf = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
+acqf = KnowledgeGradient(domain)
 
 # This maximises the function
 problem = BOProblem(
