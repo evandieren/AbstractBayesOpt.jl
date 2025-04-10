@@ -18,6 +18,7 @@ function (kg::KnowledgeGradient)(surrogate::AbstractSurrogate, x, J=1_000)
         new_model = update!(surrogate,[surrogate.gpx.data.x; x],[surrogate.gpx.data.δ ;y[j]])
         
         μ_new =  optimize_mean!(new_model, kg.domain,n_restarts = 3)[2]
+        
         Δ[j] = kg.best_μ[1] - μ_new[1]
     end
     println("KG at $(x):", mean(Δ))

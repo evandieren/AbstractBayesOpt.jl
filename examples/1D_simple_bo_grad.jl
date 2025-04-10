@@ -13,7 +13,7 @@ using BayesOpt
 using LinearAlgebra
 
 import Random
-Random.seed!(1234)
+Random.seed!(123)
 
 # Objective Function
 f(x) = sin(sum(x.+1)) + sin((10.0 / 3.0) * sum(x .+1))
@@ -32,7 +32,7 @@ grad_kernel = gradKernel(ApproxMatern52Kernel())
 model = GradientGP(grad_kernel,d+1,σ²)
 
 # Generate uniform random samples
-n_train = 10
+n_train = 5
 x_train = [lower .+ (upper .- lower) .* rand(d) for _ in 1:n_train]
 
 
@@ -49,8 +49,8 @@ model = update!(model, x_train, y_train)
 
 # Init of the acquisition function
 ξ = 1e-3
-#acqf = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
-acqf = KnowledgeGradient(domain)
+acqf = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
+#acqf = Expec(domain)
 
 # This maximises the function
 problem = BOProblem(
@@ -60,7 +60,7 @@ problem = BOProblem(
                     copy(x_train),
                     copy(y_train),
                     acqf,
-                    10,
+                    5,
                     σ²
                     )
 
@@ -71,6 +71,13 @@ result = optimize(problem)
 xs = reduce(vcat,result.xs)
 ys = hcat(result.ys...)[1,:]
 
+running_min = accumulate(min, f.(xs)) #[n_train+1:end]
+
+feval_grad = 2:2:(2*length(running_min))
+error_grad = norm.(running_min .+ 1.9887)
+
+@save "grad_bo_1d.jld2" feval_grad error_grad
+
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
 
@@ -80,11 +87,10 @@ plot_x = map(x -> [x], plot_domain)
 plot_x = prep_input(model,plot_x)
 post_mean, post_var = mean_and_var(result.gp.gpx(plot_x))
 
-if isa(model, GradientGP)
-    post_mean = reshape(post_mean, :, d+1)[:,1] # This returns f(x) to match the StandardGP
-    post_var = reshape(post_var, :, d+1)[:,1]
-    post_var[post_var .< 0] .= 0
-end
+post_mean = reshape(post_mean, :, d+1)[:,1] # This returns f(x) to match the StandardGP
+post_var = reshape(post_var, :, d+1)[:,1]
+post_var[post_var .< 0] .= 0
+
 
 plot(plot_domain, f.(plot_domain),
         label="target function",

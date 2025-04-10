@@ -10,11 +10,11 @@ using Plots
 using Distributions
 using ForwardDiff
 using GLMakie
-
+using JLD2
 using BayesOpt
 
 import Random
-Random.seed!(1234)
+Random.seed!(123456)
 
 # Objective Function 
 
@@ -34,16 +34,16 @@ d = 2
 lower = [-6,-6.0] #[-5.0, 0.0]
 upper = [6.0,6.0] #[10.0, 15.0]
 domain = ContinuousDomain(lower, upper)
+σ² = 0.0
 
 grad_kernel = gradKernel(ApproxMatern52Kernel())
-model = GradientGP(grad_kernel,d+1)
+model = GradientGP(grad_kernel,d+1,σ²)
 
 # Generate uniform random samples
 n_train = 10
 x_train = [lower .+ (upper .- lower) .* rand(d) for _ in 1:n_train]
 println(x_train)
 
-σ² = 0.0
 val_grad = f_val_grad.(x_train)
 # Create flattened output
 y_train = [val_grad[i] + sqrt(σ²)*randn(d+1) for i = eachindex(val_grad)]
@@ -52,7 +52,7 @@ println(y_train)
 
 # Conditioning: 
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed)
-model = update!(model, x_train, y_train, σ²)
+model = update!(model, x_train, y_train)
 
 # Init of the acquisition function
 ξ = 1e-3
@@ -66,7 +66,7 @@ problem = BOProblem(
                     copy(x_train),
                     copy(y_train),
                     acqf,
-                    30,
+                    20,
                     σ²
                     )
 
@@ -79,6 +79,14 @@ ys = hcat(result.ys...)[1,:]
 
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
+
+
+running_min = accumulate(min, f.(xs)) #[n_train+1:end]
+
+feval_grad = 3:3:(3*length(running_min))
+error_grad = norm.(running_min)
+
+@save "grad_bo_himmel.jld2" feval_grad error_grad
 
 @info "Starting plotting procedure..."
 plot_grid_size = 250 # Grid for surface plot.
@@ -98,40 +106,57 @@ ax4 = Axis(fig[2, 2], title="Acquisition function (EI)", xlabel="X-axis", ylabel
 
 #GLMakie.contour!(ax1, x_grid, y_grid, grid_values, colormap=:viridis, levels=200)
 x1_coords = hcat(xs...)[1,:]
+x1_train = x1_coords[1:n_train]
+x1_candidates = x1_coords[n_train+1:end]
+
 x2_coords = hcat(xs...)[2,:]
+x2_train = x2_coords[1:n_train]
+x2_candidates = x2_coords[n_train+1:end]
+
 
 # True function evaluation
 GLMakie.surface!(ax1,x_grid, y_grid,fill(0f0, size(grid_values));
-                 color=grid_values, shading = NoShading)
-GLMakie.scatter!(ax1, x1_coords, x2_coords)
-GLMakie.scatter!(ax1, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],color="green")
-Colorbar(fig[1, 1][1, 2],scale=log10,
-         limits = (minimum(grid_values),maximum(grid_values)))
+                 color=grid_values, shading = NoShading, colormap = :coolwarm)
+GLMakie.scatter!(ax1, x1_train, x2_train,color="white", marker=:cross)
+GLMakie.scatter!(ax1, x1_candidates, x2_candidates,color= 1:length(x1_candidates),colormap=:viridis)
+GLMakie.scatter!(ax1, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],marker=:star5,markersize=15,color="green")
+Colorbar(fig[1, 1][1, 2],
+         limits = (minimum(grid_values),maximum(grid_values)),
+         colormap=:coolwarm)
 
 # Posterior mean
 GLMakie.surface!(ax2,x_grid, y_grid,fill(0f0, size(grid_mean));
                  color=grid_mean, shading = NoShading,
-                 colorrange = (minimum(grid_values),maximum(grid_values)))
-GLMakie.scatter!(ax2, x1_coords, x2_coords)
-GLMakie.scatter!(ax2, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],color="green")
-Colorbar(fig[1, 2][1, 2],scale=log10,
-         limits = (minimum(grid_values),maximum(grid_values)))
+                 colorrange = (minimum(grid_values),maximum(grid_values)),
+                 colormap = :coolwarm)
+GLMakie.scatter!(ax2, x1_train, x2_train,color="white", marker=:cross)
+GLMakie.scatter!(ax2, x1_candidates, x2_candidates,color= 1:length(x1_candidates),colormap=:viridis)
+GLMakie.scatter!(ax2, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],marker=:star5,markersize=15,color="green")
+Colorbar(fig[1, 2][1, 2],
+         limits = (minimum(grid_values),maximum(grid_values)),
+         colormap=:coolwarm)
 
 # Posterior variance
 GLMakie.surface!(ax3,x_grid, y_grid,fill(0f0, size(grid_std));
-                 color=grid_std, shading = NoShading)
-GLMakie.scatter!(ax3, x1_coords, x2_coords)
-GLMakie.scatter!(ax3, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],color="green")
-Colorbar(fig[2, 1][1, 2],limits = (minimum(grid_std),maximum(grid_std)))
+                 color=grid_std, shading = NoShading,
+                 colormap = :coolwarm)
+GLMakie.scatter!(ax3, x1_train, x2_train,color="white", marker=:cross)
+GLMakie.scatter!(ax3, x1_candidates, x2_candidates,color= 1:length(x1_candidates),colormap=:viridis)
+GLMakie.scatter!(ax3, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],marker=:star5,markersize=15,color="green")
+Colorbar(fig[2, 1][1, 2],limits = (minimum(grid_std),maximum(grid_std)),
+            colormap=:coolwarm)
 
 # Acquisition function
 GLMakie.surface!(ax4,x_grid, y_grid,fill(0f0, size(grid_acqf)); 
-                 color=grid_acqf, shading = NoShading)
-GLMakie.scatter!(ax4, x1_coords, x2_coords)
-GLMakie.scatter!(ax4, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],color="green")
-Colorbar(fig[2, 2][1, 2],limits = (minimum(grid_acqf),maximum(grid_acqf)))
+                 color=grid_acqf, shading = NoShading,
+                 colormap = :coolwarm)
+GLMakie.scatter!(ax4, x1_train, x2_train,color="white", marker=:cross)
+GLMakie.scatter!(ax4, x1_candidates, x2_candidates,color= 1:length(x1_candidates),colormap=:viridis)
+GLMakie.scatter!(ax4, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],marker=:star5,markersize=15,color="green")
+Colorbar(fig[2, 2][1, 2],limits = (minimum(grid_acqf),maximum(grid_acqf)),
+colormap=:coolwarm)
 
 #savefig(fig,"output_example_2D.png")
 GLMakie.activate!(inline=true)
 display(fig)
-save("gradgp_matern_2D.png",fig)
+save("gradgp_matern_2D_10_20.png",fig)

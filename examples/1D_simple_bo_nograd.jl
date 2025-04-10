@@ -12,7 +12,7 @@ using Distributions
 using BayesOpt
 
 import Random
-Random.seed!(1234)
+Random.seed!(123)
 
 # Objective Function
 f(x) = sin(sum(x.+1)) + sin((10.0 / 3.0) * sum(x .+1))
@@ -24,11 +24,11 @@ domain = ContinuousDomain(lower, upper)
 
 σ² = 1e-3 # 1e-10
 
-kernel = RBFKernel()
+kernel = Matern52Kernel()
 model = StandardGP(kernel, σ²) # Instantiates the StandardGP (gives it the prior).
 
 # Generate uniform random samples
-n_train = 10
+n_train = 5
 x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
 
 println(x_train)
@@ -41,8 +41,8 @@ model = update!(model, x_train, y_train)
 
 # Init of the acquisition function
 ξ = 1e-3
-#acqf = ExpectedImprovement(ξ, minimum(reduce(vcat,y_train)))
-acqf = KnowledgeGradient(domain, [optimize_mean!(model, domain)[2]])
+acqf = ExpectedImprovement(ξ, minimum(reduce(vcat,y_train)))
+#acqf = KnowledgeGradient(domain, [optimize_mean!(model, domain)[2]])
 
 #plot_domain = collect(lower[1]:0.1:upper[1])
 #acqf_dom = [acqf(model,x) for x in plot_domain]
@@ -59,7 +59,7 @@ problem = BOProblem(
                     copy(x_train),
                     copy(y_train),
                     acqf,
-                    10,
+                    15,
                     σ²
                     )
 
@@ -73,17 +73,24 @@ ys = reduce(vcat,result.ys)
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
 
+
+@load "grad_bo_1d.jld2" feval_grad error_grad
+
+running_min = accumulate(min, f.(xs))
+
+Plots.plot(1:length(running_min),norm.(running_min .+ 1.9887),yaxis=:log, title="Error w.r.t true minimum (1D BO)",
+            xlabel="Function evaluations",ylabel=L"|| f(x^*_n) - f^* ||",
+            label="BO",xlims=(1,length(running_min)))
+Plots.vspan!([1,n_train]; color=:blue,alpha=0.2, label="")
+Plots.vspan!([n_train,2*n_train]; color=:purple,alpha=0.2, label="")
+Plots.plot!(feval_grad,error_grad,label="gradBO")
+savefig("1D_error_BO.pdf")
+
 plot_domain = collect(lower[1]:0.01:upper[1])
 
 plot_domain = prep_input(model,plot_domain)
 
 post_mean, post_var = mean_and_var(result.gp.gpx(plot_domain))
-
-if isa(model, GradientGP)
-    post_mean = reshape(post_mean, :, d+1)[:,1] # This returns f(x) to match the StandardGP
-    post_var = reshape(post_var, :, d+1)[:,1]
-    post_var[post_var .< 0] .= 0
-end
 
 plot(plot_domain, f.(plot_domain),
         label="target function",
@@ -108,4 +115,4 @@ scatter!(
     [minimum(ys)];
     label="Best candidate"
 )
-savefig("gp_RBF_KG_1D.pdf")
+savefig("gp_Matern_1D.pdf")
