@@ -8,11 +8,11 @@ using AbstractGPs
 using KernelFunctions
 using Plots
 using Distributions
-
+using JLD2
 using BayesOpt
-
+using LaTeXStrings
 import Random
-Random.seed!(123)
+Random.seed!(555)
 
 # Objective Function
 f(x) = sin(sum(x.+1)) + sin((10.0 / 3.0) * sum(x .+1))
@@ -22,9 +22,9 @@ lower = [-10.0]
 upper = [10.0]
 domain = ContinuousDomain(lower, upper)
 
-σ² = 1e-3 # 1e-10
+σ² = 1e-12 # 1e-10
 
-kernel = Matern52Kernel()
+kernel = 2*Matern52Kernel()
 model = StandardGP(kernel, σ²) # Instantiates the StandardGP (gives it the prior).
 
 # Generate uniform random samples
@@ -32,7 +32,7 @@ n_train = 5
 x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
 
 println(x_train)
-y_train = f.(x_train) + sqrt(σ²).* randn(n_train);
+y_train = f.(x_train) #+ sqrt(σ²).* randn(n_train);
 y_train = map(x -> [x], y_train)
 println(y_train)
 # Conditioning: 
@@ -59,7 +59,7 @@ problem = BOProblem(
                     copy(x_train),
                     copy(y_train),
                     acqf,
-                    15,
+                    85,
                     σ²
                     )
 
@@ -83,7 +83,7 @@ Plots.plot(1:length(running_min),norm.(running_min .+ 1.9887),yaxis=:log, title=
             label="BO",xlims=(1,length(running_min)))
 Plots.vspan!([1,n_train]; color=:blue,alpha=0.2, label="")
 Plots.vspan!([n_train,2*n_train]; color=:purple,alpha=0.2, label="")
-Plots.plot!(feval_grad,error_grad,label="gradBO")
+Plots.plot(feval_grad,error_grad,label="gradBO",yaxis=:log)
 savefig("1D_error_BO.pdf")
 
 plot_domain = collect(lower[1]:0.01:upper[1])
