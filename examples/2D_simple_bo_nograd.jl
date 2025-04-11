@@ -78,7 +78,7 @@ problem = BOProblem(
                     y_train,
                     acqf,
                     80,
-                    σ²
+                    0
                     )
 
 print_info(problem)

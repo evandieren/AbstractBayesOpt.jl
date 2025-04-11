@@ -13,7 +13,7 @@ function optimize_acquisition!(acqf::AbstractAcquisition, surrogate::AbstractSur
 
     # Loop over a number of random starting points
     for i in 1:n_restarts
-        println("Restart n*",i)
+        #println("Restart n*",i)
         # Generate a random starting point within the bounds
         initial_x = [rand()*(u - l) + l for (l, u) in domain.bounds]
         result = Optim.optimize(x -> -acqf(surrogate, x),
@@ -21,8 +21,8 @@ function optimize_acquisition!(acqf::AbstractAcquisition, surrogate::AbstractSur
                                 domain.upper,
                                 initial_x,
                                 box_optimizer,
-                                Optim.Options(g_tol = 1e-5, f_tol = 1e-3, x_tol = 1e-2)
-                                #Optim.Options(g_tol = 1e-5, f_tol = 2.2e-9,x_tol = 1e-4)
+                                #Optim.Options(g_tol = 1e-5, f_abstol = , x_tol = 1e-2)
+                                Optim.Options(g_tol = 1e-5, f_abstol = 2.2e-9, x_abstol = 1e-4)
                                 #; autodiff = :forward
                                 )
         # Check if the current run is better (lower negative acqf)
@@ -47,7 +47,7 @@ function optimize_mean!(surrogate::AbstractSurrogate, domain::ContinuousDomain; 
                                 domain.upper,
                                 initial_x,
                                 box_optimizer,
-                                Optim.Options(g_tol = 1e-5, f_tol = 2.2e-9)
+                                Optim.Options(g_tol = 1e-5, f_abstol = 2.2e-9)
                                 ; autodiff = :forward)
         current_μ = Optim.minimum(result)
         if current_μ < best_μ

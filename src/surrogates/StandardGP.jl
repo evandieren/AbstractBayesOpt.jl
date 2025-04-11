@@ -23,7 +23,7 @@ function StandardGP(kernel::Kernel,noise_var::Float64)
 end
 
 function update!(model::StandardGP, xs::AbstractVector, ys::AbstractVector)
-    gpx = model.gp(xs, model.noise_var...)
+    gpx = model.gp(xs, model.noise_var...) # This is a FiniteGP with Σy with noise_var on its diagonal.
     updated_gpx = posterior(gpx,reduce(vcat,ys))
     return StandardGP(model.gp, model.noise_var, updated_gpx)
 end

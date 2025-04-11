@@ -18,7 +18,7 @@ Random.seed!(555)
 # Objective Function
 f(x) = sin(sum(x.+1)) + sin((10.0 / 3.0) * sum(x .+1))
 ∇f(x) = ForwardDiff.gradient(f, x)
-
+min_f = −1.988699758534924
 f_val_grad(x) = [f(x); ∇f(x)]
 
 d = 1
@@ -28,14 +28,12 @@ domain = ContinuousDomain(lower, upper)
 
 grad_kernel = gradKernel(ApproxMatern52Kernel())
 
-σ² = 1e-12
+σ² = 1e-6
 model = GradientGP(grad_kernel,d+1,σ²)
 
 # Generate uniform random samples
-n_train = 5
+n_train = 10
 x_train = [lower .+ (upper .- lower) .* rand(d) for _ in 1:n_train]
-
-
 println(x_train)
 val_grad = f_val_grad.(x_train)
 # Create flattened output
@@ -44,6 +42,44 @@ y_train = [val_grad[i] for i = eachindex(val_grad)]
 
 println(y_train)
 
+
+using Optim
+# Negative log marginal likelihood (no noise term)
+function nlml_grad(params,kernel,X_train,y_train,σ²)
+    log_ℓ, log_scale = params
+    ℓ = exp(log_ℓ)
+    scale = exp(log_scale)
+
+    # Kernel with current parameters
+    k = scale * (kernel ∘ ScaleTransform(ℓ))
+    mod = GradientGP(gradKernel(k),d+1, σ²)
+
+    #println(mean(gp.gpx(x_train)))
+
+    x̃, ỹ = KernelFunctions.MOInputIsotopicByOutputs(X_train, size(y_train[1])[1]), vec(permutedims(reduce(hcat, y_train)))
+
+    -AbstractGPs.logpdf(mod.gp(x̃,σ²), ỹ)  # Negative log marginal likelihood
+end
+
+
+# Initial log-parameters: log(lengthscale), log(magnitude)
+initial_params = [log(1.0), log(1.0)]
+
+# Optimize with BFGS
+res = Optim.optimize(x -> nlml_grad(x,ApproxMatern52Kernel(),x_train,y_train,σ²), initial_params, Optim.Newton())
+
+res
+
+# Extract optimized values
+opt_params = Optim.minimizer(res)
+ell_opt = exp(opt_params[1])
+scale_opt = exp(opt_params[2])
+
+println("Optimized lengthscale: ", ell_opt)
+println("Optimized magnitude: ", scale_opt)
+
+grad_kernel = gradKernel(scale_opt *(ApproxMatern52Kernel() ∘ ScaleTransform(ell_opt)))
+model = GradientGP(grad_kernel,d+1,σ²)
 # Conditioning: 
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed anyway)
 model = update!(model, x_train, y_train)
@@ -75,20 +111,25 @@ problem = BOProblem(
                     copy(y_train),
                     acqf,
                     40,
-                    σ²
+                    0.0
                     )
 
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
-result = optimize(problem)
+result = BayesOpt.optimize(problem)
 xs = reduce(vcat,result.xs)
 ys = hcat(result.ys...)[1,:]
 
 running_min = accumulate(min, f.(xs)) #[n_train+1:end]
 
 feval_grad = 2:2:(2*length(running_min))
-error_grad = norm.(running_min .+ 1.9887)
+error_grad = norm.(running_min .- min_f)
+
+xs_ = prep_input(result.gp, result.xs) 
+
+K̃ = kernelmatrix(result.gp.gp.kernel,xs_,xs_) + σ²*I(length(xs_))
+κ_K = cond(K̃)
 
 @save "grad_bo_1d.jld2" feval_grad error_grad
 
