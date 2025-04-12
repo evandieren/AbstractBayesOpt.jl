@@ -9,7 +9,7 @@ using KernelFunctions
 using Plots
 using Distributions
 using ForwardDiff
-using GLMakie
+#using GLMakie
 using LinearAlgebra
 
 using BayesOpt

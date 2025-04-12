@@ -8,11 +8,7 @@ using Statistics
 using SpecialFunctions
 using Plots
 using Distributions
-try
-    using GLMakie
-catch
-    @warn "GLMakie not available, using SSH?"
-end
+#using GLMakie
 using Distances
 
 # Interface definitions

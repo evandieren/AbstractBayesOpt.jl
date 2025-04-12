@@ -8,7 +8,7 @@ using AbstractGPs
 using KernelFunctions
 using Plots
 using Distributions
-using GLMakie
+#using GLMakie
 
 using BayesOpt
 
