@@ -14,11 +14,11 @@ end
 
 Base.copy(s::StandardGP) = StandardGP(s.gp, s.noise_var, copy(s.gpx))
 
-function StandardGP(kernel::Kernel,noise_var::Float64)
+function StandardGP(kernel::Kernel,noise_var::Float64;mean=ZeroMean())
     """
     Initialises the model
     """
-    gp = AbstractGPs.GP(kernel) # Creates GP(0,k) for the prior
+    gp = AbstractGPs.GP(mean,kernel) # Creates GP(0,k) for the prior
     StandardGP(gp, noise_var, nothing)
 end
 

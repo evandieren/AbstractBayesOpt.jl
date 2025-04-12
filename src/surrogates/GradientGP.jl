@@ -35,7 +35,16 @@ function Base.show(io::IO, k::ApproxMatern52Kernel)
     return print(io, "Matern 5/2 Kernel, quadratic approximation around d=0 (metric = ", k.metric, ")")
 end
 
+struct gradMean
+    c::AbstractVector
+    function f_mean(vec_const, (x, px)::Tuple{Any,Int})
+        return vec_const[px]
+    end
 
+    function gradMean(c)
+        return CustomMean(x -> f_mean(c,x))
+    end
+end
 
 struct gradKernel <: MOKernel 
     base_kernel
@@ -80,11 +89,11 @@ function (κ::gradKernel)((x, px)::Tuple{Any,Int}, (y, py)::Tuple{Any,Int})
     end
 end
 
-function GradientGP(kernel::gradKernel,p::Int,noise_var::Float64)
+function GradientGP(kernel::gradKernel,p::Int,noise_var::Float64;mean=ZeroMean())
     """
     Initialises the model for Gradient GPs (multi-output GP)
     """
-    gp = AbstractGPs.GP(kernel) # Creates GP(0,k) for the prior
+    gp = AbstractGPs.GP(mean,kernel) # Creates GP(0,k) for the prior
     GradientGP(gp,noise_var,p,nothing)
 end
 
