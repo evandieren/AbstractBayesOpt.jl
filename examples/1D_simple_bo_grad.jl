@@ -99,8 +99,9 @@ model = update!(model, x_train, y_train)
 # plot!(plot_domain,f.(plot_domain))
 # Init of the acquisition function
 ξ = 1e-3
-acqf = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
-#acqf = Expec(domain)
+acqf1 = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
+acqf2 = ProbabilityDescent()
+acqf3 = EnsembleAcquisition([0.9, 0.1], [acqf1, acqf2])
 
 # This maximises the function
 problem = BOProblem(
@@ -152,7 +153,7 @@ plot(plot_domain, f.(plot_domain),
         xlim=(lower[1], upper[1]),
         xlabel="x",
         ylabel="y",
-        title="BayesOpt, EI ξ=$(ξ), σ²=$(σ²)",
+        title="BayesOpt, σ²=$(σ²)",
         legend=:outertopright)
 plot!(plot_domain, post_mean; label="GP", ribbon=sqrt.(post_var),ribbon_scale=2,color="green")
 scatter!(
@@ -170,4 +171,4 @@ scatter!(
     [minimum(ys)];
     label="Best candidate"
 )
-savefig("gradgp_matern_1D.pdf")
+savefig("gradgp_matern_1D_ensemble_prob_descent.pdf")
