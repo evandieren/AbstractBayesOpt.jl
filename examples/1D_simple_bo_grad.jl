@@ -100,8 +100,8 @@ model = update!(model, x_train, y_train)
 # Init of the acquisition function
 ξ = 1e-3
 acqf1 = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
-acqf2 = ProbabilityDescent()
-acqf3 = EnsembleAcquisition([0.9, 0.1], [acqf1, acqf2])
+acqf2 = GradientNormUCB(1.96)
+acqf = EnsembleAcquisition([0.5, 0.5], [acqf1, acqf2])
 
 # This maximises the function
 problem = BOProblem(
@@ -110,7 +110,7 @@ problem = BOProblem(
                     model,
                     copy(x_train),
                     copy(y_train),
-                    acqf,
+                    acqf2,
                     40,
                     0.0
                     )
@@ -132,7 +132,7 @@ xs_ = prep_input(result.gp, result.xs)
 K̃ = kernelmatrix(result.gp.gp.kernel,xs_,xs_) + σ²*I(length(xs_))
 κ_K = cond(K̃)
 
-@save "grad_bo_1d.jld2" feval_grad error_grad
+#@save "grad_bo_1d.jld2" feval_grad error_grad
 
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
@@ -171,4 +171,4 @@ scatter!(
     [minimum(ys)];
     label="Best candidate"
 )
-savefig("gradgp_matern_1D_ensemble_prob_descent.pdf")
+savefig("gradgp_matern_1D_ensemble_EI_ucb_grad.pdf")

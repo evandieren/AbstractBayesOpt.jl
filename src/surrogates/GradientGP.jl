@@ -116,4 +116,4 @@ posterior_grad_mean(model::GradientGP,x) = mean(model.gpx(prep_input(model, [x])
 
 posterior_var(model::GradientGP,x) = var(model.gpx(prep_input(model, [x])))[1] # we do the function value only for now
 
-posterior_grad_covar(model::GradientGP,x) = cov(model.gpx(prep_input(model, [x]))) # the matrix itself
+posterior_grad_cov(model::GradientGP,x) = cov(model.gpx(prep_input(model, [x]))) # the matrix itself

@@ -8,6 +8,7 @@ using Statistics
 using SpecialFunctions
 using Plots
 using Distributions
+using LinearAlgebra
 #using GLMakie
 using Distances
 
@@ -30,11 +31,12 @@ export GradientGP, ApproxMatern52Kernel, gradMean, gradKernel, prep_input, poste
 # Acquisition functions
 include("acquisition/acq_utils.jl")
 include("acquisition/ExpectedImprovement.jl")
-include("acquisition/ProbabilityDescent.jl")
+include("acquisition/gradNormUCB.jl")
+#include("acquisition/ProbabilityDescent.jl")
 include("acquisition/ProbabilityImprovement.jl")
 #include("acquisition/KnowledgeGradient.jl")
 include("acquisition/Ensemble_Acq.jl")
-export normcdf, normpdf, optimize_mean!, ExpectedImprovement, ei, ProbabilityImprovement, pi, ProbabilityDescent, pd, EnsembleAcquisition, ea
+export normcdf, normpdf, optimize_mean!, ExpectedImprovement, ei, ProbabilityImprovement, pi, GradientNormUCB, gradUCB, EnsembleAcquisition, ea
 
 # Core Bayesian Optimization framework
 include("bayesian_opt.jl")
