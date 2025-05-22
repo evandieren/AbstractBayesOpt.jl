@@ -116,9 +116,6 @@ K̃ = kernelmatrix(kernel,xs)+σ²*I(length(xs))
 @load "grad_bo_1d.jld2" feval_grad error_grad
 
 running_min = accumulate(min, f.(xs))
-eps()*κ_K
-err = LinearAlgebra.norm.(running_min .- min_f)
-err[end]
 
 Plots.plot(1:length(running_min),err,yaxis=:log, title="Error w.r.t true minimum (1D BO)",
             xlabel="Function evaluations",ylabel=L"|| f(x^*_n) - f^* ||",

@@ -99,9 +99,7 @@ model = update!(model, x_train, y_train)
 # plot!(plot_domain,f.(plot_domain))
 # Init of the acquisition function
 ξ = 1e-3
-acqf1 = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
-acqf2 = GradientNormUCB(1.96)
-acqf = EnsembleAcquisition([0.5, 0.5], [acqf1, acqf2])
+acqf = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
 
 # This maximises the function
 problem = BOProblem(
@@ -110,7 +108,7 @@ problem = BOProblem(
                     model,
                     copy(x_train),
                     copy(y_train),
-                    acqf2,
+                    acqf,
                     40,
                     0.0
                     )
@@ -126,6 +124,8 @@ running_min = accumulate(min, f.(xs)) #[n_train+1:end]
 
 feval_grad = 2:2:(2*length(running_min))
 error_grad = norm.(running_min .- min_f)
+
+@save "grad_bo_1d.jld2" feval_grad error_grad
 
 xs_ = prep_input(result.gp, result.xs) 
 
@@ -146,7 +146,6 @@ post_mean, post_var = mean_and_var(result.gp.gpx(plot_x))
 post_mean = reshape(post_mean, :, d+1)[:,1] # This returns f(x) to match the StandardGP
 post_var = reshape(post_var, :, d+1)[:,1]
 post_var[post_var .< 0] .= 0
-
 
 plot(plot_domain, f.(plot_domain),
         label="target function",
@@ -171,4 +170,4 @@ scatter!(
     [minimum(ys)];
     label="Best candidate"
 )
-savefig("gradgp_matern_1D_ensemble_EI_ucb_grad.pdf")
+#savefig("gradgp_matern_1D_ensemble_EI_ucb_grad.pdf")

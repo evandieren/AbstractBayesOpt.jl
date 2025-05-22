@@ -2,6 +2,7 @@ normpdf(μ, σ²) = 1 / √(2π * σ²) * exp(-μ^2 / (2 * σ²))
 normcdf(μ, σ²) = 1 / 2 * (1 + erf(μ / √(2σ²)))
 
 using Optim
+using Random
 
 inner_optimizer = LBFGS(;linesearch = Optim.LineSearches.HagerZhang(linesearchmax=20))
 box_optimizer = Fminbox(inner_optimizer)
@@ -10,7 +11,7 @@ function optimize_acquisition!(acqf::AbstractAcquisition, surrogate::AbstractSur
     # We will use BFGS for now
     best_acq = Inf
     best_x = nothing
-
+    
     # Loop over a number of random starting points
     for i in 1:n_restarts
         #println("Restart n*",i)
@@ -21,7 +22,6 @@ function optimize_acquisition!(acqf::AbstractAcquisition, surrogate::AbstractSur
                                 domain.upper,
                                 initial_x,
                                 box_optimizer,
-                                #Optim.Options(g_tol = 1e-5, f_abstol = , x_tol = 1e-2)
                                 Optim.Options(g_tol = 1e-5, f_abstol = 2.2e-9, x_abstol = 1e-4)
                                 #; autodiff = :forward
                                 )
