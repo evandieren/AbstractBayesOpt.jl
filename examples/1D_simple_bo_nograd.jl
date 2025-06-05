@@ -77,7 +77,8 @@ model = update!(model, x_train, y_train)
 
 # Init of the acquisition function
 ξ = 1e-3
-acqf = ExpectedImprovement(ξ, minimum(reduce(vcat,y_train)))
+β = 0.0
+acqf = UpperConfidenceBound(β) #ExpectedImprovement(ξ, minimum(reduce(vcat,y_train)))
 #acqf = KnowledgeGradient(domain, [optimize_mean!(model, domain)[2]])
 
 #plot_domain = collect(lower[1]:0.1:upper[1])
@@ -110,19 +111,21 @@ println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
 
 
-K̃ = kernelmatrix(kernel,xs)+σ²*I(length(xs))
-κ_K = cond(K̃)
+# K̃ = kernelmatrix(kernel,xs)+σ²*I(length(xs))
+#κ_K = cond(K̃)
 
-@load "grad_bo_1d.jld2" feval_grad error_grad
+#@load "grad_bo_1d.jld2" feval_grad error_grad
 
 running_min = accumulate(min, f.(xs))
 
-Plots.plot(1:length(running_min),err,yaxis=:log, title="Error w.r.t true minimum (1D BO)",
+
+
+Plots.plot(n_train:length(running_min),running_min[n_train:end] .- min_f,yaxis=:log, title="Error w.r.t true minimum (1D BO)",
             xlabel="Function evaluations",ylabel=L"|| f(x^*_n) - f^* ||",
             label="BO",xlims=(1,length(running_min)))
 Plots.vspan!([1,n_train]; color=:blue,alpha=0.2, label="")
-Plots.vspan!([n_train,2*n_train]; color=:purple,alpha=0.2, label="")
-Plots.plot!(feval_grad,error_grad,label="gradBO",yaxis=:log)
+#Plots.vspan!([n_train,2*n_train]; color=:purple,alpha=0.2, label="")
+#Plots.plot!(feval_grad,error_grad,label="gradBO",yaxis=:log)
 savefig("1D_error_BO.pdf")
 
 plot_domain = collect(lower[1]:0.01:upper[1])

@@ -31,13 +31,19 @@ export GradientGP, ApproxMatern52Kernel, gradMean, gradKernel, prep_input, poste
 
 # Acquisition functions
 include("acquisition/acq_utils.jl")
+export normcdf, normpdf,optimize_mean!,optimize_acquisition!
 include("acquisition/ExpectedImprovement.jl")
+export ExpectedImprovement, ei
+include("acquisition/UpperConfidenceBound.jl")
+export UpperConfidenceBound, ucb
 include("acquisition/gradNormUCB.jl")
+export GradientNormUCB, gradUCB
 #include("acquisition/ProbabilityDescent.jl")
 include("acquisition/ProbabilityImprovement.jl")
+export ProbabilityImprovement, pi
 #include("acquisition/KnowledgeGradient.jl")
 include("acquisition/Ensemble_Acq.jl")
-export normcdf, normpdf, optimize_mean!,optimize_acquisition!, ExpectedImprovement, ei, ProbabilityImprovement, pi, GradientNormUCB, gradUCB, EnsembleAcquisition, ea
+export EnsembleAcquisition, ea
 
 # Core Bayesian Optimization framework
 include("bayesian_opt.jl")
