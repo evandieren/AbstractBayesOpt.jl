@@ -11,8 +11,8 @@ using Distributions
 using ForwardDiff
 using BayesOpt
 using LinearAlgebra
-using JLD2
 import Random
+using Optim
 Random.seed!(555)
 
 # Objective Function
@@ -42,33 +42,11 @@ y_train = [val_grad[i] for i = eachindex(val_grad)]
 
 println(y_train)
 
-
-using Optim
-# Negative log marginal likelihood (no noise term)
-function nlml_grad(params,kernel,X_train,y_train,σ²)
-    log_ℓ, log_scale = params
-    ℓ = exp(log_ℓ)
-    scale = exp(log_scale)
-
-    # Kernel with current parameters
-    k = scale * (kernel ∘ ScaleTransform(ℓ))
-    mod = GradientGP(gradKernel(k),d+1, σ²)
-
-    #println(mean(gp.gpx(x_train)))
-
-    x̃, ỹ = KernelFunctions.MOInputIsotopicByOutputs(X_train, size(y_train[1])[1]), vec(permutedims(reduce(hcat, y_train)))
-
-    -AbstractGPs.logpdf(mod.gp(x̃,σ²), ỹ)  # Negative log marginal likelihood
-end
-
-
 # Initial log-parameters: log(lengthscale), log(magnitude)
 initial_params = [log(1.0), log(1.0)]
 
 # Optimize with BFGS
 res = Optim.optimize(x -> nlml_grad(x,ApproxMatern52Kernel(),x_train,y_train,σ²), initial_params, Optim.Newton())
-
-res
 
 # Extract optimized values
 opt_params = Optim.minimizer(res)
@@ -84,19 +62,6 @@ model = GradientGP(grad_kernel,d+1,σ²)
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed anyway)
 model = update!(model, x_train, y_train)
 
-
-# plot_domain = collect(lower[1]:0.01:upper[1])
-
-# plot_x = map(x -> [x], plot_domain)
-# plot_x = prep_input(model,plot_x)
-# post_mean, post_var = mean_and_var(model.gpx(plot_x))
-# post_mean = reshape(post_mean, :, d+1)[:,1] # This returns f(x) to match the StandardGP
-# post_var = reshape(post_var, :, d+1)[:,1]
-# post_var[post_var .< 0] .= 0
-
-
-# plot(plot_domain,post_mean,ribbon=sqrt.(post_var),ribbon_scale=2)
-# plot!(plot_domain,f.(plot_domain))
 # Init of the acquisition function
 ξ = 1e-3
 acqf = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
@@ -119,23 +84,20 @@ print_info(problem)
 result = BayesOpt.optimize(problem)
 xs = reduce(vcat,result.xs)
 ys = hcat(result.ys...)[1,:]
-
-running_min = accumulate(min, f.(xs)) #[n_train+1:end]
-
-feval_grad = 2:2:(2*length(running_min))
-error_grad = norm.(running_min .- min_f)
-
-@save "grad_bo_1d.jld2" feval_grad error_grad
-
-xs_ = prep_input(result.gp, result.xs) 
-
-K̃ = kernelmatrix(result.gp.gp.kernel,xs_,xs_) + σ²*I(length(xs_))
-κ_K = cond(K̃)
-
-#@save "grad_bo_1d.jld2" feval_grad error_grad
-
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
+
+running_min = accumulate(min, f.(xs))
+
+running_min = collect(Iterators.flatten(fill(x, 2) for x in (running_min)))
+
+
+p = Plots.plot((2*n_train):length(running_min),running_min[2*n_train:end] .- min_f,yaxis=:log, title="Error w.r.t true minimum (1D GradBO)",
+            xlabel="Function evaluations",ylabel=L"|| f(x^*_n) - f^* ||",
+            label="GradBO",xlims=(1,length(running_min)))
+Plots.vspan!([1,2*n_train]; color=:blue,alpha=0.2, label="")
+Plots.display(p)
+
 
 plot_domain = collect(lower[1]:0.01:upper[1])
 

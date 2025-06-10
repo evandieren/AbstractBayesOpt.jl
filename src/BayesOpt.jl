@@ -27,7 +27,7 @@ include("surrogates/StandardGP.jl")
 export StandardGP, prep_input, posterior_mean, posterior_var
 
 include("surrogates/GradientGP.jl") # not implemented yet
-export GradientGP, ApproxMatern52Kernel, gradMean, gradKernel, prep_input, posterior_mean, posterior_var, posterior_grad_mean, posterior_grad_cov
+export GradientGP, ApproxMatern52Kernel, gradMean, gradKernel, prep_input, posterior_mean, posterior_var, posterior_grad_mean, posterior_grad_cov, nlml_grad 
 
 # Acquisition functions
 include("acquisition/acq_utils.jl")

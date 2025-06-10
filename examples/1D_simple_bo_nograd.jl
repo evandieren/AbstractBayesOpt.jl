@@ -8,8 +8,8 @@ using AbstractGPs
 using KernelFunctions
 using Plots
 using Distributions
-using JLD2
 using BayesOpt
+using Optim
 using LinearAlgebra
 using LaTeXStrings
 import Random
@@ -32,12 +32,9 @@ model = StandardGP(kernel, σ²) # Instantiates the StandardGP (gives it the pri
 n_train = 10
 x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
 
-println(x_train)
 y_train = f.(x_train) #+ sqrt(σ²).* randn(n_train);
 y_train = map(x -> [x], y_train)
-println(y_train)
 
-using Optim
 # Negative log marginal likelihood (no noise term)
 function nlml(params,kernel,X_train,y_train,σ²)
     log_ℓ, log_scale = params
@@ -71,22 +68,12 @@ kernel = scale_opt *(kernel ∘ ScaleTransform(ell_opt))
 model = StandardGP(kernel, σ²)
 
 # Conditioning: 
-# We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed anyway)
 model = update!(model, x_train, y_train)
 
 
 # Init of the acquisition function
 ξ = 1e-3
-β = 0.0
-acqf = UpperConfidenceBound(β) #ExpectedImprovement(ξ, minimum(reduce(vcat,y_train)))
-#acqf = KnowledgeGradient(domain, [optimize_mean!(model, domain)[2]])
-
-#plot_domain = collect(lower[1]:0.1:upper[1])
-#acqf_dom = [acqf(model,x) for x in plot_domain]
-#plot(plot_domain,acqf_dom)
-
-#plot(plot_domain,f.(plot_domain))
-#line!(optimize_mean!(model, domain))
+acqf = ExpectedImprovement(ξ, minimum(reduce(vcat,y_train)))
 
 # This maximises the function
 problem = BOProblem(
@@ -111,29 +98,17 @@ println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
 
 
-# K̃ = kernelmatrix(kernel,xs)+σ²*I(length(xs))
-#κ_K = cond(K̃)
-
-#@load "grad_bo_1d.jld2" feval_grad error_grad
-
 running_min = accumulate(min, f.(xs))
 
-
-
-Plots.plot(n_train:length(running_min),running_min[n_train:end] .- min_f,yaxis=:log, title="Error w.r.t true minimum (1D BO)",
+p = Plots.plot(n_train:length(running_min),running_min[n_train:end] .- min_f,yaxis=:log, title="Error w.r.t true minimum (1D BO)",
             xlabel="Function evaluations",ylabel=L"|| f(x^*_n) - f^* ||",
             label="BO",xlims=(1,length(running_min)))
 Plots.vspan!([1,n_train]; color=:blue,alpha=0.2, label="")
-#Plots.vspan!([n_train,2*n_train]; color=:purple,alpha=0.2, label="")
-#Plots.plot!(feval_grad,error_grad,label="gradBO",yaxis=:log)
-savefig("1D_error_BO.pdf")
+Plots.display(p)
+savefig("examples/1D_error_BO.pdf")
 
 plot_domain = collect(lower[1]:0.01:upper[1])
-
-plot_domain = prep_input(model,plot_domain)
-
 post_mean, post_var = mean_and_var(result.gp.gpx(plot_domain))
-
 plot(plot_domain, f.(plot_domain),
         label="target function",
         xlim=(lower[1], upper[1]),
@@ -157,4 +132,4 @@ scatter!(
     [minimum(ys)];
     label="Best candidate"
 )
-savefig("gp_Matern_1D.pdf")
+savefig("examples/gp_Matern_1D.pdf")

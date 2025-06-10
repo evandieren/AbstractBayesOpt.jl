@@ -108,6 +108,23 @@ function update!(model::GradientGP, xs::AbstractVector, ys::AbstractVector)
     return GradientGP(model.gp, model.noise_var, model.p, updated_gpx)
 end
 
+# Negative log marginal likelihood (no noise term)
+function nlml_grad(params,kernel,X_train,y_train,σ²)
+    log_ℓ, log_scale = params
+    ℓ = exp(log_ℓ)
+    scale = exp(log_scale)
+
+    # Kernel with current parameters
+    k = scale * (kernel ∘ ScaleTransform(ℓ))
+    mod = GradientGP(gradKernel(k),d+1, σ²)
+
+    #println(mean(gp.gpx(x_train)))
+
+    x̃, ỹ = KernelFunctions.MOInputIsotopicByOutputs(X_train, size(y_train[1])[1]), vec(permutedims(reduce(hcat, y_train)))
+
+    -AbstractGPs.logpdf(mod.gp(x̃,σ²), ỹ)  # Negative log marginal likelihood
+end
+
 prep_input(model::GradientGP, x::AbstractVector) = KernelFunctions.MOInputIsotopicByOutputs(x, model.p)
 
 posterior_mean(model::GradientGP,x) = mean(model.gpx(prep_input(model, [x])))[1] # we do the function value only for now
