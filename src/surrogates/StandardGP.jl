@@ -28,6 +28,21 @@ function update!(model::StandardGP, xs::AbstractVector, ys::AbstractVector)
     return StandardGP(model.gp, model.noise_var, updated_gpx)
 end
 
+# Negative log marginal likelihood (no noise term)
+function nlml(params,kernel,X_train,y_train,σ²)
+    log_ℓ, log_scale = params
+    ℓ = exp(log_ℓ)
+    scale = exp(log_scale)
+
+    # Kernel with current parameters
+    k = scale * (kernel ∘ ScaleTransform(ℓ))
+    mod = StandardGP(k, σ²)
+
+    #println(mean(gp.gpx(x_train)))
+
+    -AbstractGPs.logpdf(mod.gp(X_train,σ²), reduce(vcat,y_train))  # Negative log marginal likelihood
+end
+
 prep_input(model::StandardGP,x::AbstractVector) = x
 
 posterior_mean(model::StandardGP,x) = Statistics.mean(model.gpx([x]))[1]

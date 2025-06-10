@@ -35,21 +35,6 @@ x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
 y_train = f.(x_train) #+ sqrt(σ²).* randn(n_train);
 y_train = map(x -> [x], y_train)
 
-# Negative log marginal likelihood (no noise term)
-function nlml(params,kernel,X_train,y_train,σ²)
-    log_ℓ, log_scale = params
-    ℓ = exp(log_ℓ)
-    scale = exp(log_scale)
-
-    # Kernel with current parameters
-    k = scale * (kernel ∘ ScaleTransform(ℓ))
-    mod = StandardGP(k, σ²)
-
-    #println(mean(gp.gpx(x_train)))
-
-    -AbstractGPs.logpdf(mod.gp(X_train,σ²), reduce(vcat,y_train))  # Negative log marginal likelihood
-end
-
 # Initial log-parameters: log(lengthscale), log(magnitude)
 initial_params = [log(1.0), log(1.0)]
 

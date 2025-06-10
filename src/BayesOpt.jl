@@ -24,7 +24,7 @@ export ContinuousDomain
 # Surrogate models
 include("surrogates/surrogates_utils.jl")
 include("surrogates/StandardGP.jl")
-export StandardGP, prep_input, posterior_mean, posterior_var
+export StandardGP, prep_input, posterior_mean, posterior_var, nlml
 
 include("surrogates/GradientGP.jl") # not implemented yet
 export GradientGP, ApproxMatern52Kernel, gradMean, gradKernel, prep_input, posterior_mean, posterior_var, posterior_grad_mean, posterior_grad_cov, nlml_grad 
