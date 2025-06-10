@@ -9,9 +9,8 @@ using KernelFunctions
 using Plots
 using Distributions
 using ForwardDiff
-#using GLMakie
-using JLD2
 using BayesOpt
+using LaTeXStrings
 
 import Random
 Random.seed!(123456)
@@ -31,8 +30,8 @@ f(x) = himmelblau(x)
 f_val_grad(x) = [f(x); ∇f(x)]
 
 d = 2
-lower = [-6,-6.0] #[-5.0, 0.0]
-upper = [6.0,6.0] #[10.0, 15.0]
+lower = [-6,-6.0]
+upper = [6.0,6.0]
 domain = ContinuousDomain(lower, upper)
 σ² = 0.0
 
@@ -42,13 +41,12 @@ model = GradientGP(grad_kernel,d+1,σ²)
 # Generate uniform random samples
 n_train = 10
 x_train = [lower .+ (upper .- lower) .* rand(d) for _ in 1:n_train]
-println(x_train)
+
 
 val_grad = f_val_grad.(x_train)
 # Create flattened output
 y_train = [val_grad[i] + sqrt(σ²)*randn(d+1) for i = eachindex(val_grad)]
 
-println(y_train)
 
 # Conditioning: 
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed)
@@ -66,97 +64,102 @@ problem = BOProblem(
                     copy(x_train),
                     copy(y_train),
                     acqf,
-                    20,
+                    60,
                     σ²
                     )
 
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
-result = optimize(problem)
-xs = result.xs #reduce(vcat,result.xs)
+result = BayesOpt.optimize(problem)
+xs = result.xs
 ys = hcat(result.ys...)[1,:]
 
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
 
+running_min = accumulate(min, f.(xs))
 
-running_min = accumulate(min, f.(xs)) #[n_train+1:end]
+running_min = collect(Iterators.flatten(fill(x, 3) for x in (running_min)))
 
-feval_grad = 3:3:(3*length(running_min))
-error_grad = norm.(running_min)
-
-@save "grad_bo_himmel.jld2" feval_grad error_grad
-
-@info "Starting plotting procedure..."
-plot_grid_size = 250 # Grid for surface plot.
-x_grid = range(domain.lower[1], domain.upper[1], length=plot_grid_size)
-y_grid = range(domain.lower[2], domain.upper[2], length=plot_grid_size)
-
-grid_values = [f([x,y]) for x in x_grid, y in y_grid]
-grid_mean = [mean(result.gp.gpx([([x,y],1)]))[1] for x in x_grid, y in y_grid]
-grid_std = sqrt.([var(result.gp.gpx([([x,y],1)]))[1] for x in x_grid, y in y_grid])
-grid_acqf = [result.acqf(result.gp,[x,y]) for x in x_grid, y in y_grid]
-
-fig = Figure(;size=(1000, 600))
-ax1 = Axis(fig[1, 1], title="True function", xlabel="X-axis", ylabel="Y-axis")
-ax2 = Axis(fig[1, 2], title="Posterior mean", xlabel="X-axis", ylabel="Y-axis")
-ax3 = Axis(fig[2, 1], title="Posterior standard deviation", xlabel="X-axis", ylabel="Y-axis")
-ax4 = Axis(fig[2, 2], title="Acquisition function (EI)", xlabel="X-axis", ylabel="Y-axis")
-
-#GLMakie.contour!(ax1, x_grid, y_grid, grid_values, colormap=:viridis, levels=200)
-x1_coords = hcat(xs...)[1,:]
-x1_train = x1_coords[1:n_train]
-x1_candidates = x1_coords[n_train+1:end]
-
-x2_coords = hcat(xs...)[2,:]
-x2_train = x2_coords[1:n_train]
-x2_candidates = x2_coords[n_train+1:end]
+p = Plots.plot((3*n_train):length(running_min),running_min[3*n_train:end],yaxis=:log, title="Error w.r.t true minimum (2D GradBO)",
+            xlabel="Function evaluations",ylabel=L"|| f(x^*_n) - f^* ||",
+            label="GradBO",xlims=(1,length(running_min)))
+Plots.vspan!([1,3*n_train]; color=:blue,alpha=0.2, label="")
+Plots.display(p)
 
 
-# True function evaluation
-GLMakie.surface!(ax1,x_grid, y_grid,fill(0f0, size(grid_values));
-                 color=grid_values, shading = NoShading, colormap = :coolwarm)
-GLMakie.scatter!(ax1, x1_train, x2_train,color="white", marker=:cross)
-GLMakie.scatter!(ax1, x1_candidates, x2_candidates,color= 1:length(x1_candidates),colormap=:viridis)
-GLMakie.scatter!(ax1, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],marker=:star5,markersize=15,color="green")
-Colorbar(fig[1, 1][1, 2],
-         limits = (minimum(grid_values),maximum(grid_values)),
-         colormap=:coolwarm)
+# Uncomment for GLMakie plotting 
+# using GLMakie
+# @info "Starting plotting procedure..."
+# plot_grid_size = 250 # Grid for surface plot.
+# x_grid = range(domain.lower[1], domain.upper[1], length=plot_grid_size)
+# y_grid = range(domain.lower[2], domain.upper[2], length=plot_grid_size)
 
-# Posterior mean
-GLMakie.surface!(ax2,x_grid, y_grid,fill(0f0, size(grid_mean));
-                 color=grid_mean, shading = NoShading,
-                 colorrange = (minimum(grid_values),maximum(grid_values)),
-                 colormap = :coolwarm)
-GLMakie.scatter!(ax2, x1_train, x2_train,color="white", marker=:cross)
-GLMakie.scatter!(ax2, x1_candidates, x2_candidates,color= 1:length(x1_candidates),colormap=:viridis)
-GLMakie.scatter!(ax2, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],marker=:star5,markersize=15,color="green")
-Colorbar(fig[1, 2][1, 2],
-         limits = (minimum(grid_values),maximum(grid_values)),
-         colormap=:coolwarm)
+# grid_values = [f([x,y]) for x in x_grid, y in y_grid]
+# grid_mean = [mean(result.gp.gpx([([x,y],1)]))[1] for x in x_grid, y in y_grid]
+# grid_std = sqrt.([var(result.gp.gpx([([x,y],1)]))[1] for x in x_grid, y in y_grid])
+# grid_acqf = [result.acqf(result.gp,[x,y]) for x in x_grid, y in y_grid]
 
-# Posterior variance
-GLMakie.surface!(ax3,x_grid, y_grid,fill(0f0, size(grid_std));
-                 color=grid_std, shading = NoShading,
-                 colormap = :coolwarm)
-GLMakie.scatter!(ax3, x1_train, x2_train,color="white", marker=:cross)
-GLMakie.scatter!(ax3, x1_candidates, x2_candidates,color= 1:length(x1_candidates),colormap=:viridis)
-GLMakie.scatter!(ax3, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],marker=:star5,markersize=15,color="green")
-Colorbar(fig[2, 1][1, 2],limits = (minimum(grid_std),maximum(grid_std)),
-            colormap=:coolwarm)
+# fig = Figure(;size=(1000, 600))
+# ax1 = Axis(fig[1, 1], title="True function", xlabel="X-axis", ylabel="Y-axis")
+# ax2 = Axis(fig[1, 2], title="Posterior mean", xlabel="X-axis", ylabel="Y-axis")
+# ax3 = Axis(fig[2, 1], title="Posterior standard deviation", xlabel="X-axis", ylabel="Y-axis")
+# ax4 = Axis(fig[2, 2], title="Acquisition function (EI)", xlabel="X-axis", ylabel="Y-axis")
 
-# Acquisition function
-GLMakie.surface!(ax4,x_grid, y_grid,fill(0f0, size(grid_acqf)); 
-                 color=grid_acqf, shading = NoShading,
-                 colormap = :coolwarm)
-GLMakie.scatter!(ax4, x1_train, x2_train,color="white", marker=:cross)
-GLMakie.scatter!(ax4, x1_candidates, x2_candidates,color= 1:length(x1_candidates),colormap=:viridis)
-GLMakie.scatter!(ax4, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],marker=:star5,markersize=15,color="green")
-Colorbar(fig[2, 2][1, 2],limits = (minimum(grid_acqf),maximum(grid_acqf)),
-colormap=:coolwarm)
+# #GLMakie.contour!(ax1, x_grid, y_grid, grid_values, colormap=:viridis, levels=200)
+# x1_coords = hcat(xs...)[1,:]
+# x1_train = x1_coords[1:n_train]
+# x1_candidates = x1_coords[n_train+1:end]
 
-#savefig(fig,"output_example_2D.png")
-GLMakie.activate!(inline=true)
-display(fig)
-save("gradgp_matern_2D_10_20.png",fig)
+# x2_coords = hcat(xs...)[2,:]
+# x2_train = x2_coords[1:n_train]
+# x2_candidates = x2_coords[n_train+1:end]
+
+
+# # True function evaluation
+# GLMakie.surface!(ax1,x_grid, y_grid,fill(0f0, size(grid_values));
+#                  color=grid_values, shading = NoShading, colormap = :coolwarm)
+# GLMakie.scatter!(ax1, x1_train, x2_train,color="white", marker=:cross)
+# GLMakie.scatter!(ax1, x1_candidates, x2_candidates,color= 1:length(x1_candidates),colormap=:viridis)
+# GLMakie.scatter!(ax1, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],marker=:star5,markersize=15,color="green")
+# Colorbar(fig[1, 1][1, 2],
+#          limits = (minimum(grid_values),maximum(grid_values)),
+#          colormap=:coolwarm)
+
+# # Posterior mean
+# GLMakie.surface!(ax2,x_grid, y_grid,fill(0f0, size(grid_mean));
+#                  color=grid_mean, shading = NoShading,
+#                  colorrange = (minimum(grid_values),maximum(grid_values)),
+#                  colormap = :coolwarm)
+# GLMakie.scatter!(ax2, x1_train, x2_train,color="white", marker=:cross)
+# GLMakie.scatter!(ax2, x1_candidates, x2_candidates,color= 1:length(x1_candidates),colormap=:viridis)
+# GLMakie.scatter!(ax2, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],marker=:star5,markersize=15,color="green")
+# Colorbar(fig[1, 2][1, 2],
+#          limits = (minimum(grid_values),maximum(grid_values)),
+#          colormap=:coolwarm)
+
+# # Posterior variance
+# GLMakie.surface!(ax3,x_grid, y_grid,fill(0f0, size(grid_std));
+#                  color=grid_std, shading = NoShading,
+#                  colormap = :coolwarm)
+# GLMakie.scatter!(ax3, x1_train, x2_train,color="white", marker=:cross)
+# GLMakie.scatter!(ax3, x1_candidates, x2_candidates,color= 1:length(x1_candidates),colormap=:viridis)
+# GLMakie.scatter!(ax3, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],marker=:star5,markersize=15,color="green")
+# Colorbar(fig[2, 1][1, 2],limits = (minimum(grid_std),maximum(grid_std)),
+#             colormap=:coolwarm)
+
+# # Acquisition function
+# GLMakie.surface!(ax4,x_grid, y_grid,fill(0f0, size(grid_acqf)); 
+#                  color=grid_acqf, shading = NoShading,
+#                  colormap = :coolwarm)
+# GLMakie.scatter!(ax4, x1_train, x2_train,color="white", marker=:cross)
+# GLMakie.scatter!(ax4, x1_candidates, x2_candidates,color= 1:length(x1_candidates),colormap=:viridis)
+# GLMakie.scatter!(ax4, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],marker=:star5,markersize=15,color="green")
+# Colorbar(fig[2, 2][1, 2],limits = (minimum(grid_acqf),maximum(grid_acqf)),
+# colormap=:coolwarm)
+
+# #savefig(fig,"output_example_2D.png")
+# GLMakie.activate!(inline=true)
+# display(fig)
+# save("gradgp_matern_2D_10_20.png",fig)

@@ -90,7 +90,7 @@ p = Plots.plot(n_train:length(running_min),running_min[n_train:end] .- min_f,yax
             label="BO",xlims=(1,length(running_min)))
 Plots.vspan!([1,n_train]; color=:blue,alpha=0.2, label="")
 Plots.display(p)
-savefig("examples/1D_error_BO.pdf")
+# savefig("examples/1D_error_BO.pdf")
 
 plot_domain = collect(lower[1]:0.01:upper[1])
 post_mean, post_var = mean_and_var(result.gp.gpx(plot_domain))
@@ -117,4 +117,4 @@ scatter!(
     [minimum(ys)];
     label="Best candidate"
 )
-savefig("examples/gp_Matern_1D.pdf")
+# savefig("examples/gp_Matern_1D.pdf")

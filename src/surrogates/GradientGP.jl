@@ -116,6 +116,7 @@ function nlml_grad(params,kernel,X_train,y_train,σ²)
 
     # Kernel with current parameters
     k = scale * (kernel ∘ ScaleTransform(ℓ))
+    d = length(X_train[1])
     mod = GradientGP(gradKernel(k),d+1, σ²)
 
     #println(mean(gp.gpx(x_train)))

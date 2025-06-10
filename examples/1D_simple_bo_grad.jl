@@ -11,6 +11,7 @@ using Distributions
 using ForwardDiff
 using BayesOpt
 using LinearAlgebra
+using LaTeXStrings
 import Random
 using Optim
 Random.seed!(555)
