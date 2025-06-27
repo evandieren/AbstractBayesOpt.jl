@@ -89,6 +89,7 @@ function optimize(p::BOProblem)
         the new best candidate, (2) query the target function f, (3) update the GP and the overall optimization state. 
 
     """
+    acqf_list = []
     i = 0
     while !stop_criteria(p) & !p.flag 
         #try
@@ -101,12 +102,13 @@ function optimize(p::BOProblem)
         #    println("Iteration #",i+1," current min val: NA")
         #end
         x_cand = optimize_acquisition!(p.acqf,p.gp,p.domain) # There might be an issue here.
-        println("New point acquired: ",x_cand)
+        println("New point acquired: $(x_cand) with acq func $(p.acqf(p.gp, x_cand))")
+        push!(acqf_list,p.acqf(p.gp, x_cand))
         y_cand = p.f(x_cand)
         y_cand = y_cand .+ sqrt(p.noise)*randn(length(y_cand))
         println("New value probed: ",y_cand)
         i +=1
         p = update!(p, x_cand, y_cand, i)
     end
-    return p
+    return p, acqf_list
 end

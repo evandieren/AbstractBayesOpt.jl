@@ -7,7 +7,7 @@ using Random
 inner_optimizer = LBFGS(;linesearch = Optim.LineSearches.HagerZhang(linesearchmax=20))
 box_optimizer = Fminbox(inner_optimizer)
 
-function optimize_acquisition!(acqf::AbstractAcquisition, surrogate::AbstractSurrogate, domain::ContinuousDomain; n_restarts = 20)
+function optimize_acquisition!(acqf::AbstractAcquisition, surrogate::AbstractSurrogate, domain::ContinuousDomain; n_restarts = 100)
     # We will use BFGS for now
     best_acq = Inf
     best_x = nothing
@@ -22,9 +22,7 @@ function optimize_acquisition!(acqf::AbstractAcquisition, surrogate::AbstractSur
                                 domain.upper,
                                 initial_x,
                                 box_optimizer,
-                                Optim.Options(g_tol = 1e-5, f_abstol = 2.2e-9, x_abstol = 1e-4)
-                                #; autodiff = :forward
-                                )
+                                Optim.Options(g_tol = 1e-5, f_abstol = 2.2e-9, x_abstol = 1e-4))
         # Check if the current run is better (lower negative acqf)
         current_acq = Optim.minimum(result)
         if current_acq < best_acq

@@ -82,12 +82,12 @@ problem = BOProblem(
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
-result = BayesOpt.optimize(problem)
+result, acqf_list = BayesOpt.optimize(problem)
 xs = reduce(vcat,result.xs)
 ys = hcat(result.ys...)[1,:]
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
-
+plot(max.(acqf_list,1e-13),yaxis=:log)
 running_min = accumulate(min, f.(xs))
 
 running_min = collect(Iterators.flatten(fill(x, 2) for x in (running_min)))
