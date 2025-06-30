@@ -3,6 +3,7 @@ normcdf(μ, σ²) = 1 / 2 * (1 + erf(μ / √(2σ²)))
 
 using Optim
 using Random
+using Surrogates
 
 inner_optimizer = LBFGS(;linesearch = Optim.LineSearches.HagerZhang(linesearchmax=20))
 box_optimizer = Fminbox(inner_optimizer)
@@ -39,6 +40,20 @@ function optimize_acquisition!(acqf::AbstractAcquisition,
         end
     end
     return best_x
+end
+
+function sample_gp_function(surrogate::AbstractSurrogate, domain::ContinuousDomain;n_points=250)
+    d = length(domain.bounds)
+    X = [domain.lower .+ rand(d) .* (domain.upper .- domain.lower) for _ in 1:n_points]
+    X_mat = reduce(hcat, X)'  # shape (n_points, d)
+    # Sample from the GP at these points
+    y = rand(surrogate.gpx(X))  # 1 sample from posterior
+    #println("here",y)
+    
+    itp = RadialBasis(X_mat, y, domain.lower, domain.upper)
+
+    return x -> -itp(x)
+
 end
 
 function optimize_mean!(surrogate::AbstractSurrogate, domain::ContinuousDomain; n_restarts = 30)

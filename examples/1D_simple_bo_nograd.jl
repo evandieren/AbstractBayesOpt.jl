@@ -57,8 +57,9 @@ model = update!(model, x_train, y_train)
 
 
 # Init of the acquisition function
-ξ = 1e-3
-acqf = ExpectedImprovement(ξ, minimum(reduce(vcat,y_train)))
+#ξ = 1e-3
+sample = sample_gp_function(model,domain)
+acqf = ThompsonSampling(sample,domain) #ExpectedImprovement(ξ, minimum(reduce(vcat,y_train)))
 
 # This maximises the function
 problem = BOProblem(
@@ -75,7 +76,7 @@ problem = BOProblem(
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
-result = BayesOpt.optimize(problem)
+result, acq_list = BayesOpt.optimize(problem)
 xs = reduce(vcat,result.xs)
 ys = reduce(vcat,result.ys)
 
