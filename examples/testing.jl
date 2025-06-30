@@ -69,7 +69,7 @@ problem = BOProblem(
                     copy(x_train),
                     copy(y_train),
                     acqf,
-                    90,
+                    50,
                     0.0
                     )
 
@@ -80,7 +80,7 @@ problem2 = BOProblem(
                     copy(x_train),
                     copy(y_train),
                     acqf2,
-                    90,
+                    50,
                     0.0
                     )
 
@@ -95,14 +95,23 @@ println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
 
 
-@info "Starting Bayesian Optimization..."
-result2,acq_list2 = BayesOpt.optimize(problem2)
-xs2 = reduce(vcat,result2.xs)
-ys2 = reduce(vcat,result2.ys)
+# @info "Starting Bayesian Optimization..."
+# result2,acq_list2 = BayesOpt.optimize(problem2)
+# xs2 = reduce(vcat,result2.xs)
+# ys2 = reduce(vcat,result2.ys)
 
-println("Optimal point: ",xs2[argmin(ys2)])
-println("Optimal value: ",minimum(ys2))
+# println("Optimal point: ",xs2[argmin(ys2)])
+# println("Optimal value: ",minimum(ys2))
 
 
 plot(max.(acq_list,1e-15),yaxis=:log)
-plot!(max.(acq_list2,1e-15))
+
+
+
+using ImageMagick, FileIO
+
+# Load frames into an array
+frames = [load("./examples/plots/iter_$(i).png") for i in 0:49]
+
+# Save as GIF (set delay between frames in seconds)
+save("my_animation.gif", cat(frames...; dims=3), fps=0.25)

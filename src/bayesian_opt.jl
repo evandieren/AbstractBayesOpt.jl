@@ -90,6 +90,7 @@ function optimize(p::BOProblem)
 
     """
     acqf_list = []
+    n_train = length(p.xs)
     i = 0
     while !stop_criteria(p) & !p.flag 
         #try
@@ -102,10 +103,16 @@ function optimize(p::BOProblem)
         #    println("Iteration #",i+1," current min val: NA")
         #end
         x_cand = optimize_acquisition!(p.acqf,p.gp,p.domain) # There might be an issue here.
+        #plot_state(p,n_train,x_cand,"./examples/plots/iter_$(i).png")
+
         println("New point acquired: $(x_cand) with acq func $(p.acqf(p.gp, x_cand))")
         push!(acqf_list,p.acqf(p.gp, x_cand))
         y_cand = p.f(x_cand)
         y_cand = y_cand .+ sqrt(p.noise)*randn(length(y_cand))
+
+
+        
+
         println("New value probed: ",y_cand)
         i +=1
         p = update!(p, x_cand, y_cand, i)

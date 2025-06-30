@@ -49,4 +49,8 @@ export EnsembleAcquisition, ea
 include("bayesian_opt.jl")
 export optimize, print_info, update!, BOProblem, stop_criteria
 
+
+include("plotting.jl")
+export plot_state
+
 end

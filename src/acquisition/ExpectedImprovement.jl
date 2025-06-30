@@ -8,11 +8,15 @@ function (ei::ExpectedImprovement)(surrogate::AbstractSurrogate, x)
     σ² = posterior_var(surrogate, x)
     Δ = (ei.best_y - ei.ξ) - μ # we are substracting ξ because we are minimising.
 
-    max(σ²,0) == 0 && return max(Δ,0.0) # maybe remove the max(Δ,0.0)?
+    if σ² <= 1e-12
+        return max(Δ, 0.0)
+    end
 
     σ = sqrt(σ²)
 
-    return Δ*normcdf(Δ/σ,1) + σ*normpdf(Δ/σ,1)
+    z = Δ/σ
+
+    return Δ * cdf(Normal(0, 1), z) + σ * pdf(Normal(0, 1), z)
 end
 
 function update!(acqf::ExpectedImprovement,ys::AbstractVector, surrogate::AbstractSurrogate)

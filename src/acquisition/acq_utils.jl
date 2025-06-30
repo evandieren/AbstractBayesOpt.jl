@@ -7,16 +7,24 @@ using Random
 inner_optimizer = LBFGS(;linesearch = Optim.LineSearches.HagerZhang(linesearchmax=20))
 box_optimizer = Fminbox(inner_optimizer)
 
-function optimize_acquisition!(acqf::AbstractAcquisition, surrogate::AbstractSurrogate, domain::ContinuousDomain; n_restarts = 100)
+function optimize_acquisition!(acqf::AbstractAcquisition,
+                               surrogate::AbstractSurrogate,
+                               domain::ContinuousDomain;
+                               n_grid = 10000,
+                               n_local = 100)
     # We will use BFGS for now
-    best_acq = Inf
+    best_acq = -Inf
     best_x = nothing
+
+    # Random search
+    d = length(domain.bounds)
+    grid_points = [domain.lower .+ rand(d) .* (domain.upper .- domain.lower) for _ in 1:n_grid]
+    evaluated = [(x, acqf(surrogate, x)) for x in grid_points]
+    sorted_points = sort(evaluated, by = x -> -x[2])  # higher EI is better
+    top_points = first.(sorted_points[1:min(n_local, length(sorted_points))])
     
     # Loop over a number of random starting points
-    for i in 1:n_restarts
-        #println("Restart n*",i)
-        # Generate a random starting point within the bounds
-        initial_x = [rand()*(u - l) + l for (l, u) in domain.bounds]
+    for initial_x in top_points
         result = Optim.optimize(x -> -acqf(surrogate, x),
                                 domain.lower,
                                 domain.upper,
@@ -24,8 +32,8 @@ function optimize_acquisition!(acqf::AbstractAcquisition, surrogate::AbstractSur
                                 box_optimizer,
                                 Optim.Options(g_tol = 1e-5, f_abstol = 2.2e-9, x_abstol = 1e-4))
         # Check if the current run is better (lower negative acqf)
-        current_acq = Optim.minimum(result)
-        if current_acq < best_acq
+        current_acq = -Optim.minimum(result)
+        if current_acq > best_acq
             best_acq = current_acq
             best_x = Optim.minimizer(result)
         end
