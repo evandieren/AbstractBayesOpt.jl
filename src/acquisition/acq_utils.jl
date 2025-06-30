@@ -42,15 +42,15 @@ function optimize_acquisition!(acqf::AbstractAcquisition,
     return best_x
 end
 
-function sample_gp_function(surrogate::AbstractSurrogate, domain::ContinuousDomain;n_points=250)
+function sample_gp_function(surrogate::AbstractSurrogate, domain::ContinuousDomain;n_points=100)
     d = length(domain.bounds)
     X = [domain.lower .+ rand(d) .* (domain.upper .- domain.lower) for _ in 1:n_points]
-    X_mat = reduce(hcat, X)'  # shape (n_points, d)
+    # X_mat = reduce(hcat, X)  # shape (n_points, d)
+    X = prep_input(surrogate,X)
     # Sample from the GP at these points
-    y = rand(surrogate.gpx(X))  # 1 sample from posterior
-    #println("here",y)
-    
-    itp = RadialBasis(X_mat, y, domain.lower, domain.upper)
+    y = reshape(rand(surrogate.gpx(X)), :, d+1)[:,1] #rand(surrogate.gpx(X))  # 1 sample from posterior
+    println("here",length(y))
+    itp = RadialBasis(X, y, domain.lower, domain.upper)
 
     return x -> -itp(x)
 
