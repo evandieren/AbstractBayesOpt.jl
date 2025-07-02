@@ -45,8 +45,8 @@ export ProbabilityImprovement, pi
 include("acquisition/Ensemble_Acq.jl")
 export EnsembleAcquisition, ea
 
-include("acquisition/ThompsonSampling.jl")
-export ThompsonSampling, ts
+# include("acquisition/ThompsonSampling.jl")
+# export ThompsonSampling, ts
 
 # Core Bayesian Optimization framework
 include("bayesian_opt.jl")

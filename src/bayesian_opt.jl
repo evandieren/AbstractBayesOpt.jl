@@ -82,7 +82,7 @@ end
 
 # Looping routine
 
-function optimize(p::BOProblem)
+function optimize(p::BOProblem;fn=nothing)
     """
     This function implements the EGO framework: 
         While some criterion is not met, (1) optimize the acquisition function to obtain 
@@ -103,7 +103,10 @@ function optimize(p::BOProblem)
         #    println("Iteration #",i+1," current min val: NA")
         #end
         x_cand = optimize_acquisition!(p.acqf,p.gp,p.domain) # There might be an issue here.
-        #plot_state(p,n_train,x_cand,"./examples/plots/iter_$(i).png")
+
+        if fn != nothing
+            plot_state(p,n_train,x_cand,"./examples/plots/$(fn)_iter_$(i).png")
+        end
 
         println("New point acquired: $(x_cand) with acq func $(p.acqf(p.gp, x_cand))")
         push!(acqf_list,p.acqf(p.gp, x_cand))

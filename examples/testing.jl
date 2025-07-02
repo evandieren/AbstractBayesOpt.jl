@@ -87,7 +87,7 @@ problem2 = BOProblem(
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
-result, acq_list = BayesOpt.optimize(problem)
+result, acq_list = BayesOpt.optimize(problem,fn="1D")
 xs = reduce(vcat,result.xs)
 ys = reduce(vcat,result.ys)
 
@@ -104,14 +104,14 @@ println("Optimal value: ",minimum(ys))
 # println("Optimal value: ",minimum(ys2))
 
 
-plot(max.(acq_list,1e-15),yaxis=:log)
-
+Plots.plot(max.(acq_list,1e-15),yaxis=:log,title="selected EI for classical BO over iterations")
+Plots.savefig("EI_iter_bo.pdf")
 
 
 using ImageMagick, FileIO
 
 # Load frames into an array
-frames = [load("./examples/plots/iter_$(i).png") for i in 0:49]
+frames = [load("./examples/plots/1D_iter_$(i).png") for i in 0:49]
 
 # Save as GIF (set delay between frames in seconds)
-save("my_animation.gif", cat(frames...; dims=3), fps=0.25)
+save("my_animation_1D.gif", cat(frames...; dims=3), fps=0.5)

@@ -13,7 +13,7 @@ using BayesOpt
 using LinearAlgebra
 
 import Random
-Random.seed!(123456)
+Random.seed!(123)
 
 # Objective Function 
 # Branin
@@ -70,16 +70,28 @@ problem = BOProblem(
                     x_train,
                     y_train,
                     acqf,
-                    80,
+                    50,
                     0.0
                     )
 
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
-result = optimize(problem)
+result,acq_list = optimize(problem,fn="himmel")
 xs = result.xs
 ys = result.ys
+
+
+using ImageMagick, FileIO
+
+# Load frames into an array
+frames = [load("./examples/plots/himmel_iter_$(i).png") for i in 0:(result.iter-1)]
+
+# Save as GIF (set delay between frames in seconds)
+save("my_animation_himmel.gif", cat(frames...; dims=3), fps=0.5)
+
+p = Plots.plot(max.(acq_list,1e-15),yaxis=:log,title="selected EI for classical BO over iterations, Himmelblau")
+Plots.savefig("EI_iter_bo_himmel.pdf")
 
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))

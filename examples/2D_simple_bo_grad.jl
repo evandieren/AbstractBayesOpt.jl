@@ -75,6 +75,8 @@ result = BayesOpt.optimize(problem)
 xs = result.xs
 ys = hcat(result.ys...)[1,:]
 
+
+
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
 

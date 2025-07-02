@@ -3,7 +3,6 @@ normcdf(μ, σ²) = 1 / 2 * (1 + erf(μ / √(2σ²)))
 
 using Optim
 using Random
-using Surrogates
 
 inner_optimizer = LBFGS(;linesearch = Optim.LineSearches.HagerZhang(linesearchmax=20))
 box_optimizer = Fminbox(inner_optimizer)
@@ -42,19 +41,19 @@ function optimize_acquisition!(acqf::AbstractAcquisition,
     return best_x
 end
 
-function sample_gp_function(surrogate::AbstractSurrogate, domain::ContinuousDomain;n_points=100)
-    d = length(domain.bounds)
-    X = [domain.lower .+ rand(d) .* (domain.upper .- domain.lower) for _ in 1:n_points]
-    # X_mat = reduce(hcat, X)  # shape (n_points, d)
-    X = prep_input(surrogate,X)
-    # Sample from the GP at these points
-    y = reshape(rand(surrogate.gpx(X)), :, d+1)[:,1] #rand(surrogate.gpx(X))  # 1 sample from posterior
-    println("here",length(y))
-    itp = RadialBasis(X, y, domain.lower, domain.upper)
+# function sample_gp_function(surrogate::AbstractSurrogate, domain::ContinuousDomain;n_points=50)
+#     d = length(domain.bounds)
+#     X = [domain.lower .+ rand(d) .* (domain.upper .- domain.lower) for _ in 1:n_points]
+#     X_mat = reduce(hcat, X)  # shape (n_points, d)
+#     X = prep_input(surrogate,X)
+#     # Sample from the GP at these points
+#     y = reshape(rand(surrogate.gpx(X)), :, d+1)[:,1] #rand(surrogate.gpx(X))  # 1 sample from posterior
+#     println("here",length(y))
+#     itp = RadialBasis(X_mat, y, domain.lower, domain.upper)
 
-    return x -> -itp(x)
+#     return x -> -itp(x)
 
-end
+# end
 
 function optimize_mean!(surrogate::AbstractSurrogate, domain::ContinuousDomain; n_restarts = 30)
     # This will minimize the posterior mean of the surrogate. Similar to optimize_acquisition!
