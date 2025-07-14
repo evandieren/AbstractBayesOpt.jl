@@ -29,18 +29,28 @@ function update!(model::StandardGP, xs::AbstractVector, ys::AbstractVector)
 end
 
 # Negative log marginal likelihood (no noise term)
-function nlml(params,kernel,X_train,y_train,σ²)
+function nlml(mod::StandardGP,params,kernel,X_train,y_train,σ²;mean=ZeroMean())
     log_ℓ, log_scale = params
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
 
     # Kernel with current parameters
     k = scale * (kernel ∘ ScaleTransform(ℓ))
-    mod = StandardGP(k, σ²)
+    gp = StandardGP(k, σ²,mean=mean) # Use fixed noise here, or optimize σ² too
 
-    #println(mean(gp.gpx(x_train)))
+    # Evaluate GP at training points with noise, creates a FiniteGP
+    gpx = gp.gp(X_train,mod.noise_var...)
 
-    -AbstractGPs.logpdf(mod.gp(X_train,σ²), reduce(vcat,y_train))  # Negative log marginal likelihood
+    try
+        return -AbstractGPs.logpdf(gpx, reduce(vcat, y_train))
+    catch e
+        if e isa PosDefException
+            @warn "Cholesky failed at params: $params"
+            return Inf
+        else
+            rethrow(e)
+        end
+    end
 end
 
 prep_input(model::StandardGP,x::AbstractVector) = x

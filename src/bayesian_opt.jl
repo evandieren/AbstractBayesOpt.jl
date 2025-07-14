@@ -12,6 +12,7 @@ mutable struct BOProblem{T<:AbstractSurrogate,F<:Function,A<:AbstractAcquisition
     xs::AbstractVector
     ys::AbstractVector
     gp::T
+    kernel_constructor
     acqf::A
     max_iter::Int
     iter::Int
@@ -31,7 +32,7 @@ function print_info(p::BOProblem)
     println("noise: ",p.noise)
 end
 
-function BOProblem(f::Function, domain::AbstractDomain, prior::AbstractSurrogate,x_train::AbstractVector, y_train::AbstractVector, acqf::AbstractAcquisition, max_iter::Int, noise::Float64)
+function BOProblem(f::Function, domain::AbstractDomain, prior::AbstractSurrogate, kernel_constructor, x_train::AbstractVector, y_train::AbstractVector, acqf::AbstractAcquisition, max_iter::Int, noise::Float64)
     """
     Initialize the Bayesian Optimization problem.
     """
@@ -39,7 +40,7 @@ function BOProblem(f::Function, domain::AbstractDomain, prior::AbstractSurrogate
     xs = x_train
     ys = y_train
     # Initialize the posterior with prior
-    BOProblem(f, domain, xs, ys, prior, acqf, max_iter, 0, noise, false)
+    BOProblem(f, domain, xs, ys, prior,kernel_constructor, acqf, max_iter, 0, noise, false)
 end
 
 function update!(p::BOProblem, x::AbstractVector, y::AbstractVector, i::Int)
@@ -79,9 +80,34 @@ function stop_criteria(p::BOProblem)
     return p.iter > p.max_iter
 end
 
+function optimize_hyperparameters(gp_model, X_train, y_train,kernel_constructor; init_params=nothing, mean=ZeroMean())
+    if isnothing(init_params)
+        # Initial guess (log-space): [ℓ, scale]
+        init_params = log.([1.0, 1.0])
+    end
+
+    obj = p -> nlml(gp_model, p, kernel_constructor, X_train, y_train,gp_model.noise_var)
+
+    result = Optim.optimize(obj, init_params, LBFGS())
+
+    opt_params = Optim.minimizer(result)
+
+    if !Optim.converged(result)
+        println("MLE optimization did not succeed: ", result)
+        return nothing
+    end
+
+    log_ℓ, log_scale = opt_params
+    ℓ = exp(log_ℓ)
+    scale = exp(log_scale)
+
+    # Update the GP model in-place
+    k_opt = scale * (kernel_constructor ∘ ScaleTransform(ℓ))
+
+    return StandardGP(k_opt,gp_model.noise_var,mean=mean)
+end
 
 # Looping routine
-
 function optimize(p::BOProblem;fn=nothing)
     """
     This function implements the EGO framework: 
@@ -92,19 +118,30 @@ function optimize(p::BOProblem;fn=nothing)
     acqf_list = []
     n_train = length(p.xs)
     i = 0
-    while !stop_criteria(p) & !p.flag 
-        #try
+    original_mean = p.gp.gp.mean
+    while !stop_criteria(p) & !p.flag
+
+        if i % 5 == 0  # Optimize GP hyperparameters every 5 iterations
+            println("Re-optimizing GP hyperparameters at iteration $i...")
+            println("Former parameters: ℓ=$(p.gp.gp.kernel.kernel.transform.s), variance =$(p.gp.gp.kernel.σ²)")
+            out = optimize_hyperparameters(p.gp, p.xs, p.ys,p.kernel_constructor,mean=original_mean)
+            if !isnothing(out)
+                p.gp = out
+                p.gp = update!(p.gp, p.xs, p.ys)
+            end
+            println("New parameters: ℓ=$(p.gp.gp.kernel.kernel.transform.s), variance =$(p.gp.gp.kernel.σ²)")
+        end
+
+        
         if isa(p.ys[1],Float64)
         println("Iteration #",i+1,", current min val: ",minimum(p.ys))
         else
             println("Iteration #",i+1,", current min val: ",minimum(hcat(p.ys...)[1,:]))
         end
-        #catch
-        #    println("Iteration #",i+1," current min val: NA")
-        #end
+
         x_cand = optimize_acquisition!(p.acqf,p.gp,p.domain) # There might be an issue here.
 
-        if fn != nothing
+        if !isnothing(fn)
             plot_state(p,n_train,x_cand,"./examples/plots/$(fn)_iter_$(i).png")
         end
 

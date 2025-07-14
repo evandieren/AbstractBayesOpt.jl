@@ -25,9 +25,6 @@ domain = ContinuousDomain(lower, upper)
 
 σ² = 1e-6 # 1e-10
 
-kernel = Matern52Kernel()
-model = StandardGP(kernel, σ²) # Instantiates the StandardGP (gives it the prior).
-
 # Generate uniform random samples
 n_train = 10
 x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
@@ -35,22 +32,24 @@ x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
 y_train = f.(x_train) #+ sqrt(σ²).* randn(n_train);
 y_train = map(x -> [x], y_train)
 
-# Initial log-parameters: log(lengthscale), log(magnitude)
-initial_params = [log(1.0), log(1.0)]
+kernel_constructor = Matern52Kernel()
 
-# Optimize with BFGS
-res = Optim.optimize(x -> nlml(x,kernel,x_train,y_train,σ²), initial_params, Optim.Newton())
+# # Initial log-parameters: log(lengthscale), log(magnitude)
+# initial_params = [log(1.0), log(1.0)]
 
-# Extract optimized values
-opt_params = Optim.minimizer(res)
-ell_opt = exp(opt_params[1])
-scale_opt = exp(opt_params[2])
+# # Optimize with BFGS
+# res = Optim.optimize(x -> nlml(x,kernel,x_train,y_train,σ²), initial_params, Optim.Newton())
 
-println("Optimized lengthscale: ", ell_opt)
-println("Optimized magnitude: ", scale_opt)
+# # Extract optimized values
+# opt_params = Optim.minimizer(res)
+# ell_opt = exp(opt_params[1])
+# scale_opt = exp(opt_params[2])
 
-kernel = scale_opt *(kernel ∘ ScaleTransform(ell_opt))
-model = StandardGP(kernel, σ²)
+# println("Optimized lengthscale: ", ell_opt)
+# println("Optimized magnitude: ", scale_opt)
+
+kernel = 1 *(kernel_constructor ∘ ScaleTransform(1))
+model = StandardGP(kernel, σ²,mean=ConstMean(mean(reduce(vcat, y_train))))
 
 # Conditioning: 
 model = update!(model, x_train, y_train)
@@ -65,6 +64,7 @@ problem = BOProblem(
                     f,
                     domain,
                     model,
+                    kernel_constructor,
                     copy(x_train),
                     copy(y_train),
                     acqf,

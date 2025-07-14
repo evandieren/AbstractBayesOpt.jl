@@ -43,16 +43,21 @@ problem_dim = 2
 lower = [-6,-6.0] #[-5.0, 0.0]
 upper = [6.0,6.0] #[10.0, 15.0]
 domain = ContinuousDomain(lower, upper)
-σ² = 0.0
+σ² = 1e-6
 
-kernel = Matern52Kernel()
-model = StandardGP(kernel,σ²) # Instantiates the StandardGP (gives it the prior).
+kernel_constructor = Matern52Kernel()
+
 
 # Generate uniform random samples
 n_train = 10
 x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
 y_train = f.(x_train) + sqrt(σ²).* randn(n_train)
 y_train = map(x -> [x], y_train)
+
+
+kernel = 1 *(kernel_constructor ∘ ScaleTransform(1))
+model = StandardGP(kernel,σ²,mean=ConstMean(mean(reduce(vcat, y_train)))) # Instantiates the StandardGP (gives it the prior).
+
 
 # Conditioning: 
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed)
@@ -67,6 +72,7 @@ problem = BOProblem(
                     f,
                     domain,
                     model,
+                    kernel,
                     x_train,
                     y_train,
                     acqf,
@@ -77,7 +83,7 @@ problem = BOProblem(
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
-result,acq_list = optimize(problem,fn="himmel")
+result,acq_list = BayesOpt.optimize(problem,fn="himmel")
 xs = result.xs
 ys = result.ys
 
