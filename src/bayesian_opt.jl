@@ -6,8 +6,8 @@ BOProblem (function) : Initiate a BOProblem structure
 update (for BOProblem) : updates the BOProblem once you have new values x,y
 """
 
-mutable struct BOProblem{T<:AbstractSurrogate,F<:Function,A<:AbstractAcquisition}
-    f::F
+mutable struct BOProblem{T<:AbstractSurrogate,A<:AbstractAcquisition}
+    f
     domain::AbstractDomain
     xs::AbstractVector
     ys::AbstractVector
@@ -32,7 +32,7 @@ function print_info(p::BOProblem)
     println("noise: ",p.noise)
 end
 
-function BOProblem(f::Function, domain::AbstractDomain, prior::AbstractSurrogate, kernel_constructor, x_train::AbstractVector, y_train::AbstractVector, acqf::AbstractAcquisition, max_iter::Int, noise::Float64)
+function BOProblem(f, domain::AbstractDomain, prior::AbstractSurrogate, kernel_constructor, x_train::AbstractVector, y_train::AbstractVector, acqf::AbstractAcquisition, max_iter::Int, noise::Float64)
     """
     Initialize the Bayesian Optimization problem.
     """
@@ -50,6 +50,7 @@ function update!(p::BOProblem, x::AbstractVector, y::AbstractVector, i::Int)
     # Add the obserbed data
     push!(p.xs, x)
     push!(p.ys, y)
+
     # Could create some issues if we have the same point twice.
     try
         # test for ill-conditioning
@@ -64,7 +65,6 @@ function update!(p::BOProblem, x::AbstractVector, y::AbstractVector, i::Int)
         p.xs = p.xs[1:(length(p.xs)-1)]
         p.ys = p.ys[1:(length(p.ys)-1)]
         println("Final # points for posterior: ",length(p.xs))
-        #p.gp = update!(p.gp, p.xs, p.ys)
         p.flag = true
         return p
     end
@@ -82,9 +82,7 @@ end
 
 function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor,old_params,classic_bo; mean=ZeroMean(),num_restarts=5)
 
-
     best_nlml = Inf
-    best_gp = nothing
     best_result = nothing
 
     lower_bounds = log.([0.1, 0.1])
@@ -100,35 +98,48 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
 
     obj = p -> nlml(gp_model, p, kernel_constructor, x_train_prepped, y_train_prepped, gp_model.noise_var, mean=mean)
 
-    opts = Optim.Options(iterations = 200, g_tol=1e-5,f_abstol=2.2e-9)
+    opts = Optim.Options(iterations = 100, g_tol=1e-5,f_abstol=2.2e-9)
 
     random_inits = [rand.(Uniform.(lower_bounds, upper_bounds)) for _ in 1:(num_restarts - 1)]
     init_guesses = [collect(old_params), random_inits...]
     for i in 1:num_restarts
-        result = Optim.optimize(obj, lower_bounds, upper_bounds, init_guesses[i], Fminbox(LBFGS()),opts)
+        try
+            result = Optim.optimize(obj, lower_bounds, upper_bounds, init_guesses[i], Fminbox(LBFGS()),opts)
+                
+            if Optim.converged(result)
+                current_nlml = Optim.minimum(result)
 
-        if Optim.converged(result)
-            current_nlml = Optim.minimum(result)
-
-            if current_nlml < best_nlml
-                best_nlml = current_nlml
-                opt_params = Optim.minimizer(result)
-                ℓ, scale = exp.(opt_params)
-
-                k_opt = scale * (kernel_constructor ∘ ScaleTransform(ℓ))
-
-                best_gp = StandardGP(k_opt, gp_model.noise_var, mean=mean)
-                best_result = result                
+                if current_nlml < best_nlml
+                    best_nlml = current_nlml
+                    best_result = Optim.minimizer(result)
+                                
+                end
             end
+        catch e 
+            @warn "Optimization failed at restart $i with error: $e"
+            continue
         end
     end
 
-    if best_gp === nothing
+    if best_result === nothing
         println("All restarts failed to converge.")
     else
         println("Best NLML after $(num_restarts) restarts: ", best_nlml)
     end
-    return best_gp # returns nothing of a new gp
+
+    ℓ, scale = exp.(best_result)
+    k_opt = scale * (kernel_constructor ∘ ScaleTransform(ℓ))
+
+    if classic_bo
+        return StandardGP(k_opt, gp_model.noise_var, mean=mean)
+    else
+        return GradientGP(gradKernel(k_opt),gp_model.p, gp_model.noise_var, mean=mean)
+    end
+end
+
+function rescale_output(y_scaled::AbstractVector,params::Tuple)
+    μ, σ = params
+    return [(y .* σ) .+ μ for y in y_scaled]
 end
 
 # Looping routine
@@ -143,35 +154,36 @@ function optimize(p::BOProblem;fn=nothing,standardize=true)
     acqf_list = []
     n_train = length(p.xs)
     
-    classic_bo = isa(p.ys[1],Float64)
+    classic_bo = (length(p.ys[1])==1)
     
     μ=nothing
     σ=nothing
     if standardize
         p.ys, μ, σ = standardize_y(p.gp,p.ys)
-        println("μ=$(μ), σ=$(σ)")
+        println("Standardization applied: μ=$μ, σ=$σ")
         p.gp = update!(p.gp, p.xs, p.ys)
         p.acqf = update!(p.acqf,p.ys, p.gp)
         println("New value of p.acqf best_y after standard $(p.acqf.best_y)")
     end
     
-    f̃(x) = (p.f(x)-μ)/σ
+    f̃(x) = (p.f(x).-μ)./σ
 
     original_mean = p.gp.gp.mean
     println(original_mean)
     i = 0
     while !stop_criteria(p) & !p.flag
 
-        if i % 10 == 0  # Optimize GP hyperparameters
+        if i % 20 == 0  # Optimize GP hyperparameters
             println("Re-optimizing GP hyperparameters at iteration $i...")
-            println("Former parameters: ℓ=$(p.gp.gp.kernel.kernel.transform.s), variance =$(p.gp.gp.kernel.σ²)")
-            old_params = log.([p.gp.gp.kernel.kernel.transform.s[1],p.gp.gp.kernel.σ²[1]])
-            out = optimize_hyperparameters(p.gp, p.xs, p.ys,p.kernel_constructor,old_params,classic_bo,mean=original_mean)
+            println("Former parameters: ℓ=$(get_lengthscale(p.gp)), variance =$(get_scale(p.gp))")
+            old_params = log.([get_lengthscale(p.gp)[1],get_scale(p.gp)[1]])
+            println("Hyperparameter time taken:")
+            @time out = optimize_hyperparameters(p.gp, p.xs, p.ys,p.kernel_constructor,old_params,classic_bo,mean=original_mean)
             if !isnothing(out)
                 p.gp = out
                 p.gp = update!(p.gp, p.xs, p.ys)
             end
-            println("New parameters: ℓ=$(p.gp.gp.kernel.kernel.transform.s), variance =$(p.gp.gp.kernel.σ²)")
+            println("New parameters: ℓ=$(get_lengthscale(p.gp)), variance =$(get_scale(p.gp))")
         end
 
         
@@ -181,8 +193,9 @@ function optimize(p::BOProblem;fn=nothing,standardize=true)
             println("Iteration #",i+1,", current min val: ",minimum(hcat(p.ys...)[1,:]))
         end
 
-        x_cand = optimize_acquisition!(p.acqf,p.gp,p.domain) # There might be an issue here.
-
+        println("Time acq update:")
+        @time x_cand = optimize_acquisition!(p.acqf,p.gp,p.domain)
+        
         if !isnothing(fn)
             plot_state(p,n_train,x_cand,"./examples/plots/$(fn)_iter_$(i).png")
         end
@@ -191,13 +204,12 @@ function optimize(p::BOProblem;fn=nothing,standardize=true)
         push!(acqf_list,p.acqf(p.gp, x_cand))
         y_cand = f̃(x_cand)
         y_cand = y_cand .+ sqrt(p.noise)*randn(length(y_cand))
-
-
         
 
         println("New value probed: ",y_cand)
         i +=1
-        p = update!(p, x_cand, y_cand, i)
+        println("Time update GP")
+        @time p = update!(p, x_cand, y_cand, i)
     end
 
     return p, acqf_list, (μ,σ)

@@ -27,10 +27,8 @@ lower = [-10.0]
 upper = [10.0]
 domain = ContinuousDomain(lower, upper)
 
-grad_kernel = gradKernel(ApproxMatern52Kernel())
 
-σ² = 1e-6
-model = GradientGP(grad_kernel,d+1,σ²)
+σ² = 1e-12
 
 # Generate uniform random samples
 n_train = 10
@@ -41,30 +39,17 @@ val_grad = f_val_grad.(x_train)
 y_train = [val_grad[i] for i = eachindex(val_grad)]
 #y_train = [val_grad[i] + sqrt(σ²)*randn(d+1) for i = eachindex(val_grad)]
 
-println(y_train)
+kernel_constructor = ApproxMatern52Kernel()
 
-# Initial log-parameters: log(lengthscale), log(magnitude)
-initial_params = [log(1.0), log(1.0)]
-
-# Optimize with BFGS
-res = Optim.optimize(x -> nlml_grad(x,ApproxMatern52Kernel(),x_train,y_train,σ²), initial_params, Optim.Newton())
-
-# Extract optimized values
-opt_params = Optim.minimizer(res)
-ell_opt = exp(opt_params[1])
-scale_opt = exp(opt_params[2])
-
-println("Optimized lengthscale: ", ell_opt)
-println("Optimized magnitude: ", scale_opt)
-
-grad_kernel = gradKernel(scale_opt *(ApproxMatern52Kernel() ∘ ScaleTransform(ell_opt)))
+kernel = 1 *(kernel_constructor ∘ ScaleTransform(1))
+grad_kernel = gradKernel(kernel)
 model = GradientGP(grad_kernel,d+1,σ²)
-# Conditioning: 
+# Conditioning: should not be necessary
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed anyway)
-model = update!(model, x_train, y_train)
+# model = update!(model, x_train, y_train)
 
 # Init of the acquisition function
-ξ = 1e-3
+ξ = 0.0
 acqf = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
 
 # This maximises the function
@@ -72,22 +57,25 @@ problem = BOProblem(
                     f_val_grad,
                     domain,
                     model,
+                    kernel_constructor,
                     copy(x_train),
                     copy(y_train),
                     acqf,
-                    40,
+                    100,
                     0.0
                     )
 
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
-result, acqf_list = BayesOpt.optimize(problem)
+result, acqf_list, standard_params = BayesOpt.optimize(problem)
 xs = reduce(vcat,result.xs)
-ys = hcat(result.ys...)[1,:]
+ys = rescale_output(result.ys,standard_params)
+ys = hcat(ys...)[1,:]
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
-plot(max.(acqf_list,1e-13),yaxis=:log)
+
+# plot(max.(acqf_list,1e-13),yaxis=:log)
 running_min = accumulate(min, f.(xs))
 
 running_min = collect(Iterators.flatten(fill(x, 2) for x in (running_min)))

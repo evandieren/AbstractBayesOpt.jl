@@ -12,6 +12,8 @@ using ForwardDiff
 using BayesOpt
 using LaTeXStrings
 
+using BenchmarkTools
+
 import Random
 Random.seed!(123456)
 
@@ -35,7 +37,9 @@ upper = [6.0,6.0]
 domain = ContinuousDomain(lower, upper)
 σ² = 0.0
 
-grad_kernel = gradKernel(ApproxMatern52Kernel())
+kernel_constructor = ApproxMatern52Kernel()
+kernel = 1 * (kernel_constructor ∘ ScaleTransform(1))
+grad_kernel = gradKernel(kernel)
 model = GradientGP(grad_kernel,d+1,σ²)
 
 # Generate uniform random samples
@@ -50,10 +54,10 @@ y_train = [val_grad[i] + sqrt(σ²)*randn(d+1) for i = eachindex(val_grad)]
 
 # Conditioning: 
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed)
-model = update!(model, x_train, y_train)
+# model = update!(model, x_train, y_train)
 
 # Init of the acquisition function
-ξ = 1e-3
+ξ = 0.0
 acqf = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
 
 # This maximises the function
@@ -61,19 +65,22 @@ problem = BOProblem(
                     f_val_grad, # because we probe both the function value and its gradients.
                     domain,
                     model,
+                    kernel_constructor,
                     copy(x_train),
                     copy(y_train),
                     acqf,
-                    410,
+                    100,
                     σ²
                     )
 
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
-result = BayesOpt.optimize(problem)
+result, acq_list, standard_params = BayesOpt.optimize(problem)
 xs = result.xs
-ys = hcat(result.ys...)[1,:]
+ys = rescale_output(result.ys,standard_params)
+
+f_val_grad(xs[1])
 
 
 

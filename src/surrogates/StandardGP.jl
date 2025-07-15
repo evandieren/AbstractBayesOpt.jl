@@ -53,13 +53,21 @@ function standardize_y(mod::StandardGP,y_train::AbstractVector)
     return y_standardized, y_mean, std_mean
 end
 
-function rescale_output(y_scaled::AbstractVector,params)
-    μ, σ = params
-    return [(y .* σ) .+ μ for y in y_scaled]
-end
+get_lengthscale(model::StandardGP) = model.gp.kernel.kernel.transform.s
+
+get_scale(model::StandardGP) = model.gp.kernel.σ²
 
 prep_input(model::StandardGP,x::AbstractVector) = x
 
 posterior_mean(model::StandardGP,x) = Statistics.mean(model.gpx([x]))[1]
 
 posterior_var(model::StandardGP,x) = Statistics.var(model.gpx([x]))[1]
+
+function unstandardized_mean_and_var(gp::StandardGP, X, params::Tuple)
+    μ, σ = params
+    m, v = mean_and_var(gp.gpx(X))
+    # Un-standardize mean and variance
+    m_unstd = (m .* σ) .+ μ
+    v_unstd = v .* (σ.^2)
+    return m_unstd, v_unstd
+end

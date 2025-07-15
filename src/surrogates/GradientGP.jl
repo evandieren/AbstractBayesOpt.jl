@@ -123,12 +123,43 @@ function nlml(mod::GradientGP,params,kernel,x,y,σ²;mean=ZeroMean())
     -AbstractGPs.logpdf(gpx, y)  # Negative log marginal likelihood
 end
 
+function standardize_y(mod::GradientGP,y_train::AbstractVector)
+    y_mat = reduce(hcat, y_train)
+
+    μ = vec(mean(y_mat; dims=2))
+    μ[2:end] .= 0.0
+    σ = vec(std(y_mat; dims=2))
+    σ[2:end] .= σ[1]
+    
+    println("μ=$μ")
+    println("σ=$σ")
+
+    ys_std = [(y .- μ) ./ σ for y in y_train]
+    # this re-creates a Vector{Vector{Float64}}, which is what we need
+    return ys_std, μ, σ
+end
+
+get_lengthscale(model::GradientGP) = model.gp.kernel.base_kernel.kernel.transform.s
+
+get_scale(model::GradientGP) = model.gp.kernel.base_kernel.σ²
+
 prep_input(model::GradientGP, x::AbstractVector) = KernelFunctions.MOInputIsotopicByOutputs(x, model.p)
 
-posterior_mean(model::GradientGP,x) = mean(model.gpx(prep_input(model, [x])))[1] # we do the function value only for now
+posterior_mean(model::GradientGP,x) = mean(model.gpx([(x,1)]))[1]
 
 posterior_grad_mean(model::GradientGP,x) = mean(model.gpx(prep_input(model, [x]))) # the whole vector
 
-posterior_var(model::GradientGP,x) = var(model.gpx(prep_input(model, [x])))[1] # we do the function value only for now
+posterior_var(model::GradientGP,x) = var(model.gpx([(x,1)]))[1] # we do the function value only for now
+
+posterior_grad_var(model::GradientGP,x) = var(model.gpx(prep_input(model, [x])))
 
 posterior_grad_cov(model::GradientGP,x) = cov(model.gpx(prep_input(model, [x]))) # the matrix itself
+
+function unstandardized_mean_and_var(gp::GradientGP, X, params::Tuple)
+    μ, σ = params[1][1], params[2][1]
+    m, v = mean_and_var(gp.gpx(X))
+    # Un-standardize mean and variance
+    m_unstd = (m .* σ) .+ μ
+    v_unstd = v .* (σ.^2)
+    return m_unstd, v_unstd
+end
