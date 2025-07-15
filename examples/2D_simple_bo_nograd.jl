@@ -47,21 +47,22 @@ domain = ContinuousDomain(lower, upper)
 
 kernel_constructor = Matern52Kernel()
 
-
 # Generate uniform random samples
 n_train = 10
 x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
-y_train = f.(x_train) + sqrt(σ²).* randn(n_train)
+y_train = f.(x_train) #+ sqrt(σ²).* randn(n_train)
+
 y_train = map(x -> [x], y_train)
+
+# f̃(x) = (himmelblau(x)-y_mean)/y_std
 
 
 kernel = 1 *(kernel_constructor ∘ ScaleTransform(1))
-model = StandardGP(kernel,σ²,mean=ConstMean(mean(reduce(vcat, y_train)))) # Instantiates the StandardGP (gives it the prior).
+model = StandardGP(kernel,σ²) # Instantiates the StandardGP (gives it the prior).
 
-
-# Conditioning: 
+# Conditioning: no need if true
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed)
-model = update!(model, x_train, y_train)
+# model = update!(model, x_train, y_train)
 
 # Init of the acquisition function
 ξ = 1e-3
@@ -73,19 +74,20 @@ problem = BOProblem(
                     domain,
                     model,
                     kernel,
-                    x_train,
-                    y_train,
+                    copy(x_train),
+                    copy(y_train),
                     acqf,
-                    50,
+                    410,
                     0.0
                     )
 
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
-result,acq_list = BayesOpt.optimize(problem,fn="himmel")
+result,acq_list, std_params = BayesOpt.optimize(problem)
 xs = result.xs
-ys = result.ys
+ys = rescale_output(result.ys,std_params)
+# ys = (reduce(vcat,result.ys).*y_std) .+ y_mean
 
 
 using ImageMagick, FileIO

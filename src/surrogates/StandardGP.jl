@@ -29,7 +29,7 @@ function update!(model::StandardGP, xs::AbstractVector, ys::AbstractVector)
 end
 
 # Negative log marginal likelihood (no noise term)
-function nlml(mod::StandardGP,params,kernel,X_train,y_train,σ²;mean=ZeroMean())
+function nlml(mod::StandardGP,params,kernel,x,y,σ²;mean=ZeroMean())
     log_ℓ, log_scale = params
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
@@ -39,18 +39,23 @@ function nlml(mod::StandardGP,params,kernel,X_train,y_train,σ²;mean=ZeroMean()
     gp = StandardGP(k, σ²,mean=mean) # Use fixed noise here, or optimize σ² too
 
     # Evaluate GP at training points with noise, creates a FiniteGP
-    gpx = gp.gp(X_train,mod.noise_var...)
+    gpx = gp.gp(x,mod.noise_var...)
 
-    try
-        return -AbstractGPs.logpdf(gpx, reduce(vcat, y_train))
-    catch e
-        if e isa PosDefException
-            @warn "Cholesky failed at params: $params"
-            return Inf
-        else
-            rethrow(e)
-        end
-    end
+    -AbstractGPs.logpdf(gpx, y)
+end
+
+function standardize_y(mod::StandardGP,y_train::AbstractVector)
+    y_flat = reduce(vcat, y_train)
+    y_mean = mean(y_flat)
+    std_mean = std(y_flat)
+    y_standardized = [(y .- y_mean) ./ std_mean for y in y_train]
+    # this re-creates a Vector{Vector{Float64}}, which is what we need
+    return y_standardized, y_mean, std_mean
+end
+
+function rescale_output(y_scaled::AbstractVector,params)
+    μ, σ = params
+    return [(y .* σ) .+ μ for y in y_scaled]
 end
 
 prep_input(model::StandardGP,x::AbstractVector) = x

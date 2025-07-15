@@ -17,13 +17,13 @@ Random.seed!(555)
 
 # Objective Function
 f(x) = sin(sum(x.+1)) + sin((10.0 / 3.0) * sum(x .+1))
-min_f = −1.988699758534924
+min_f = −1.988699758534925
 problem_dim = 1
 lower = [-10.0]
 upper = [10.0]
 domain = ContinuousDomain(lower, upper)
 
-σ² = 1e-6 # 1e-10
+σ² = 1e-12 # 1e-10
 
 # Generate uniform random samples
 n_train = 10
@@ -33,30 +33,15 @@ y_train = f.(x_train) #+ sqrt(σ²).* randn(n_train);
 y_train = map(x -> [x], y_train)
 
 kernel_constructor = Matern52Kernel()
+kernel = 1 *(kernel_constructor ∘ ScaleTransform(1)) # needed because I need to do MLE
+model = StandardGP(kernel, σ²)
 
-# # Initial log-parameters: log(lengthscale), log(magnitude)
-# initial_params = [log(1.0), log(1.0)]
-
-# # Optimize with BFGS
-# res = Optim.optimize(x -> nlml(x,kernel,x_train,y_train,σ²), initial_params, Optim.Newton())
-
-# # Extract optimized values
-# opt_params = Optim.minimizer(res)
-# ell_opt = exp(opt_params[1])
-# scale_opt = exp(opt_params[2])
-
-# println("Optimized lengthscale: ", ell_opt)
-# println("Optimized magnitude: ", scale_opt)
-
-kernel = 1 *(kernel_constructor ∘ ScaleTransform(1))
-model = StandardGP(kernel, σ²,mean=ConstMean(mean(reduce(vcat, y_train))))
-
-# Conditioning: 
-model = update!(model, x_train, y_train)
+# # Conditioning:  no need if standardize == true
+# model = update!(model, x_train, y_train)
 
 
 # Init of the acquisition function
-ξ = 1e-3
+ξ = 0.0
 acqf = ExpectedImprovement(ξ, minimum(reduce(vcat,y_train)))
 
 # This maximises the function
@@ -68,16 +53,18 @@ problem = BOProblem(
                     copy(x_train),
                     copy(y_train),
                     acqf,
-                    90,
+                    210,
                     0.0
                     )
 
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
-result, acq_list = BayesOpt.optimize(problem)
+result, acq_list, standard_params = BayesOpt.optimize(problem)
 xs = reduce(vcat,result.xs)
-ys = reduce(vcat,result.ys)
+ys = rescale_output(result.ys,standard_params)
+
+ys = reduce(vcat,ys)
 
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))

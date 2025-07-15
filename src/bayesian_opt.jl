@@ -80,51 +80,93 @@ function stop_criteria(p::BOProblem)
     return p.iter > p.max_iter
 end
 
-function optimize_hyperparameters(gp_model, X_train, y_train,kernel_constructor; init_params=nothing, mean=ZeroMean())
-    if isnothing(init_params)
-        # Initial guess (log-space): [ℓ, scale]
-        init_params = log.([1.0, 1.0])
+function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor,old_params,classic_bo; mean=ZeroMean(),num_restarts=5)
+
+
+    best_nlml = Inf
+    best_gp = nothing
+    best_result = nothing
+
+    lower_bounds = log.([0.1, 0.1])
+    upper_bounds = log.([1e2, 1e2])
+
+    x_train_prepped = prep_input(gp_model, X_train)
+    y_train_prepped = nothing
+    if classic_bo
+        y_train_prepped = reduce(vcat,y_train)
+    else
+        y_train_prepped = vec(permutedims(reduce(hcat, y_train)))
     end
 
-    obj = p -> nlml(gp_model, p, kernel_constructor, X_train, y_train,gp_model.noise_var)
+    obj = p -> nlml(gp_model, p, kernel_constructor, x_train_prepped, y_train_prepped, gp_model.noise_var, mean=mean)
 
-    result = Optim.optimize(obj, init_params, LBFGS())
+    opts = Optim.Options(iterations = 200, g_tol=1e-5,f_abstol=2.2e-9)
 
-    opt_params = Optim.minimizer(result)
+    random_inits = [rand.(Uniform.(lower_bounds, upper_bounds)) for _ in 1:(num_restarts - 1)]
+    init_guesses = [collect(old_params), random_inits...]
+    for i in 1:num_restarts
+        result = Optim.optimize(obj, lower_bounds, upper_bounds, init_guesses[i], Fminbox(LBFGS()),opts)
 
-    if !Optim.converged(result)
-        println("MLE optimization did not succeed: ", result)
-        return nothing
+        if Optim.converged(result)
+            current_nlml = Optim.minimum(result)
+
+            if current_nlml < best_nlml
+                best_nlml = current_nlml
+                opt_params = Optim.minimizer(result)
+                ℓ, scale = exp.(opt_params)
+
+                k_opt = scale * (kernel_constructor ∘ ScaleTransform(ℓ))
+
+                best_gp = StandardGP(k_opt, gp_model.noise_var, mean=mean)
+                best_result = result                
+            end
+        end
     end
 
-    log_ℓ, log_scale = opt_params
-    ℓ = exp(log_ℓ)
-    scale = exp(log_scale)
-
-    # Update the GP model in-place
-    k_opt = scale * (kernel_constructor ∘ ScaleTransform(ℓ))
-
-    return StandardGP(k_opt,gp_model.noise_var,mean=mean)
+    if best_gp === nothing
+        println("All restarts failed to converge.")
+    else
+        println("Best NLML after $(num_restarts) restarts: ", best_nlml)
+    end
+    return best_gp # returns nothing of a new gp
 end
 
 # Looping routine
-function optimize(p::BOProblem;fn=nothing)
+function optimize(p::BOProblem;fn=nothing,standardize=true)
     """
     This function implements the EGO framework: 
-        While some criterion is not met, (1) optimize the acquisition function to obtain 
-        the new best candidate, (2) query the target function f, (3) update the GP and the overall optimization state. 
-
+        While some criterion is not met, 
+        (1) optimize the acquisition function to obtain the new best candidate, 
+        (2) query the target function f, 
+        (3) update the GP and the overall optimization state. 
     """
     acqf_list = []
     n_train = length(p.xs)
-    i = 0
+    
+    classic_bo = isa(p.ys[1],Float64)
+    
+    μ=nothing
+    σ=nothing
+    if standardize
+        p.ys, μ, σ = standardize_y(p.gp,p.ys)
+        println("μ=$(μ), σ=$(σ)")
+        p.gp = update!(p.gp, p.xs, p.ys)
+        p.acqf = update!(p.acqf,p.ys, p.gp)
+        println("New value of p.acqf best_y after standard $(p.acqf.best_y)")
+    end
+    
+    f̃(x) = (p.f(x)-μ)/σ
+
     original_mean = p.gp.gp.mean
+    println(original_mean)
+    i = 0
     while !stop_criteria(p) & !p.flag
 
-        if i % 5 == 0  # Optimize GP hyperparameters every 5 iterations
+        if i % 10 == 0  # Optimize GP hyperparameters
             println("Re-optimizing GP hyperparameters at iteration $i...")
             println("Former parameters: ℓ=$(p.gp.gp.kernel.kernel.transform.s), variance =$(p.gp.gp.kernel.σ²)")
-            out = optimize_hyperparameters(p.gp, p.xs, p.ys,p.kernel_constructor,mean=original_mean)
+            old_params = log.([p.gp.gp.kernel.kernel.transform.s[1],p.gp.gp.kernel.σ²[1]])
+            out = optimize_hyperparameters(p.gp, p.xs, p.ys,p.kernel_constructor,old_params,classic_bo,mean=original_mean)
             if !isnothing(out)
                 p.gp = out
                 p.gp = update!(p.gp, p.xs, p.ys)
@@ -133,8 +175,8 @@ function optimize(p::BOProblem;fn=nothing)
         end
 
         
-        if isa(p.ys[1],Float64)
-        println("Iteration #",i+1,", current min val: ",minimum(p.ys))
+        if classic_bo
+            println("Iteration #",i+1,", current min val: ",minimum(p.ys))
         else
             println("Iteration #",i+1,", current min val: ",minimum(hcat(p.ys...)[1,:]))
         end
@@ -147,7 +189,7 @@ function optimize(p::BOProblem;fn=nothing)
 
         println("New point acquired: $(x_cand) with acq func $(p.acqf(p.gp, x_cand))")
         push!(acqf_list,p.acqf(p.gp, x_cand))
-        y_cand = p.f(x_cand)
+        y_cand = f̃(x_cand)
         y_cand = y_cand .+ sqrt(p.noise)*randn(length(y_cand))
 
 
@@ -157,5 +199,6 @@ function optimize(p::BOProblem;fn=nothing)
         i +=1
         p = update!(p, x_cand, y_cand, i)
     end
-    return p, acqf_list
+
+    return p, acqf_list, (μ,σ)
 end
