@@ -32,7 +32,15 @@ function print_info(p::BOProblem)
     println("noise: ",p.noise)
 end
 
-function BOProblem(f, domain::AbstractDomain, prior::AbstractSurrogate, kernel_constructor, x_train::AbstractVector, y_train::AbstractVector, acqf::AbstractAcquisition, max_iter::Int, noise::Float64)
+function BOProblem(f, 
+                   domain::AbstractDomain, 
+                   prior::AbstractSurrogate, 
+                   kernel_constructor, 
+                   x_train::AbstractVector, 
+                   y_train::AbstractVector, 
+                   acqf::AbstractAcquisition, 
+                   max_iter::Int, 
+                   noise::Float64)
     """
     Initialize the Bayesian Optimization problem.
     """
@@ -85,8 +93,8 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
     best_nlml = Inf
     best_result = nothing
 
-    lower_bounds = log.([0.1, 0.1])
-    upper_bounds = log.([1e2, 1e2])
+    lower_bounds = log.([0.5, 0.1])
+    upper_bounds = log.([10.0, 10.0])
 
     x_train_prepped = prep_input(gp_model, X_train)
     y_train_prepped = nothing
@@ -98,13 +106,16 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
 
     obj = p -> nlml(gp_model, p, kernel_constructor, x_train_prepped, y_train_prepped, gp_model.noise_var, mean=mean)
 
-    opts = Optim.Options(iterations = 100, g_tol=1e-5,f_abstol=2.2e-9)
+    opts = Optim.Options(g_tol=1e-5,f_abstol=2.2e-9,x_abstol=1e-4,outer_iterations=500)
 
     random_inits = [rand.(Uniform.(lower_bounds, upper_bounds)) for _ in 1:(num_restarts - 1)]
     init_guesses = [collect(old_params), random_inits...]
+
+    inner_optimizer = LBFGS(;linesearch = Optim.LineSearches.HagerZhang(linesearchmax=20))
+
     for i in 1:num_restarts
         try
-            result = Optim.optimize(obj, lower_bounds, upper_bounds, init_guesses[i], Fminbox(LBFGS()),opts)
+            result = Optim.optimize(obj, lower_bounds, upper_bounds, init_guesses[i], Fminbox(inner_optimizer),opts)
                 
             if Optim.converged(result)
                 current_nlml = Optim.minimum(result)
@@ -137,13 +148,31 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
     end
 end
 
-function rescale_output(y_scaled::AbstractVector,params::Tuple)
+function rescale_output(ys::AbstractVector,params::Tuple)
     μ, σ = params
-    return [(y .* σ) .+ μ for y in y_scaled]
+
+    if isnothing(μ) || snothing(σ)
+        return [y for y in ys]
+    else
+        return [(y .* σ) .+ μ for y in ys]
+    end
+end
+
+function standardize_problem(p::BOProblem)    
+    μ=nothing
+    σ=nothing
+    p.ys, μ, σ = standardize_y(p.gp,p.ys)
+    println("Standardization applied: μ=$μ, σ=$σ")
+    p.gp = update!(p.gp, p.xs, p.ys)
+    p.acqf = update!(p.acqf,p.ys, p.gp)
+    println("New value of p.acqf best_y after standard $(p.acqf.best_y)")
+    f_old = p.f
+    p.f = x -> (f_old(x).-μ)./σ
+    return p, (μ, σ)
 end
 
 # Looping routine
-function optimize(p::BOProblem;fn=nothing,standardize=true)
+function optimize(p::BOProblem;fn=nothing,standardize=false)
     """
     This function implements the EGO framework: 
         While some criterion is not met, 
@@ -159,21 +188,18 @@ function optimize(p::BOProblem;fn=nothing,standardize=true)
     μ=nothing
     σ=nothing
     if standardize
-        p.ys, μ, σ = standardize_y(p.gp,p.ys)
-        println("Standardization applied: μ=$μ, σ=$σ")
-        p.gp = update!(p.gp, p.xs, p.ys)
-        p.acqf = update!(p.acqf,p.ys, p.gp)
-        println("New value of p.acqf best_y after standard $(p.acqf.best_y)")
+        p, (μ, σ) = standardize_problem(p)
+    else 
+        p.gp = update!(p.gp, p.xs, p.ys) # because we might not to that before
     end
-    
-    f̃(x) = (p.f(x).-μ)./σ
+
 
     original_mean = p.gp.gp.mean
     println(original_mean)
     i = 0
     while !stop_criteria(p) & !p.flag
 
-        if i % 20 == 0  # Optimize GP hyperparameters
+        if (i != 0) & (i % 500 == 0)  # Optimize GP hyperparameters
             println("Re-optimizing GP hyperparameters at iteration $i...")
             println("Former parameters: ℓ=$(get_lengthscale(p.gp)), variance =$(get_scale(p.gp))")
             old_params = log.([get_lengthscale(p.gp)[1],get_scale(p.gp)[1]])
@@ -202,7 +228,7 @@ function optimize(p::BOProblem;fn=nothing,standardize=true)
 
         println("New point acquired: $(x_cand) with acq func $(p.acqf(p.gp, x_cand))")
         push!(acqf_list,p.acqf(p.gp, x_cand))
-        y_cand = f̃(x_cand)
+        y_cand = p.f(x_cand)
         y_cand = y_cand .+ sqrt(p.noise)*randn(length(y_cand))
         
 

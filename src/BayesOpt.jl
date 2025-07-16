@@ -50,7 +50,7 @@ export EnsembleAcquisition, ea
 
 # Core Bayesian Optimization framework
 include("bayesian_opt.jl")
-export optimize, print_info, update!, BOProblem, stop_criteria, rescale_output, optimize_hyperparameters
+export optimize, print_info, update!, BOProblem, stop_criteria, rescale_output, optimize_hyperparameters, standardize_problem
 
 
 # include("plotting.jl")

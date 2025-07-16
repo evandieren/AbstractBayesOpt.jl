@@ -20,7 +20,7 @@ function (ei::ExpectedImprovement)(surrogate::AbstractSurrogate, x)
 end
 
 function update!(acqf::ExpectedImprovement,ys::AbstractVector, surrogate::AbstractSurrogate)
-    if isa(ys[1],Float64) # we are in 1d
+    if (length(ys[1])==1) # we are in 1d
         ExpectedImprovement(acqf.ξ, minimum(reduce(vcat,ys)))
     else 
         ExpectedImprovement(acqf.ξ, minimum(hcat(ys...)[1,:]))
