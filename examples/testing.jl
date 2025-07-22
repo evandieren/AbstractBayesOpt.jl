@@ -13,7 +13,7 @@ using Optim
 using LinearAlgebra
 using LaTeXStrings
 import Random
-Random.seed!(555)
+Random.seed!(1234)
 
 # Objective Function
 f(x) = sin(sum(x.+1)) + sin((10.0 / 3.0) * sum(x .+1))
