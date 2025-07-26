@@ -94,7 +94,7 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
     best_result = nothing
 
     length_scale_only ? lower_bounds = log.([1e-5]) : lower_bounds = log.([1e-5, 0.1]) #log.([0.5]) : lower_bounds = log.([0.5, 0.1])
-    length_scale_only ? upper_bounds = log.([1e5]) : upper_bounds = log.([1e5, 10.0]) #log.([10.0]) : upper_bounds = log.([10.0, 10.0])
+    length_scale_only ? upper_bounds = log.([1e5]) : upper_bounds = log.([1e5, 30]) #log.([10.0]) : upper_bounds = log.([10.0, 10.0])
 
     
     x_train_prepped = prep_input(gp_model, X_train)
@@ -213,7 +213,7 @@ function optimize(p::BOProblem;fn=nothing,standardize=false)
     i = 0
     while !stop_criteria(p) & !p.flag
 
-        if (i != 0) # & (i % 500 == 0)  # Optimize GP hyperparameters
+        if (i != 0) & (i % 10 == 0)  # Optimize GP hyperparameters
             println("Re-optimizing GP hyperparameters at iteration $i...")
             println("Former parameters: ℓ=$(get_lengthscale(p.gp)), variance =$(get_scale(p.gp))")
             old_params = log.([get_lengthscale(p.gp)[1],get_scale(p.gp)[1]])
