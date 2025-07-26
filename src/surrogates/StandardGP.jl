@@ -53,7 +53,7 @@ function standardize_y(mod::StandardGP,y_train::AbstractVector)
     return y_standardized, y_mean, std_mean
 end
 
-get_lengthscale(model::StandardGP) = 1/model.gp.kernel.kernel.transform.s
+get_lengthscale(model::StandardGP) = 1 ./ model.gp.kernel.kernel.transform.s
 
 get_scale(model::StandardGP) = model.gp.kernel.σ²
 
