@@ -35,7 +35,7 @@ function nlml(mod::StandardGP,params,kernel,x,y,σ²;mean=ZeroMean())
     scale = exp(log_scale)
 
     # Kernel with current parameters
-    k = scale * (kernel ∘ ScaleTransform(ℓ))
+    k = scale * (kernel ∘ ScaleTransform(1/ℓ))
     gp = StandardGP(k, σ²,mean=mean) # Use fixed noise here, or optimize σ² too
 
     # Evaluate GP at training points with noise, creates a FiniteGP
@@ -53,7 +53,7 @@ function standardize_y(mod::StandardGP,y_train::AbstractVector)
     return y_standardized, y_mean, std_mean
 end
 
-get_lengthscale(model::StandardGP) = model.gp.kernel.kernel.transform.s
+get_lengthscale(model::StandardGP) = 1/model.gp.kernel.kernel.transform.s
 
 get_scale(model::StandardGP) = model.gp.kernel.σ²
 

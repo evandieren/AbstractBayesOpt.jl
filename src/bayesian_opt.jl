@@ -88,14 +88,15 @@ function stop_criteria(p::BOProblem)
     return p.iter > p.max_iter
 end
 
-function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor,old_params,classic_bo; mean=ZeroMean(),num_restarts=5)
+function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor,old_params,classic_bo;length_scale_only=false, mean=ZeroMean(),num_restarts=5)
 
     best_nlml = Inf
     best_result = nothing
 
-    lower_bounds = log.([0.5, 0.1])
-    upper_bounds = log.([10.0, 10.0])
+    length_scale_only ? lower_bounds = log.([1e-5]) : lower_bounds = log.([1e-5, 0.1]) #log.([0.5]) : lower_bounds = log.([0.5, 0.1])
+    length_scale_only ? upper_bounds = log.([1e5]) : upper_bounds = log.([1e5, 10.0]) #log.([10.0]) : upper_bounds = log.([10.0, 10.0])
 
+    
     x_train_prepped = prep_input(gp_model, X_train)
     y_train_prepped = nothing
     if classic_bo
@@ -104,12 +105,18 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
         y_train_prepped = vec(permutedims(reduce(hcat, y_train)))
     end
 
-    obj = p -> nlml(gp_model, p, kernel_constructor, x_train_prepped, y_train_prepped, gp_model.noise_var, mean=mean)
+    obj = nothing
+
+    if length_scale_only
+        obj = p -> nlml(gp_model, [p;0.0], kernel_constructor, x_train_prepped, y_train_prepped, gp_model.noise_var, mean=mean)
+    else
+        obj = p -> nlml(gp_model, p, kernel_constructor, x_train_prepped, y_train_prepped, gp_model.noise_var, mean=mean)
+    end
 
     opts = Optim.Options(g_tol=1e-5,f_abstol=2.2e-9,x_abstol=1e-4,outer_iterations=500)
 
     random_inits = [rand.(Uniform.(lower_bounds, upper_bounds)) for _ in 1:(num_restarts - 1)]
-    init_guesses = [collect(old_params), random_inits...]
+    length_scale_only ? init_guesses = [[collect(old_params)[1]], random_inits...] : init_guesses = [collect(old_params), random_inits...]
 
     inner_optimizer = LBFGS(;linesearch = Optim.LineSearches.HagerZhang(linesearchmax=20))
 
@@ -138,7 +145,14 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
         println("Best NLML after $(num_restarts) restarts: ", best_nlml)
     end
 
-    ℓ, scale = exp.(best_result)
+    ℓ = nothing; scale = nothing
+    if length_scale_only
+        ℓ = exp.(best_result)
+        scale = 1.0
+    else
+        ℓ, scale = exp.(best_result)
+    end
+
     k_opt = scale * (kernel_constructor ∘ ScaleTransform(ℓ))
 
     if classic_bo
@@ -199,7 +213,7 @@ function optimize(p::BOProblem;fn=nothing,standardize=false)
     i = 0
     while !stop_criteria(p) & !p.flag
 
-        if (i != 0) & (i % 500 == 0)  # Optimize GP hyperparameters
+        if (i != 0) # & (i % 500 == 0)  # Optimize GP hyperparameters
             println("Re-optimizing GP hyperparameters at iteration $i...")
             println("Former parameters: ℓ=$(get_lengthscale(p.gp)), variance =$(get_scale(p.gp))")
             old_params = log.([get_lengthscale(p.gp)[1],get_scale(p.gp)[1]])

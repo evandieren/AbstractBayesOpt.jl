@@ -65,7 +65,7 @@ model = StandardGP(kernel,σ²) # Instantiates the StandardGP (gives it the prio
 # model = update!(model, x_train, y_train)
 
 # Init of the acquisition function
-ξ = 1e-3
+ξ = 0.0
 acqf = ExpectedImprovement(ξ, minimum(y_train)[1])
 
 # This maximises the function

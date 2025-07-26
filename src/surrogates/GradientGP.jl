@@ -115,7 +115,7 @@ function nlml(mod::GradientGP,params,kernel,x,y,σ²;mean=ZeroMean())
     scale = exp(log_scale)
 
     # Kernel with current parameters
-    k = scale * (kernel ∘ ScaleTransform(ℓ))
+    k = scale * (kernel ∘ ScaleTransform(1/ℓ))
     gp = GradientGP(gradKernel(k),mod.p, σ²,mean=mean)
 
     gpx = gp.gp(x,mod.noise_var...)

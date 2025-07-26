@@ -79,29 +79,29 @@ Plots.vspan!([1,n_train]; color=:blue,alpha=0.2, label="")
 Plots.display(p)
 # savefig("examples/1D_error_BO.pdf")
 
-plot_domain = collect(lower[1]:0.01:upper[1])
-post_mean, post_var = unstandardized_mean_and_var(result.gp,plot_domain,standard_params)
-plot(plot_domain, f.(plot_domain),
-        label="target function",
-        xlim=(lower[1], upper[1]),
-        xlabel="x",
-        ylabel="y",
-        title="BayesOpt, EI ξ=$(ξ), σ²=$(σ²)",
-        legend=:outertopright)
-plot!(plot_domain, post_mean; label="GP", ribbon=sqrt.(abs.(post_var)),ribbon_scale=2,color="green")
-scatter!(
-    xs[1:n_train],
-    ys[1:n_train];
-    label="Train Data"
-)
-scatter!(
-    xs[n_train+1:end],
-    ys[n_train+1:end];
-    label="Candidates"
-)
-scatter!(
-    [xs[argmin(ys)]],
-    [minimum(ys)];
-    label="Best candidate"
-)
+# plot_domain = collect(lower[1]:0.01:upper[1])
+# post_mean, post_var = unstandardized_mean_and_var(result.gp,plot_domain,standard_params)
+# plot(plot_domain, f.(plot_domain),
+#         label="target function",
+#         xlim=(lower[1], upper[1]),
+#         xlabel="x",
+#         ylabel="y",
+#         title="BayesOpt, EI ξ=$(ξ), σ²=$(σ²)",
+#         legend=:outertopright)
+# plot!(plot_domain, post_mean; label="GP", ribbon=sqrt.(abs.(post_var)),ribbon_scale=2,color="green")
+# scatter!(
+#     xs[1:n_train],
+#     ys[1:n_train];
+#     label="Train Data"
+# )
+# scatter!(
+#     xs[n_train+1:end],
+#     ys[n_train+1:end];
+#     label="Candidates"
+# )
+# scatter!(
+#     [xs[argmin(ys)]],
+#     [minimum(ys)];
+#     label="Best candidate"
+# )
 # savefig("examples/gp_Matern_1D.pdf")
