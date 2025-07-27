@@ -141,6 +141,7 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
 
     if best_result === nothing
         println("All restarts failed to converge.")
+        return gp_model
     else
         println("Best NLML after $(num_restarts) restarts: ", best_nlml)
     end
@@ -153,7 +154,7 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
         ℓ, scale = exp.(best_result)
     end
 
-    k_opt = scale * (kernel_constructor ∘ ScaleTransform(ℓ))
+    k_opt = scale * (kernel_constructor ∘ ScaleTransform(1/ℓ))
 
     if classic_bo
         return StandardGP(k_opt, gp_model.noise_var, mean=mean)

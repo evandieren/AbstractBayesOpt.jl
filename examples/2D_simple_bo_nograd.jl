@@ -13,7 +13,7 @@ using BayesOpt
 using LinearAlgebra
 
 import Random
-Random.seed!(123)
+Random.seed!(555)
 
 # Objective Function 
 # Branin
@@ -37,13 +37,13 @@ rosenbrock(x::AbstractVector) = (1 - x[1])^2 + 100 * (x[2] - x[1]^2)^2
 # Himmelblau
 himmelblau(x::AbstractVector) = (x[1]^2 + x[2] -11)^2 + (x[1]+x[2]^2-7)^2
 
-f(x) = himmelblau(x)
+f(x) = rosenbrock(x)
 
 problem_dim = 2
-lower = [-6,-6.0] #[-5.0, 0.0]
-upper = [6.0,6.0] #[10.0, 15.0]
+lower = [-2.0,-1.0]
+upper = [2.0,3.0]
 domain = ContinuousDomain(lower, upper)
-σ² = 1e-6
+σ² = 1e-12
 
 kernel_constructor = Matern52Kernel()
 

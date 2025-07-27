@@ -88,3 +88,35 @@ scatter!(log.(ℓ_opt),[nlml_opt])
 
 # # Save as GIF (set delay between frames in seconds)
 # save("my_animation_1D.gif", cat(frames...; dims=3), fps=0.5)
+
+
+
+using AbstractGPs, KernelFunctions, Plots, LinearAlgebra
+
+# Define base kernel (no scale yet)
+base_kernel = Matern52Kernel()
+
+# Define inputs
+X = collect(-2.0:0.1:2.0)  # 1D column vectors
+
+# Try two lengthscales
+ell1 = 0.5
+ell2 = 2.0
+
+# Construct two kernels with ScaleTransform(ℓ)
+k1 = base_kernel ∘ ScaleTransform(ell1)
+k2 = base_kernel ∘ ScaleTransform(ell2)
+
+# Evaluate kernels on inputs
+K1 = kernelmatrix(k1, X, X)
+K2 = kernelmatrix(k2, X, X)
+
+
+# Plot center column (covariance with x = 0.0) to visualize
+center_idx = findfirst(x -> x ≈ 0.0, vec(X))
+
+plot(X, K1[:, center_idx], label="ScaleTransform(ℓ=0.5)", lw=2)
+plot!(X, K2[:, center_idx], label="ScaleTransform(ℓ=2.0)", lw=2)
+xlabel!("Input x")
+ylabel!("k(x, 0.0)")
+title!("Effect of ScaleTransform(ℓ) vs ScaleTransform(1/ℓ)")
