@@ -13,6 +13,7 @@ using Optim
 using LinearAlgebra
 using LaTeXStrings
 import Random
+using ForwardDiff
 Random.seed!(555)
 
 # Objective Function
@@ -23,7 +24,7 @@ lower = [-10.0]
 upper = [10.0]
 domain = ContinuousDomain(lower, upper)
 
-σ² = 1e-1 # 1e-10
+σ² = 1e-12 # 1e-10
 
 # Generate uniform random samples
 n_train = 10
@@ -58,65 +59,3 @@ problem = BOProblem(
                     )
 
 print_info(problem)
-
-
-old_params = log.([get_lengthscale(problem.gp)[1],get_scale(problem.gp)[1]])
-
-obj = p -> nlml(model, p, kernel, x_train, reduce(vcat,y_train), model.noise_var,mean=ZeroMean())
-
-nlml(model,old_params,kernel,x_train,reduce(vcat,y_train),model.noise_var)
-
-new_model = optimize_hyperparameters(model, x_train, y_train, kernel_constructor,old_params,true,num_restarts=25)
-
-obj_lengthscale = p -> nlml(new_model,[p,0.0],kernel,x_train,reduce(vcat,y_train), model.noise_var,mean=ZeroMean())
-
-ℓ_logvals = log(0.7):0.01:log(1.40) 
-
-nlml_ℓ = obj_lengthscale.(ℓ_logvals)
-
-ℓ_opt = get_lengthscale(new_model)
-nlml_opt = nlml(new_model,[log(ℓ_opt[1]),0.0],kernel,x_train,reduce(vcat,y_train),model.noise_var)
-
-plot(ℓ_logvals,nlml_ℓ)
-scatter!(log.(ℓ_opt),[nlml_opt])
-
-#nlml(model,[log(1.1527522390407372),0.0],kernel,x_train,reduce(vcat,y_train),model.noise_var)
-# using ImageMagick, FileIO
-
-# # Load frames into an array
-# frames = [load("./examples/plots/1D_iter_$(i).png") for i in 0:49]
-
-# # Save as GIF (set delay between frames in seconds)
-# save("my_animation_1D.gif", cat(frames...; dims=3), fps=0.5)
-
-
-
-using AbstractGPs, KernelFunctions, Plots, LinearAlgebra
-
-# Define base kernel (no scale yet)
-base_kernel = Matern52Kernel()
-
-# Define inputs
-X = collect(-2.0:0.1:2.0)  # 1D column vectors
-
-# Try two lengthscales
-ell1 = 0.5
-ell2 = 2.0
-
-# Construct two kernels with ScaleTransform(ℓ)
-k1 = base_kernel ∘ ScaleTransform(ell1)
-k2 = base_kernel ∘ ScaleTransform(ell2)
-
-# Evaluate kernels on inputs
-K1 = kernelmatrix(k1, X, X)
-K2 = kernelmatrix(k2, X, X)
-
-
-# Plot center column (covariance with x = 0.0) to visualize
-center_idx = findfirst(x -> x ≈ 0.0, vec(X))
-
-plot(X, K1[:, center_idx], label="ScaleTransform(ℓ=0.5)", lw=2)
-plot!(X, K2[:, center_idx], label="ScaleTransform(ℓ=2.0)", lw=2)
-xlabel!("Input x")
-ylabel!("k(x, 0.0)")
-title!("Effect of ScaleTransform(ℓ) vs ScaleTransform(1/ℓ)")

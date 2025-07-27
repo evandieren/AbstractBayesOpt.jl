@@ -37,15 +37,15 @@ rosenbrock(x::AbstractVector) = (1 - x[1])^2 + 100 * (x[2] - x[1]^2)^2
 # Himmelblau
 himmelblau(x::AbstractVector) = (x[1]^2 + x[2] -11)^2 + (x[1]+x[2]^2-7)^2
 
-f(x) = rosenbrock(x)
+f(x) = himmelblau(x)
 
 problem_dim = 2
-lower = [-2.0,-1.0]
-upper = [2.0,3.0]
+lower = [-6,-6.0]
+upper = [6.0,6.0]
 domain = ContinuousDomain(lower, upper)
 σ² = 1e-12
 
-kernel_constructor = Matern52Kernel()
+kernel_constructor = ApproxMatern52Kernel()
 
 # Generate uniform random samples
 n_train = 10
@@ -56,9 +56,8 @@ y_train = map(x -> [x], y_train)
 
 # f̃(x) = (himmelblau(x)-y_mean)/y_std
 
-
 kernel = 1 *(kernel_constructor ∘ ScaleTransform(1))
-model = StandardGP(kernel,σ²) # Instantiates the StandardGP (gives it the prior).
+model = StandardGP(kernel,σ²,mean=ConstMean(mean_y[1])) # Instantiates the StandardGP (gives it the prior).
 
 # Conditioning: no need if true
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed)
@@ -73,7 +72,7 @@ problem = BOProblem(
                     f,
                     domain,
                     model,
-                    kernel,
+                    kernel_constructor,
                     copy(x_train),
                     copy(y_train),
                     acqf,
@@ -90,16 +89,16 @@ ys = rescale_output(result.ys,std_params)
 # ys = (reduce(vcat,result.ys).*y_std) .+ y_mean
 
 
-using ImageMagick, FileIO
+# using ImageMagick, FileIO
 
-# Load frames into an array
-frames = [load("./examples/plots/himmel_iter_$(i).png") for i in 0:(result.iter-1)]
+# # Load frames into an array
+# frames = [load("./examples/plots/himmel_iter_$(i).png") for i in 0:(result.iter-1)]
 
-# Save as GIF (set delay between frames in seconds)
-save("my_animation_himmel.gif", cat(frames...; dims=3), fps=0.5)
+# # Save as GIF (set delay between frames in seconds)
+# save("my_animation_himmel.gif", cat(frames...; dims=3), fps=0.5)
 
-p = Plots.plot(max.(acq_list,1e-15),yaxis=:log,title="selected EI for classical BO over iterations, Himmelblau")
-Plots.savefig("EI_iter_bo_himmel.pdf")
+# p = Plots.plot(max.(acq_list,1e-15),yaxis=:log,title="selected EI for classical BO over iterations, Himmelblau")
+# Plots.savefig("EI_iter_bo_himmel.pdf")
 
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))

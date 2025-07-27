@@ -29,17 +29,17 @@ function update!(model::StandardGP, xs::AbstractVector, ys::AbstractVector)
 end
 
 # Negative log marginal likelihood (no noise term)
-function nlml(mod::StandardGP,params,kernel,x,y,σ²;mean=ZeroMean())
+function nlml(mod::StandardGP,params,kernel,x,y;mean=ZeroMean())
     log_ℓ, log_scale = params
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
 
     # Kernel with current parameters
     k = scale * (kernel ∘ ScaleTransform(1/ℓ))
-    gp = StandardGP(k, σ²,mean=mean) # Use fixed noise here, or optimize σ² too
+    gp = StandardGP(k, mod.noise_var,mean=mean) # Use fixed noise here, or optimize σ² too
 
     # Evaluate GP at training points with noise, creates a FiniteGP
-    gpx = gp.gp(x,mod.noise_var...)
+    gpx = gp.gp(x,mod.noise_var)
 
     -AbstractGPs.logpdf(gpx, y)
 end

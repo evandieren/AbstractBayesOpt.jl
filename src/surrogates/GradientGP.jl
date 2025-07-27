@@ -109,16 +109,16 @@ function update!(model::GradientGP, xs::AbstractVector, ys::AbstractVector)
 end
 
 # Negative log marginal likelihood (no noise term)
-function nlml(mod::GradientGP,params,kernel,x,y,σ²;mean=ZeroMean())
+function nlml(mod::GradientGP,params,kernel,x,y;mean=ZeroMean())
     log_ℓ, log_scale = params
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
 
     # Kernel with current parameters
     k = scale * (kernel ∘ ScaleTransform(1/ℓ))
-    gp = GradientGP(gradKernel(k),mod.p, σ²,mean=mean)
+    gp = GradientGP(gradKernel(k),mod.p, mod.noise_var,mean=mean)
 
-    gpx = gp.gp(x,mod.noise_var...)
+    gpx = gp.gp(x,mod.noise_var)
 
     -AbstractGPs.logpdf(gpx, y)  # Negative log marginal likelihood
 end

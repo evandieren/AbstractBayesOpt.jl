@@ -35,7 +35,7 @@ d = 2
 lower = [-6,-6.0]
 upper = [6.0,6.0]
 domain = ContinuousDomain(lower, upper)
-σ² = 0.0
+σ² = 1e-12
 
 kernel_constructor = ApproxMatern52Kernel()
 kernel = 1 * (kernel_constructor ∘ ScaleTransform(1))
@@ -49,8 +49,7 @@ x_train = [lower .+ (upper .- lower) .* rand(d) for _ in 1:n_train]
 
 val_grad = f_val_grad.(x_train)
 # Create flattened output
-y_train = [val_grad[i] + sqrt(σ²)*randn(d+1) for i = eachindex(val_grad)]
-
+y_train = [val_grad[i] for i = eachindex(val_grad)]
 
 # Conditioning: 
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed)
@@ -79,10 +78,6 @@ print_info(problem)
 result, acq_list, standard_params = BayesOpt.optimize(problem)
 xs = result.xs
 ys = rescale_output(result.ys,standard_params)
-
-f_val_grad(xs[1])
-
-
 
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
