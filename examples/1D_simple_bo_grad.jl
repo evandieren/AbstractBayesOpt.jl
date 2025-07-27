@@ -43,7 +43,7 @@ kernel_constructor = ApproxMatern52Kernel()
 
 kernel = 1 *(kernel_constructor ∘ ScaleTransform(1))
 grad_kernel = gradKernel(kernel)
-model = GradientGP(grad_kernel,d+1,σ²)
+model = GradientGP(grad_kernel,d+1,σ²,mean=ConstMean(mean(y_train)[1]))
 # Conditioning: should not be necessary
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed anyway)
 # model = update!(model, x_train, y_train)

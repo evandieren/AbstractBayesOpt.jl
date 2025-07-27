@@ -32,7 +32,7 @@ x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
 y_train = f.(x_train) #+ sqrt(σ²).* randn(n_train);
 y_train = map(x -> [x], y_train)
 
-kernel_constructor = Matern52Kernel()
+kernel_constructor = ApproxMatern52Kernel()
 kernel = 1 *(kernel_constructor ∘ ScaleTransform(1)) # needed because I need to do MLE
 model = StandardGP(kernel, σ²)
 

@@ -33,9 +33,9 @@ x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
 y_train = f.(x_train) #+ sqrt(σ²).* randn(n_train);
 y_train = map(x -> [x], y_train)
 
-kernel_constructor = Matern52Kernel()
+kernel_constructor = ApproxMatern52Kernel()
 kernel = 1 *(kernel_constructor ∘ ScaleTransform(1)) # needed because I need to do MLE
-model = StandardGP(kernel, σ²)
+model = StandardGP(kernel, σ²,mean=mean(y_train)[1])
 
 # # Conditioning:  no need if standardize == true
 # model = update!(model, x_train, y_train)
@@ -59,3 +59,9 @@ problem = BOProblem(
                     )
 
 print_info(problem)
+
+obj = p -> nlml(model, p, kernel_constructor, x_train, reduce(vcat,y_train),mean=mean(y_train)[1])
+
+obj([0.0,0.0])
+
+ForwardDiff.gradient(obj,[0.0,0.0])

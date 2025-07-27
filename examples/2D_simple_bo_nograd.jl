@@ -54,6 +54,8 @@ y_train = f.(x_train) #+ sqrt(σ²).* randn(n_train)
 
 y_train = map(x -> [x], y_train)
 
+mean_y = mean(y_train)
+
 # f̃(x) = (himmelblau(x)-y_mean)/y_std
 
 kernel = 1 *(kernel_constructor ∘ ScaleTransform(1))
@@ -76,7 +78,7 @@ problem = BOProblem(
                     copy(x_train),
                     copy(y_train),
                     acqf,
-                    410,
+                    100,
                     0.0
                     )
 
