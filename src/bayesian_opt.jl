@@ -95,8 +95,8 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
 
     std_y = maximum(Statistics.std(y_train))
 
-    length_scale_only ? lower_bounds = log.([1e-2]) : lower_bounds = log.([1e-5, 1e-3*std_y]) #log.([0.5]) : lower_bounds = log.([0.5, 0.1])
-    length_scale_only ? upper_bounds = log.([1e2]) : upper_bounds = log.([1e5, maximum([exp(old_params[2]),1e2*maximum(std_y)])]) #log.([10.0]) : upper_bounds = log.([10.0, 10.0])
+    length_scale_only ? lower_bounds = log.([1e-2]) : lower_bounds = log.([1e-2, 1e-3*std_y]) #log.([0.5]) : lower_bounds = log.([0.5, 0.1])
+    length_scale_only ? upper_bounds = log.([1e2]) : upper_bounds = log.([1e2, maximum([exp(old_params[2]),1e2*maximum(std_y)])]) #log.([10.0]) : upper_bounds = log.([10.0, 10.0])
 
     
     x_train_prepped = prep_input(gp_model, X_train)
