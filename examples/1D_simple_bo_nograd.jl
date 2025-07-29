@@ -60,7 +60,7 @@ problem = BOProblem(
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
-result, acq_list, standard_params = BayesOpt.optimize(problem)
+result, acq_list, standard_params = BayesOpt.optimize(problem,standardize=true)
 xs = reduce(vcat,result.xs)
 ys = rescale_output(result.ys,standard_params)
 

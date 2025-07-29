@@ -11,6 +11,7 @@ mutable struct BOProblem{T<:AbstractSurrogate,A<:AbstractAcquisition}
     domain::AbstractDomain
     xs::AbstractVector
     ys::AbstractVector
+    ys_non_std::AbstractVector
     gp::T
     kernel_constructor
     acqf::A
@@ -48,7 +49,7 @@ function BOProblem(f,
     xs = x_train
     ys = y_train
     # Initialize the posterior with prior
-    BOProblem(f, domain, xs, ys, prior,kernel_constructor, acqf, max_iter, 0, noise, false)
+    BOProblem(f, domain, xs, ys, copy(ys), prior,kernel_constructor, acqf, max_iter, 0, noise, false)
 end
 
 function update!(p::BOProblem, x::AbstractVector, y::AbstractVector, i::Int)
@@ -151,7 +152,7 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
 
     ℓ = nothing; scale = nothing
     if length_scale_only
-        ℓ = exp.(best_result)
+        ℓ = exp(best_result[1])
         scale = 1.0
     else
         ℓ, scale = exp.(best_result)
@@ -169,7 +170,7 @@ end
 function rescale_output(ys::AbstractVector,params::Tuple)
     μ, σ = params
 
-    if isnothing(μ) || snothing(σ)
+    if isnothing(μ) || isnothing(σ)
         return [y for y in ys]
     else
         return [(y .* σ) .+ μ for y in ys]
@@ -179,13 +180,12 @@ end
 function standardize_problem(p::BOProblem)    
     μ=nothing
     σ=nothing
-    p.ys, μ, σ = standardize_y(p.gp,p.ys)
+    p.ys, μ, σ = standardize_y(p.gp,p.ys_non_std)
     println("Standardization applied: μ=$μ, σ=$σ")
     p.gp = update!(p.gp, p.xs, p.ys)
     p.acqf = update!(p.acqf,p.ys, p.gp)
-    println("New value of p.acqf best_y after standard $(p.acqf.best_y)")
-    f_old = p.f
-    p.f = x -> (f_old(x).-μ)./σ
+    # println("New value of p.acqf best_y after standard $(p.acqf.best_y * σ + μ)")
+    # p.f = x -> (p.f_non_std(x).-μ)./σ
     return p, (μ, σ)
 end
 
@@ -207,13 +207,16 @@ function optimize(p::BOProblem;fn=nothing,standardize=false)
     σ=nothing
     if standardize
         p, (μ, σ) = standardize_problem(p)
+        # classic_bo ? p.gp.gp.mean = ZeroMean() : p.gp.gp.mean = gradMean(zeros(p.gp.p))
     else 
+        μ = 0
+        σ = 1
         p.gp = update!(p.gp, p.xs, p.ys) # because we might not to that before
     end
 
 
     original_mean = p.gp.gp.mean
-    println(original_mean)
+    @assert isa(original_mean,ZeroMean) #: @assert isa(original_mean,ZeroMean)
     i = 0
     while !stop_criteria(p) & !p.flag
 
@@ -222,28 +225,23 @@ function optimize(p::BOProblem;fn=nothing,standardize=false)
             println("Former parameters: ℓ=$(get_lengthscale(p.gp)), variance =$(get_scale(p.gp))")
             old_params = log.([get_lengthscale(p.gp)[1],get_scale(p.gp)[1]])
             println("Hyperparameter time taken:")
-            @time out = optimize_hyperparameters(p.gp, p.xs, p.ys,p.kernel_constructor,old_params,classic_bo,mean=original_mean)
+            @time out = optimize_hyperparameters(p.gp, p.xs, p.ys,p.kernel_constructor,old_params,classic_bo,
+                                                length_scale_only = standardize, mean=original_mean)
 
             println("MLE new parameters: ℓ=$(get_lengthscale(out)), variance =$(get_scale(out))")
             if !isnothing(out)
                 p.gp = out
                 p.gp = update!(p.gp, p.xs, p.ys)
             end
-            # else
-            #     ℓ = 1.7824084150197173
-            #     scale = 0.2932189429005226
-            #     k_opt = scale * (p.kernel_constructor ∘ ScaleTransform(1/ℓ))
-            #     p.gp = GradientGP(gradKernel(k_opt),p.gp.p, p.gp.noise_var, mean=original_mean)
-            #     p.gp = update!(p.gp,p.xs,p.ys)
-            # end
+
             println("New parameters: ℓ=$(get_lengthscale(p.gp)), variance =$(get_scale(p.gp))")
         end
 
         
         if classic_bo
-            println("Iteration #",i+1,", current min val: ",minimum(p.ys))
+            println("Iteration #",i+1,", current min val: ",minimum(p.ys_non_std))
         else
-            println("Iteration #",i+1,", current min val: ",minimum(hcat(p.ys...)[1,:]))
+            println("Iteration #",i+1,", current min val: ",minimum(hcat(p.ys_non_std...)[1,:]))
         end
 
         println("Time acq update:")
@@ -255,14 +253,22 @@ function optimize(p::BOProblem;fn=nothing,standardize=false)
 
         println("New point acquired: $(x_cand) with acq func $(p.acqf(p.gp, x_cand))")
         push!(acqf_list,p.acqf(p.gp, x_cand))
-        y_cand = p.f(x_cand)
-        y_cand = y_cand .+ sqrt(p.noise)*randn(length(y_cand))
-        
 
+        y_cand = p.f(x_cand) 
+        y_cand = y_cand .+ sqrt(p.noise)*randn(length(y_cand))
+        # y_cand here is NOT standardized
+        push!(p.ys_non_std, y_cand)
         println("New value probed: ",y_cand)
         i +=1
         println("Time update GP")
-        @time p = update!(p, x_cand, y_cand, i)
+        
+        if standardize
+            push!(p.xs, x_cand)
+            @time p, (μ, σ) = standardize_problem(p)
+            p.iter = i
+        else
+            @time p = update!(p, x_cand, y_cand, i)
+        end
     end
 
     return p, acqf_list, (μ,σ)

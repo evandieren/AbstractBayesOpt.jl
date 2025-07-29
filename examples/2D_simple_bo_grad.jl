@@ -40,7 +40,6 @@ domain = ContinuousDomain(lower, upper)
 kernel_constructor = ApproxMatern52Kernel()
 kernel = 1 * (kernel_constructor ∘ ScaleTransform(1))
 grad_kernel = gradKernel(kernel)
-model = GradientGP(grad_kernel,d+1,σ²)
 
 # Generate uniform random samples
 n_train = 10
@@ -50,6 +49,7 @@ x_train = [lower .+ (upper .- lower) .* rand(d) for _ in 1:n_train]
 val_grad = f_val_grad.(x_train)
 # Create flattened output
 y_train = [val_grad[i] for i = eachindex(val_grad)]
+model = GradientGP(grad_kernel,d+1,σ²)
 
 # Conditioning: 
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed)
@@ -75,7 +75,7 @@ problem = BOProblem(
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
-result, acq_list, standard_params = BayesOpt.optimize(problem)
+result, acq_list, standard_params = BayesOpt.optimize(problem,standardize=true)
 xs = result.xs
 ys = rescale_output(result.ys,standard_params)
 

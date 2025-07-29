@@ -59,7 +59,7 @@ mean_y = mean(y_train)
 # f̃(x) = (himmelblau(x)-y_mean)/y_std
 
 kernel = 1 *(kernel_constructor ∘ ScaleTransform(1))
-model = StandardGP(kernel,σ²,mean=ConstMean(mean_y[1])) # Instantiates the StandardGP (gives it the prior).
+model = StandardGP(kernel,σ²) # Instantiates the StandardGP (gives it the prior).
 
 # Conditioning: no need if true
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed)
@@ -85,7 +85,7 @@ problem = BOProblem(
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
-result,acq_list, std_params = BayesOpt.optimize(problem)
+result,acq_list, std_params = BayesOpt.optimize(problem,standardize=true)
 xs = result.xs
 ys = rescale_output(result.ys,std_params)
 # ys = (reduce(vcat,result.ys).*y_std) .+ y_mean

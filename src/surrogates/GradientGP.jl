@@ -131,8 +131,8 @@ function standardize_y(mod::GradientGP,y_train::AbstractVector)
     σ = vec(std(y_mat; dims=2))
     σ[2:end] .= σ[1]
     
-    println("μ=$μ")
-    println("σ=$σ")
+    #println("μ=$μ")
+    #println("σ=$σ")
 
     ys_std = [(y .- μ) ./ σ for y in y_train]
     # this re-creates a Vector{Vector{Float64}}, which is what we need
