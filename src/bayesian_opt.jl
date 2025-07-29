@@ -93,10 +93,8 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
     best_nlml = Inf
     best_result = nothing
 
-    std_y = maximum(Statistics.std(y_train))
-
-    length_scale_only ? lower_bounds = log.([1e-2]) : lower_bounds = log.([1e-2, 1e-3*std_y]) #log.([0.5]) : lower_bounds = log.([0.5, 0.1])
-    length_scale_only ? upper_bounds = log.([1e2]) : upper_bounds = log.([1e2, maximum([exp(old_params[2]),1e2*maximum(std_y)])]) #log.([10.0]) : upper_bounds = log.([10.0, 10.0])
+    length_scale_only ? lower_bounds = log.([1e-2]) : lower_bounds = log.([1e-2, 1e-4]) #log.([0.5]) : lower_bounds = log.([0.5, 0.1])
+    length_scale_only ? upper_bounds = log.([1e2]) : upper_bounds = log.([1e2, 1e3]) #log.([10.0]) : upper_bounds = log.([10.0, 10.0])
 
     
     x_train_prepped = prep_input(gp_model, X_train)
@@ -219,16 +217,25 @@ function optimize(p::BOProblem;fn=nothing,standardize=false)
     i = 0
     while !stop_criteria(p) & !p.flag
 
-        if (i != 0) & (i % 10 == 0)  # Optimize GP hyperparameters
+        if i%10==0 #(i != 0) & (i % 10 == 0)  # Optimize GP hyperparameters
             println("Re-optimizing GP hyperparameters at iteration $i...")
             println("Former parameters: ℓ=$(get_lengthscale(p.gp)), variance =$(get_scale(p.gp))")
             old_params = log.([get_lengthscale(p.gp)[1],get_scale(p.gp)[1]])
             println("Hyperparameter time taken:")
             @time out = optimize_hyperparameters(p.gp, p.xs, p.ys,p.kernel_constructor,old_params,classic_bo,mean=original_mean)
+
+            println("MLE new parameters: ℓ=$(get_lengthscale(out)), variance =$(get_scale(out))")
             if !isnothing(out)
                 p.gp = out
                 p.gp = update!(p.gp, p.xs, p.ys)
             end
+            # else
+            #     ℓ = 1.7824084150197173
+            #     scale = 0.2932189429005226
+            #     k_opt = scale * (p.kernel_constructor ∘ ScaleTransform(1/ℓ))
+            #     p.gp = GradientGP(gradKernel(k_opt),p.gp.p, p.gp.noise_var, mean=original_mean)
+            #     p.gp = update!(p.gp,p.xs,p.ys)
+            # end
             println("New parameters: ℓ=$(get_lengthscale(p.gp)), variance =$(get_scale(p.gp))")
         end
 

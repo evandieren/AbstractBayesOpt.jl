@@ -139,7 +139,7 @@ function standardize_y(mod::GradientGP,y_train::AbstractVector)
     return ys_std, μ, σ
 end
 
-get_lengthscale(model::GradientGP) = model.gp.kernel.base_kernel.kernel.transform.s
+get_lengthscale(model::GradientGP) = 1 ./ model.gp.kernel.base_kernel.kernel.transform.s
 
 get_scale(model::GradientGP) = model.gp.kernel.base_kernel.σ²
 
