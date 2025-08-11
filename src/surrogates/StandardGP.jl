@@ -48,6 +48,13 @@ function standardize_y(mod::StandardGP,y_train::AbstractVector)
     y_flat = reduce(vcat, y_train)
     y_mean = mean(y_flat)
     std_mean = std(y_flat)
+    
+    # Protect against very small standard deviations
+    if std_mean < 1e-12
+        @warn "Very small standard deviation detected: $std_mean. Using std = 1.0"
+        std_mean = 1.0
+    end
+    
     y_standardized = [(y .- y_mean) ./ std_mean for y in y_train]
     # this re-creates a Vector{Vector{Float64}}, which is what we need
     return y_standardized, y_mean, std_mean

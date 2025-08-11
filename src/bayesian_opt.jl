@@ -5,7 +5,6 @@ BOProblem (struct) : structure containing the required information to run the Ba
 BOProblem (function) : Initiate a BOProblem structure
 update (for BOProblem) : updates the BOProblem once you have new values x,y
 """
-
 mutable struct BOProblem{T<:AbstractSurrogate,A<:AbstractAcquisition}
     f
     domain::AbstractDomain
@@ -20,6 +19,7 @@ mutable struct BOProblem{T<:AbstractSurrogate,A<:AbstractAcquisition}
     noise::Float64
     flag::Bool
 end
+
 
 function print_info(p::BOProblem)
     println("== Printing information about the BOProblem ==")
@@ -91,11 +91,19 @@ end
 
 function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor,old_params,classic_bo;length_scale_only=false, mean=ZeroMean(),num_restarts=5)
 
+    # old_params is always a 2-element vector: [log(lengthscale), log(scale)]
+    if length(old_params) != 2
+        error("old_params must be a 2-element vector: [log(lengthscale), log(scale)]")
+    end
+
     best_nlml = Inf
     best_result = nothing
+    
+    # Store original scale for length_scale_only case
+    original_scale = exp(old_params[2])
 
-    length_scale_only ? lower_bounds = log.([1e-2]) : lower_bounds = log.([1e-2, 1e-4]) #log.([0.5]) : lower_bounds = log.([0.5, 0.1])
-    length_scale_only ? upper_bounds = log.([1e2]) : upper_bounds = log.([1e2, 1e3]) #log.([10.0]) : upper_bounds = log.([10.0, 10.0])
+    length_scale_only ? lower_bounds = log.([1e-3]) : lower_bounds = log.([1e-3, 1e-6])
+    length_scale_only ? upper_bounds = log.([1e1]) : upper_bounds = log.([1e1, 1e2])
 
     
     x_train_prepped = prep_input(gp_model, X_train)
@@ -108,15 +116,22 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
 
     obj = nothing
     if length_scale_only
-        obj = p -> nlml(gp_model, [p;0.0], kernel_constructor, x_train_prepped, y_train_prepped, mean=mean)
+        # Only optimize lengthscale (scalar p), keep scale fixed at original log value (second parameter)
+        obj = p -> nlml(gp_model, [p; old_params[2]], kernel_constructor, x_train_prepped, y_train_prepped, mean=mean)
     else
+        # Optimize both lengthscale and scale (vector p)
         obj = p -> nlml(gp_model, p, kernel_constructor, x_train_prepped, y_train_prepped, mean=mean)
     end
 
     opts = Optim.Options(g_tol=1e-5,f_abstol=2.2e-9,x_abstol=1e-4,outer_iterations=500)
 
     random_inits = [rand.(Uniform.(lower_bounds, upper_bounds)) for _ in 1:(num_restarts - 1)]
-    length_scale_only ? init_guesses = [[collect(old_params)[1]], random_inits...] : init_guesses = [collect(old_params), random_inits...]
+    # Fix initial guess generation to be consistent with parameter dimensions
+    if length_scale_only
+        init_guesses = [[old_params[1]], random_inits...]
+    else
+        init_guesses = [collect(old_params), random_inits...]
+    end
 
     inner_optimizer = LBFGS(;linesearch = Optim.LineSearches.HagerZhang(linesearchmax=20))
 
@@ -148,12 +163,17 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
         return gp_model
     else
         println("Best LML after $(num_restarts) restarts: ", -best_nlml)
+        if length_scale_only
+            println("Optimized lengthscale (log): $(best_result[1]), kept scale (log): $(old_params[2])")
+        else
+            println("Optimized parameters (log): lengthscale=$(best_result[1]), scale=$(best_result[2])")
+        end
     end
 
     ℓ = nothing; scale = nothing
     if length_scale_only
         ℓ = exp(best_result[1])
-        scale = 1.0
+        scale = original_scale  # Use original scale instead of hardcoded 1.0
     else
         ℓ, scale = exp.(best_result)
     end
@@ -184,8 +204,6 @@ function standardize_problem(p::BOProblem)
     println("Standardization applied: μ=$μ, σ=$σ")
     p.gp = update!(p.gp, p.xs, p.ys)
     p.acqf = update!(p.acqf,p.ys, p.gp)
-    # println("New value of p.acqf best_y after standard $(p.acqf.best_y * σ + μ)")
-    # p.f = x -> (p.f_non_std(x).-μ)./σ
     return p, (μ, σ)
 end
 
@@ -216,11 +234,11 @@ function optimize(p::BOProblem;fn=nothing,standardize=false)
 
 
     original_mean = p.gp.gp.mean
-    @assert isa(original_mean,ZeroMean) #: @assert isa(original_mean,ZeroMean)
+    @assert isa(original_mean,ZeroMean) 
     i = 0
     while !stop_criteria(p) & !p.flag
 
-        if i%10==0 #(i != 0) & (i % 10 == 0)  # Optimize GP hyperparameters
+        if i%10==0 
             println("Re-optimizing GP hyperparameters at iteration $i...")
             println("Former parameters: ℓ=$(get_lengthscale(p.gp)), variance =$(get_scale(p.gp))")
             old_params = log.([get_lengthscale(p.gp)[1],get_scale(p.gp)[1]])

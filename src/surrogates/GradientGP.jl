@@ -127,9 +127,16 @@ function standardize_y(mod::GradientGP,y_train::AbstractVector)
     y_mat = reduce(hcat, y_train)
 
     μ = vec(mean(y_mat; dims=2))
-    μ[2:end] .= 0.0
+    μ[2:end] .= 0.0  # Only standardize function values, not gradients
     σ = vec(std(y_mat; dims=2))
-    σ[2:end] .= σ[1]
+    
+    # Protect against very small standard deviations
+    if σ[1] < 1e-12
+        @warn "Very small standard deviation detected: $(σ[1]). Using std = 1.0"
+        σ[1] = 1.0
+    end
+    
+    σ[2:end] .= σ[1]  # Use same scaling for gradients
     
     #println("μ=$μ")
     #println("σ=$σ")
