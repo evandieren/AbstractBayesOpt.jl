@@ -198,8 +198,7 @@ function rescale_output(ys::AbstractVector,params::Tuple)
 end
 
 function standardize_problem(p::BOProblem)    
-    μ=nothing
-    σ=nothing
+    μ=nothing; σ=nothing
     p.ys, μ, σ = standardize_y(p.gp,p.ys_non_std)
     println("Standardization applied: μ=$μ, σ=$σ")
     p.gp = update!(p.gp, p.xs, p.ys)
@@ -208,7 +207,7 @@ function standardize_problem(p::BOProblem)
 end
 
 # Looping routine
-function optimize(p::BOProblem;fn=nothing,standardize=false)
+function optimize(p::BOProblem;fn=nothing,standardize=true)
     """
     This function implements the EGO framework: 
         While some criterion is not met, 
