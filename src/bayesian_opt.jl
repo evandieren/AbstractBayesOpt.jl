@@ -123,7 +123,7 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
         obj = p -> nlml(gp_model, p, kernel_constructor, x_train_prepped, y_train_prepped, mean=mean)
     end
 
-    opts = Optim.Options(g_tol=1e-5,f_abstol=2.2e-9,x_abstol=1e-4,outer_iterations=500)
+    opts = Optim.Options(g_tol=1e-5,f_abstol=2.2e-9,x_abstol=1e-4,outer_iterations=100)
 
     random_inits = [rand.(Uniform.(lower_bounds, upper_bounds)) for _ in 1:(num_restarts - 1)]
     # Fix initial guess generation to be consistent with parameter dimensions
@@ -282,7 +282,7 @@ function optimize(p::BOProblem;fn=nothing,standardize=true)
         if standardize
             push!(p.xs, x_cand)
             @time p, (μ, σ) = standardize_problem(p)
-            p.iter = i
+            p.iter = i+1
         else
             @time p = update!(p, x_cand, y_cand, i)
         end

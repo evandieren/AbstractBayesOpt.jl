@@ -60,11 +60,9 @@ problem = BOProblem(
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
-result, acq_list, standard_params = BayesOpt.optimize(problem,standardize=true)
+result, acq_list, standard_params = BayesOpt.optimize(problem)
 xs = reduce(vcat,result.xs)
-ys = rescale_output(result.ys,standard_params)
-
-ys = reduce(vcat,ys)
+ys = reduce(vcat,result.ys) 
 
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
