@@ -87,7 +87,7 @@ print_info(problem)
 @info "Starting Bayesian Optimization..."
 result,acq_list, std_params = BayesOpt.optimize(problem,standardize=true)
 xs = result.xs
-ys = rescale_output(result.ys,std_params)
+ys = result.ys_non_std 
 # ys = (reduce(vcat,result.ys).*y_std) .+ y_mean
 
 

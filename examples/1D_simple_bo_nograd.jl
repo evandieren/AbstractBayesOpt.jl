@@ -62,7 +62,7 @@ print_info(problem)
 @info "Starting Bayesian Optimization..."
 result, acq_list, standard_params = BayesOpt.optimize(problem)
 xs = reduce(vcat,result.xs)
-ys = reduce(vcat,result.ys) 
+ys = reduce(vcat,result.ys_non_std)
 
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
