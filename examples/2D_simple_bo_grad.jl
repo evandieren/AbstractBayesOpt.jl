@@ -68,16 +68,16 @@ problem = BOProblem(
                     copy(x_train),
                     copy(y_train),
                     acqf,
-                    100,
+                    30,
                     σ²
                     )
 
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
-result, acq_list, standard_params = BayesOpt.optimize(problem,standardize=true)
+result, acq_list, standard_params = BayesOpt.optimize(problem)
 xs = result.xs
-ys = rescale_output(result.ys,standard_params)
+ys = result.ys
 
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))

@@ -64,7 +64,7 @@ problem = BOProblem(
                     copy(x_train),
                     copy(y_train),
                     acqf,
-                    20,
+                    30,
                     σ²
                     )
 

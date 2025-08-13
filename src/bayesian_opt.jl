@@ -89,7 +89,7 @@ function stop_criteria(p::BOProblem)
     return p.iter > p.max_iter
 end
 
-function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor,old_params,classic_bo;length_scale_only=false, mean=ZeroMean(),num_restarts=5)
+function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor,old_params,classic_bo;length_scale_only=false, mean=ZeroMean(),num_restarts=1)
 
     # old_params is always a 2-element vector: [log(lengthscale), log(scale)]
     if length(old_params) != 2
@@ -123,7 +123,11 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
         obj = p -> nlml(gp_model, p, kernel_constructor, x_train_prepped, y_train_prepped, mean=mean)
     end
 
-    opts = Optim.Options(g_tol=1e-5,f_abstol=2.2e-9,x_abstol=1e-4,outer_iterations=100)
+    grad_obj! = nothing
+    if !classic_bo
+        grad_obj! = (G, p) -> ReverseDiff.gradient!(G, obj, p)
+    end
+    opts = Optim.Options(g_tol=1e-5,f_abstol=1e-6,x_abstol=1e-4,outer_iterations=100)
 
     random_inits = [rand.(Uniform.(lower_bounds, upper_bounds)) for _ in 1:(num_restarts - 1)]
     # Fix initial guess generation to be consistent with parameter dimensions
@@ -140,9 +144,13 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
             if classic_bo
                 result = Optim.optimize(obj, lower_bounds, upper_bounds, init_guesses[i], Fminbox(inner_optimizer),opts,autodiff = :forward)
             else
-                result = Optim.optimize(obj, lower_bounds, upper_bounds, init_guesses[i], Fminbox(inner_optimizer),opts) # work-around for now.
+                result = Optim.optimize(obj, grad_obj!,
+                                        lower_bounds, upper_bounds, init_guesses[i], 
+                                        Fminbox(inner_optimizer), opts)
+                #result = Optim.optimize(obj, lower_bounds, upper_bounds, init_guesses[i], Fminbox(inner_optimizer),opts) # work-around for now.
             end
-
+            println("Restart $i starting from $(init_guesses[i]): Optimized parameters: ", result.minimizer, " with minimum value: ", result.minimum)
+            println("Optimization result: ", result)
             if Optim.converged(result)
                 current_nlml = Optim.minimum(result)
 

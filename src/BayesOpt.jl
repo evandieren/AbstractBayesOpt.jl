@@ -1,7 +1,7 @@
 module BayesOpt
 
 using AbstractGPs, KernelFunctions
-using ForwardDiff
+using ForwardDiff, ReverseDiff
 using Optim
 using FillArrays
 using Statistics
@@ -50,7 +50,7 @@ export EnsembleAcquisition, ea
 
 # Core Bayesian Optimization framework
 include("bayesian_opt.jl")
-export optimize, print_info, update!, BOProblem, stop_criteria, rescale_output, optimize_hyperparameters, standardize_problem
+export optimize, print_info, update!, BOProblem, stop_criteria, optimize_hyperparameters, standardize_problem
 
 
 # include("plotting.jl")
