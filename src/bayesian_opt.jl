@@ -226,7 +226,10 @@ Arguments:
 - `p::BOProblem`: The Bayesian Optimization problem to solve.
 - `fn::String`: Optional filename for saving plots.
 - `standardize::Bool`: Whether to standardize the problem.
-- `hyper_params::Bool`: Whether to optimize hyperparameters of the GP model.
+- `hyper_params::String`: Specifies how to handle hyperparameters.
+    - If "all", re-optimize hyperparameters every 20 iterations.
+    - If 'length_scale_only', only optimize the lengthscale.
+    - If nothing, do not re-optimize hyperparameters.
 
 returns:
 - `p::BOProblem`: The updated Bayesian Optimization problem after optimization.
@@ -236,14 +239,10 @@ returns:
 function optimize(p::BOProblem;
                   fn=nothing,
                   standardize=true,
-                  hyper_params=true)
-    """
-    This function implements the EGO framework: 
-        While some criterion is not met, 
-        (1) optimize the acquisition function to obtain the new best candidate, 
-        (2) query the target function f, 
-        (3) update the GP and the overall optimization state. 
-    """
+                  hyper_params="all")
+
+    @assert hyper_params in ["all", "length_scale_only", "none", nothing] "hyper_params must be one of: 'all', 'length_scale_only', 'none', or nothing."
+
     acqf_list = []
     n_train = length(p.xs)
     
@@ -252,24 +251,30 @@ function optimize(p::BOProblem;
     μ=0.0; σ=1.0
     if standardize
         p, (μ, σ) = standardize_problem(p)
-        # classic_bo ? p.gp.gp.mean = ZeroMean() : p.gp.gp.mean = gradMean(zeros(p.gp.p))
     else 
         p.gp = update!(p.gp, p.xs, p.ys) # because we might not to that before
     end
-
 
     original_mean = p.gp.gp.mean
     @assert isa(original_mean,ZeroMean) 
     i = 0
     while !stop_criteria(p) & !p.flag
 
-        if hyper_params&&(i%10==0) 
+        if !isnothing(hyper_params)&&(i%10==0) 
             println("Re-optimizing GP hyperparameters at iteration $i...")
             println("Former parameters: ℓ=$(get_lengthscale(p.gp)), variance =$(get_scale(p.gp))")
             old_params = log.([get_lengthscale(p.gp)[1],get_scale(p.gp)[1]])
             println("Hyperparameter time taken:")
-            @time out = optimize_hyperparameters(p.gp, p.xs, p.ys,p.kernel_constructor,old_params,classic_bo,
-                                                length_scale_only = standardize, mean=original_mean)
+            out = nothing
+            if hyper_params == "length_scale_only"
+                @time out = optimize_hyperparameters(p.gp, p.xs, p.ys,p.kernel_constructor,old_params,classic_bo, 
+                                                    length_scale_only=true,mean=original_mean)
+            elseif hyper_params == "all"
+                @time out = optimize_hyperparameters(p.gp, p.xs, p.ys,p.kernel_constructor,old_params,classic_bo,
+                                                length_scale_only = false, mean=original_mean)
+            else
+                out = nothing
+            end
 
             println("MLE new parameters: ℓ=$(get_lengthscale(out)), variance =$(get_scale(out))")
             if !isnothing(out)
@@ -306,9 +311,12 @@ function optimize(p::BOProblem;
         println("Time update GP")
         
         if standardize
-            push!(p.xs, x_cand)
-            @time p, (μ, σ) = standardize_problem(p)
-            p.iter = i+1
+            #push!(p.xs, x_cand)
+            # @time p, (μ, σ) = standardize_problem(p)
+            # Standardize new observation using existing parameters
+            y_cand_std = (y_cand .- μ) ./ σ
+            
+            @time p = update!(p, x_cand, y_cand_std, i)
         else
             @time p = update!(p, x_cand, y_cand, i)
         end
