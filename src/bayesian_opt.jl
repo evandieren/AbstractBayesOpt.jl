@@ -214,8 +214,29 @@ function standardize_problem(p::BOProblem)
     return p, (μ, σ)
 end
 
-# Looping routine
-function optimize(p::BOProblem;fn=nothing,standardize=true)
+"""
+    optimize(p::BOProblem;fn=nothing, standardize=true, hyper_params=true)
+This function implements the EGO framework:
+    While some criterion is not met,
+    (1) optimize the acquisition function to obtain the new best candidate,
+    (2) query the target function f,            
+    (3) update the GP and the overall optimization state.
+
+Arguments:
+- `p::BOProblem`: The Bayesian Optimization problem to solve.
+- `fn::String`: Optional filename for saving plots.
+- `standardize::Bool`: Whether to standardize the problem.
+- `hyper_params::Bool`: Whether to optimize hyperparameters of the GP model.
+
+returns:
+- `p::BOProblem`: The updated Bayesian Optimization problem after optimization.
+- `acqf_list::Vector`: List of acquisition function values at each iteration.
+- `standard_params::Tuple`: Tuple containing the mean and standard deviation used for standardization
+"""
+function optimize(p::BOProblem;
+                  fn=nothing,
+                  standardize=true,
+                  hyper_params=true)
     """
     This function implements the EGO framework: 
         While some criterion is not met, 
@@ -228,14 +249,11 @@ function optimize(p::BOProblem;fn=nothing,standardize=true)
     
     classic_bo = (length(p.ys[1])==1)
     
-    μ=nothing
-    σ=nothing
+    μ=0.0; σ=1.0
     if standardize
         p, (μ, σ) = standardize_problem(p)
         # classic_bo ? p.gp.gp.mean = ZeroMean() : p.gp.gp.mean = gradMean(zeros(p.gp.p))
     else 
-        μ = 0
-        σ = 1
         p.gp = update!(p.gp, p.xs, p.ys) # because we might not to that before
     end
 
@@ -245,7 +263,7 @@ function optimize(p::BOProblem;fn=nothing,standardize=true)
     i = 0
     while !stop_criteria(p) & !p.flag
 
-        if i%10==0 
+        if hyper_params&&(i%10==0) 
             println("Re-optimizing GP hyperparameters at iteration $i...")
             println("Former parameters: ℓ=$(get_lengthscale(p.gp)), variance =$(get_scale(p.gp))")
             old_params = log.([get_lengthscale(p.gp)[1],get_scale(p.gp)[1]])
