@@ -9,10 +9,10 @@ function (gradUCB::GradientNormUCB)(surrogate::AbstractSurrogate, x)
     m = posterior_grad_mean(surrogate, x)[2:end]      # Vector{Float64}
     Σ = posterior_grad_cov(surrogate, x)[2:end,2:end]       # Matrix{Float64}
 
-    μ_sqnorm = m'*m # not taking f(x)
-    σ_sqnorm = 2 * m'*Σ*m + tr(Σ * Σ)    # Approximate variance of ||∇μ(x)||²
+    μ_sqnorm = dot(m,m) + trace(Σ)  # mean of the squared norm of the gradient
+    var_sqnorm = 4 * dot(m, Σ * m) + 2 * sum(Σ.^2)  # variance of the squared norm of the gradient
 
-    return -μ_sqnorm + gradUCB.β * sqrt(max(σ_sqnorm, 1e-12))
+    return -μ_sqnorm + gradUCB.β * sqrt(max(var_sqnorm, 1e-12))
 end
 
 function update!(acqf::GradientNormUCB, ys::AbstractVector, surrogate::AbstractSurrogate)
