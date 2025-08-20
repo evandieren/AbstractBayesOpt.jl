@@ -73,6 +73,7 @@ function update!(p::BOProblem, x::AbstractVector, y::AbstractVector, i::Int)
         println(length(prev_gp.gpx.data.x))
         p.xs = p.xs[1:(length(p.xs)-1)]
         p.ys = p.ys[1:(length(p.ys)-1)]
+        p.ys_non_std = p.ys_non_std[1:(length(p.ys_non_std)-1)]
         println("Final # points for posterior: ",length(p.xs))
         p.flag = true
         return p
@@ -121,6 +122,11 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
     else
         # Optimize both lengthscale and scale (vector p)
         obj = p -> nlml(gp_model, p, kernel_constructor, x_train_prepped, y_train_prepped, mean=mean)
+    end
+
+    if !classic_bo
+        grad_cache = build_grad_cache(gp_model, kernel_constructor, x_train_prepped, y_train_prepped)
+        obj = p -> fast_nlml!(grad_cache, p)
     end
 
     grad_obj! = nothing

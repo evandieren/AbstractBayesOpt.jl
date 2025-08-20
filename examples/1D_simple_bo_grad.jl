@@ -50,7 +50,7 @@ model = GradientGP(grad_kernel,d+1,σ²)
 
 # Init of the acquisition function
 ξ = 0.0
-acqf = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
+acqf = GradientNormUCB(1.0) #ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
 
 # This maximises the function
 problem = BOProblem(
@@ -88,37 +88,37 @@ Plots.vspan!([1,2*n_train]; color=:blue,alpha=0.2, label="")
 Plots.display(p)
 
 
-# plot_domain = collect(lower[1]:0.01:upper[1])
+plot_domain = collect(lower[1]:0.01:upper[1])
 
-# plot_x = map(x -> [x], plot_domain)
-# plot_x = prep_input(model,plot_x)
-# post_mean, post_var = mean_and_var(result.gp.gpx(plot_x))
+plot_x = map(x -> [x], plot_domain)
+plot_x = prep_input(model,plot_x)
+post_mean, post_var = unstandardized_mean_and_var(result.gp,plot_x, standard_params)
 
-# post_mean = reshape(post_mean, :, d+1)[:,1] # This returns f(x) to match the StandardGP
-# post_var = reshape(post_var, :, d+1)[:,1]
-# post_var[post_var .< 0] .= 0
+post_mean = reshape(post_mean, :, d+1)[:,1] # This returns f(x) to match the StandardGP
+post_var = reshape(post_var, :, d+1)[:,1]
+post_var[post_var .< 0] .= 0
 
-# plot(plot_domain, f.(plot_domain),
-#         label="target function",
-#         xlim=(lower[1], upper[1]),
-#         xlabel="x",
-#         ylabel="y",
-#         title="BayesOpt, σ²=$(σ²)",
-#         legend=:outertopright)
-# plot!(plot_domain, post_mean; label="GP", ribbon=sqrt.(post_var),ribbon_scale=2,color="green")
-# scatter!(
-#     xs[1:n_train],
-#     ys[1:n_train];
-#     label="Train Data"
-# )
-# scatter!(
-#     xs[n_train+1:end],
-#     ys[n_train+1:end];
-#     label="Candidates"
-# )
-# scatter!(
-#     [xs[argmin(ys)]],
-#     [minimum(ys)];
-#     label="Best candidate"
-# )
+plot(plot_domain, f.(plot_domain),
+        label="target function",
+        xlim=(lower[1], upper[1]),
+        xlabel="x",
+        ylabel="y",
+        title="BayesOpt, σ²=$(σ²)",
+        legend=:outertopright)
+plot!(plot_domain, post_mean; label="GP", ribbon=sqrt.(post_var),ribbon_scale=2,color="green")
+scatter!(
+    xs[1:n_train],
+    ys[1:n_train];
+    label="Train Data"
+)
+scatter!(
+    xs[n_train+1:end],
+    ys[n_train+1:end];
+    label="Candidates"
+)
+scatter!(
+    [xs[argmin(ys)]],
+    [minimum(ys)];
+    label="Best candidate"
+)
 # #savefig("gradgp_matern_1D_ensemble_EI_ucb_grad.pdf")

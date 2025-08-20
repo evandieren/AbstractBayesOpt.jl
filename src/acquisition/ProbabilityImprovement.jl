@@ -6,7 +6,7 @@ end
 function (pi::ProbabilityImprovement)(surrogate::AbstractSurrogate, x)
     μ = posterior_mean(surrogate, x)
     σ² = posterior_var(surrogate, x)
-    Δ = (ei.best_y - ei.ξ) - μ # we are substracting ξ because we are minimising.
+    Δ = (pi.best_y - pi.ξ) - μ # we are substracting ξ because we are minimising.
     
     max(σ²,0) == 0 && return max(Δ,0.0)
 

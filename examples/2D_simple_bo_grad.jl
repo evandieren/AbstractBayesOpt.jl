@@ -57,7 +57,10 @@ model = GradientGP(grad_kernel,d+1,σ²)
 
 # Init of the acquisition function
 ξ = 0.0
-acqf = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
+acqf_1 = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
+acqf_2 = GradientNormUCB(1.0) #ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
+
+acqf = EnsembleAcquisition([0.6, 0.4], [acqf_1, acqf_2])
 
 # This maximises the function
 problem = BOProblem(
