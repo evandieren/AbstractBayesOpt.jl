@@ -46,7 +46,7 @@ struct gradMean
     end
 end
 
-struct gradKernel <: MOKernel 
+mutable struct gradKernel <: MOKernel 
     base_kernel
     function gradKernel(Tk)
         return new(Tk)
@@ -70,8 +70,6 @@ function (κ::gradKernel)((x, px)::Tuple{Any,Int}, (y, py)::Tuple{Any,Int})
     
     onehot(n, i) = collect(1:n) .== i
     
-    vi = onehot(length(x), px-1) # as px is 1 for func obvs, and goes from 2 to d+1 for gradients, so we need to substract 1
-    vj = onehot(length(y), py-1) # same for py.
 
     val = px == 1 && py == 1 # we are looking at f(x), f(y)
 
@@ -81,10 +79,13 @@ function (κ::gradKernel)((x, px)::Tuple{Any,Int}, (y, py)::Tuple{Any,Int})
     if val # we are just computing the usual matrix K
         κ.base_kernel(x,y)
     elseif ∇_val_1
+        vi = onehot(length(x), px-1) # as px is 1 for func obvs, and goes from 2 to d+1 for gradients, so we need to substract 1
         return ForwardDiff.derivative(h -> κ.base_kernel(x + h * vi, y), 0.)
     elseif ∇_val_2 # we are looking at f(x)-∇f(y)
+        vj = onehot(length(y), py-1) # same for py.
         return ForwardDiff.derivative(h -> κ.base_kernel(x, y + h * vj), 0.)
     else # we are looking at ∇f(x)-∇f(y), this avoids computing the entire hessian each time.
+        vi = onehot(length(x), px-1); vj = onehot(length(y), py-1)
         return ForwardDiff.derivative(h1 -> ForwardDiff.derivative(h2 -> κ.base_kernel(x + h1 * vi, y + h2 * vj), 0.), 0.)
     end
 end
@@ -108,6 +109,13 @@ function update!(model::GradientGP, xs::AbstractVector, ys::AbstractVector)
     return GradientGP(model.gp, model.noise_var, model.p, updated_gpx)
 end
 
+# helper for the nlml computation to avoid recomputing C but it's needed at each step...
+# function fastnlml_grad(gpx,Y)
+#     m = mean(gpx)
+#     T = promote_type(eltype(m), eltype(gpx.data.C),eltype(Y))
+#     return -((size(Y, 1) * T(AbstractGPs.log2π) + logdet(gpx.data.C)) .+ AbstractGPs._sqmahal(m, gpx.data.C, Y)) ./ 2
+# end
+
 # Negative log marginal likelihood (no noise term)
 function nlml(mod::GradientGP,params,kernel,x,y;mean=ZeroMean())
     log_ℓ, log_scale = params
@@ -116,10 +124,14 @@ function nlml(mod::GradientGP,params,kernel,x,y;mean=ZeroMean())
 
     # Kernel with current parameters
     k = scale * (kernel ∘ ScaleTransform(1/ℓ))
+    #println("creation time of gradgp")
     gp = GradientGP(gradKernel(k),mod.p, mod.noise_var,mean=mean)
 
+    #println("finite gpx time")
     gpx = gp.gp(x,mod.noise_var)
 
+    #println("logpdf")
+    #@time fastnlml_grad(gpx,y)
     -AbstractGPs.logpdf(gpx, y)  # Negative log marginal likelihood
 end
 

@@ -124,10 +124,10 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
         obj = p -> nlml(gp_model, p, kernel_constructor, x_train_prepped, y_train_prepped, mean=mean)
     end
 
-    if !classic_bo
-        grad_cache = build_grad_cache(gp_model, kernel_constructor, x_train_prepped, y_train_prepped)
-        obj = p -> fast_nlml!(grad_cache, p)
-    end
+    # if !classic_bo
+    #     grad_cache = build_grad_cache(gp_model, kernel_constructor, x_train_prepped, y_train_prepped)
+    #     obj = p -> fast_nlml!(grad_cache, p)
+    # end
 
     grad_obj! = nothing
     if !classic_bo

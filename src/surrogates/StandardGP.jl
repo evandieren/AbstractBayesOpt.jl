@@ -36,12 +36,15 @@ function nlml(mod::StandardGP,params,kernel,x,y;mean=ZeroMean())
 
     # Kernel with current parameters
     k = scale * (kernel ∘ ScaleTransform(1/ℓ))
-    gp = StandardGP(k, mod.noise_var,mean=mean) # Use fixed noise here, or optimize σ² too
+    println("creation time of standardgp")
+    @time gp = StandardGP(k, mod.noise_var,mean=mean) # Use fixed noise here, or optimize σ² too
 
     # Evaluate GP at training points with noise, creates a FiniteGP
-    gpx = gp.gp(x,mod.noise_var)
+    println("finite gpx time")
+    @time gpx = gp.gp(x,mod.noise_var)
 
-    -AbstractGPs.logpdf(gpx, y)
+    println("logpdf")
+    @time -AbstractGPs.logpdf(gpx, y)
 end
 
 function standardize_y(mod::StandardGP,y_train::AbstractVector)
