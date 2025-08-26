@@ -3,7 +3,7 @@
 
 Implementation of the Abstract structures for the standard GP.
 
-Reason: This is a simple wrapper around AbstractGPs that implements the AbstractSurrogate abstract type
+Remark: this is a simple wrapper around AbstractGPs that implements the AbstractSurrogate abstract type
 """
 
 struct StandardGP <: AbstractSurrogate
@@ -14,21 +14,60 @@ end
 
 Base.copy(s::StandardGP) = StandardGP(s.gp, s.noise_var, copy(s.gpx))
 
+"""
+    StandardGP(kernel::Kernel, noise_var::Float64; mean=ZeroMean())
+
+StandardGP constructor with the specified kernel and noise variance.
+
+Arguments:
+- `kernel::Kernel`: The kernel function to be used in the GP.
+- `noise_var::Float64`: The noise variance of the observations.
+- `mean`: (optional) The mean function of the GP, defaults to ZeroMean()
+
+returns:
+- `StandardGP`: An instance of the StandardGP model.
+"""
 function StandardGP(kernel::Kernel,noise_var::Float64;mean=ZeroMean())
-    """
-    Initialises the model
-    """
     gp = AbstractGPs.GP(mean,kernel) # Creates GP(0,k) for the prior
     StandardGP(gp, noise_var, nothing)
 end
 
+"""
+    update!(model::StandardGP, xs::AbstractVector, ys::AbstractVector)
+
+Update the GP model with new data points (xs, ys).
+
+Arguments:
+- `model::StandardGP`: The current GP model.
+- `xs::AbstractVector`: A vector of input points where the function has been evaluated.
+- `ys::AbstractVector`: A vector of corresponding function values at the input points.
+
+returns:
+- `StandardGP`: A new StandardGP model updated with the provided data.
+"""
 function update!(model::StandardGP, xs::AbstractVector, ys::AbstractVector)
     gpx = model.gp(xs, model.noise_var...) # This is a FiniteGP with Σy with noise_var on its diagonal.
     updated_gpx = posterior(gpx,reduce(vcat,ys))
     return StandardGP(model.gp, model.noise_var, updated_gpx)
 end
 
-# Negative log marginal likelihood (no noise term)
+
+"""
+    nlml(mod::StandardGP,params,kernel,x,y;mean=ZeroMean())
+
+Compute the negative log marginal likelihood (NLML) of the GP model given hyperparameters.
+
+Arguments:
+- `mod::StandardGP`: The GP model.
+- `params::Tuple`: A tuple containing the log lengthscale and log scale parameters.
+- `kernel`: The kernel function used in the GP.
+- `x`: The input data points.
+- `y`: The observed function values.
+- `mean`: (optional) The mean function of the GP, defaults to ZeroMean()
+
+returns:
+- nlml : The negative log marginal likelihood of the model.
+"""
 function nlml(mod::StandardGP,params,kernel,x,y;mean=ZeroMean())
     log_ℓ, log_scale = params
     ℓ = exp(log_ℓ)
@@ -47,6 +86,21 @@ function nlml(mod::StandardGP,params,kernel,x,y;mean=ZeroMean())
     -AbstractGPs.logpdf(gpx, y)
 end
 
+
+"""
+    standardize_y(mod::StandardGP,y_train::AbstractVector)
+
+Standardize the output values of the training data.
+
+Arguments:
+- `mod::StandardGP`: The GP model.
+- `y_train::AbstractVector`: A vector of observed function values.
+
+returns:
+- `y_standardized`: A vector of standardized function values.
+- `y_mean`: The mean of the original function values.
+- `std_mean`: The standard deviation of the original function values.
+"""
 function standardize_y(mod::StandardGP,y_train::AbstractVector)
     y_flat = reduce(vcat, y_train)
     y_mean = mean(y_flat)
@@ -73,6 +127,21 @@ posterior_mean(model::StandardGP,x) = Statistics.mean(model.gpx([x]))[1]
 
 posterior_var(model::StandardGP,x) = Statistics.var(model.gpx([x]))[1]
 
+
+"""
+    unstandardized_mean_and_var(gp::StandardGP, X, params::Tuple)
+
+Compute the unstandardized mean and variance of the GP predictions at new input points.
+
+Arguments:
+- `gp::StandardGP`: The GP model.
+- `X`: A vector of new input points where predictions are to be made.
+- `params::Tuple`: A tuple containing the mean and standard deviation used for standardization.
+
+returns:
+- `m_unstd`: The unstandardized mean predictions at the input points.
+- `v_unstd`: The unstandardized variance predictions at the input points.
+"""
 function unstandardized_mean_and_var(gp::StandardGP, X, params::Tuple)
     μ, σ = params
     m, v = mean_and_var(gp.gpx(X))

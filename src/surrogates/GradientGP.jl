@@ -3,7 +3,9 @@
 
 Implementation of the Abstract structures for the gradient GP.
 
-Reason: This is a simple wrapper around AbstractGPs that implements the AbstractSurrogate abstract type for the gradient GP
+
+This relies on MOGP from AbstractGPs.jl and KernelFunctions.jl.
+As we are leveraging AutoDiff with Matern 5/2 kernel, we need to approximate it around d ≈ 0 because of differentiation issues.
 """
 
 struct GradientGP <: AbstractSurrogate
@@ -90,14 +92,38 @@ function (κ::gradKernel)((x, px)::Tuple{Any,Int}, (y, py)::Tuple{Any,Int})
     end
 end
 
+"""
+    GradientGP(kernel::gradKernel,p::Int,noise_var::Float64;mean=ZeroMean())
+
+Constructor for the GradientGP model.
+
+Arguments:
+- `kernel::gradKernel`: The gradient kernel function to be used in the GP.
+- `p::Int`: The number of outputs (1 for function value + d for gradients).
+- `noise_var::Float64`: The noise variance of the observations.
+- `mean`: (optional) The mean function of the GP, defaults to ZeroMean()
+
+returns:
+- `GradientGP`: An instance of the GradientGP model.
+"""
 function GradientGP(kernel::gradKernel,p::Int,noise_var::Float64;mean=ZeroMean())
-    """
-    Initialises the model for Gradient GPs (multi-output GP)
-    """
     gp = AbstractGPs.GP(mean,kernel) # Creates GP(0,k) for the prior
     GradientGP(gp,noise_var,p,nothing)
 end
 
+"""
+    update!(model::GradientGP, xs::AbstractVector, ys::AbstractVector)
+
+Update the GP model with new data points (xs, ys).
+
+Arguments:
+- `model::GradientGP`: The current GP model.
+- `xs::AbstractVector`: A vector of input points where the function has been evaluated.
+- `ys::AbstractVector`: A vector of corresponding function values and gradients at the input points
+
+returns:
+- `GradientGP`: A new GradientGP model updated with the provided data.
+"""
 function update!(model::GradientGP, xs::AbstractVector, ys::AbstractVector)
 
     x̃, ỹ = KernelFunctions.MOInputIsotopicByOutputs(xs, size(ys[1])[1]), vec(permutedims(reduce(hcat, ys)))
@@ -116,7 +142,22 @@ end
 #     return -((size(Y, 1) * T(AbstractGPs.log2π) + logdet(gpx.data.C)) .+ AbstractGPs._sqmahal(m, gpx.data.C, Y)) ./ 2
 # end
 
-# Negative log marginal likelihood (no noise term)
+"""
+    nlml(mod::GradientGP,params,kernel,x,y;mean=ZeroMean())
+
+Compute the negative log marginal likelihood (NLML) of the GP model given hyperparameters.
+
+Arguments:
+- `mod::GradientGP`: The GP model.
+- `params::Tuple`: A tuple containing the log lengthscale and log scale parameters.
+- `kernel`: The kernel function used in the GP.
+- `x`: The input data points.
+- `y`: The observed function values and gradients.
+- `mean`: (optional) The mean function of the GP, defaults to ZeroMean()
+
+returns:
+- nlml : The negative log marginal likelihood of the model.
+"""
 function nlml(mod::GradientGP,params,kernel,x,y;mean=ZeroMean())
     log_ℓ, log_scale = params
     ℓ = exp(log_ℓ)
@@ -135,6 +176,21 @@ function nlml(mod::GradientGP,params,kernel,x,y;mean=ZeroMean())
     -AbstractGPs.logpdf(gpx, y)  # Negative log marginal likelihood
 end
 
+
+"""
+    standardize_y(mod::GradientGP,y_train::AbstractVector)
+
+Standardize the output values (y_train) for the GradientGP model.
+
+Arguments:
+- `mod::GradientGP`: The GP model.
+- `y_train::AbstractVector`: A vector of observed function values and gradients.
+
+returns:
+- `ys_std`: A vector of standardized output values.
+- `μ`: The mean of the original output values.
+- `σ`: The standard deviation of the original output values.
+"""
 function standardize_y(mod::GradientGP,y_train::AbstractVector)
     y_mat = reduce(hcat, y_train)
 
@@ -150,9 +206,6 @@ function standardize_y(mod::GradientGP,y_train::AbstractVector)
     
     σ[2:end] .= σ[1]  # Use same scaling for gradients
     
-    #println("μ=$μ")
-    #println("σ=$σ")
-
     ys_std = [(y .- μ) ./ σ for y in y_train]
     # this re-creates a Vector{Vector{Float64}}, which is what we need
     return ys_std, μ, σ
@@ -174,6 +227,21 @@ posterior_grad_var(model::GradientGP,x) = var(model.gpx(prep_input(model, [x])))
 
 posterior_grad_cov(model::GradientGP,x) = cov(model.gpx(prep_input(model, [x]))) # the matrix itself
 
+
+"""
+    unstandardized_mean_and_var(gp::GradientGP, X, params::Tuple)
+
+Compute the unstandardized mean and variance of the GP predictions at new input points.
+
+Arguments:
+- `gp::GradientGP`: The GP model.
+- `X`: A vector of new input points where predictions are to be made.
+- `params::Tuple`: A tuple containing the mean and standard deviation used for standardization.
+
+returns:
+- `m_unstd`: The unstandardized mean predictions at the input points.
+- `v_unstd`: The unstandardized variance predictions at the input points.
+"""
 function unstandardized_mean_and_var(gp::GradientGP, X, params::Tuple)
     μ, σ = params[1][1], params[2][1]
     m, v = mean_and_var(gp.gpx(X))

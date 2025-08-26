@@ -51,17 +51,17 @@ function setup_acquisition_functions(y_train)
     pi_acq = ProbabilityImprovement(0.0, best_y)
    
     # 3. Upper-Confidence-Bound
-    ucb_acq = UpperConfidenceBound(2.0)
+    ucb_acq = UpperConfidenceBound(1.96)
 
     # 4. Tracked Ensemble of UCB and GradientNormUCB
     ucb_acq_for_ensemble = UpperConfidenceBound(1.96)
     grad_ucb_acq = GradientNormUCB(1.5)
-    ensemble_ucb_grad = EnsembleAcquisition([0.7, 0.3], [ucb_acq_for_ensemble, grad_ucb_acq])
+    ensemble_ucb_grad = EnsembleAcquisition([0.9, 0.1], [ucb_acq_for_ensemble, grad_ucb_acq])
     
     # 5. Tracked Ensemble of EI and GradientNormUCB
     ei_for_ensemble = ExpectedImprovement(0.0, best_y)
     grad_ucb_for_ensemble = GradientNormUCB(1.5)
-    ensemble_ei_grad = EnsembleAcquisition([0.7, 0.3], [ei_for_ensemble, grad_ucb_for_ensemble])
+    ensemble_ei_grad = EnsembleAcquisition([0.9, 0.1], [ei_for_ensemble, grad_ucb_for_ensemble])
     
     return [
         ("EI", ei_acq),

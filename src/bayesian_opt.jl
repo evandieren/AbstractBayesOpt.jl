@@ -90,7 +90,16 @@ function stop_criteria(p::BOProblem)
     return p.iter > p.max_iter
 end
 
-function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor,old_params,classic_bo;length_scale_only=false, mean=ZeroMean(),num_restarts=1)
+
+function optimize_hyperparameters(gp_model,
+                                  X_train,
+                                  y_train,
+                                  kernel_constructor,
+                                  old_params,
+                                  classic_bo;
+                                  length_scale_only=false,
+                                  mean=ZeroMean(),
+                                  num_restarts=1)
 
     # old_params is always a 2-element vector: [log(lengthscale), log(scale)]
     if length(old_params) != 2
@@ -123,11 +132,6 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
         # Optimize both lengthscale and scale (vector p)
         obj = p -> nlml(gp_model, p, kernel_constructor, x_train_prepped, y_train_prepped, mean=mean)
     end
-
-    # if !classic_bo
-    #     grad_cache = build_grad_cache(gp_model, kernel_constructor, x_train_prepped, y_train_prepped)
-    #     obj = p -> fast_nlml!(grad_cache, p)
-    # end
 
     grad_obj! = nothing
     if !classic_bo
@@ -201,6 +205,18 @@ function optimize_hyperparameters(gp_model, X_train, y_train, kernel_constructor
     end
 end
 
+"""
+    rescale_output(ys::AbstractVector, params::Tuple)
+
+Rescale the standardized output values back to the original scale.
+
+Arguments:
+- `ys::AbstractVector`: A vector of standardized function values.
+- `params::Tuple`: A tuple containing the mean and standard deviation used for standardization.
+
+returns:
+- `ys_rescaled`: A vector of rescaled function values.
+"""
 function rescale_output(ys::AbstractVector,params::Tuple)
     μ, σ = params
 
@@ -211,6 +227,19 @@ function rescale_output(ys::AbstractVector,params::Tuple)
     end
 end
 
+"""
+    standardize_problem(p::BOProblem)
+
+Standardize the output values of the BOProblem and update the GP and acquisition function accordingly.
+
+
+Arguments:
+- `p::BOProblem`: The Bayesian Optimization problem to standardize.
+
+returns:
+- `p::BOProblem`: The updated Bayesian Optimization problem with standardized outputs.
+- `params::Tuple`: A tuple containing the mean and standard deviation used for standardization.
+"""
 function standardize_problem(p::BOProblem)    
     μ=nothing; σ=nothing
     p.ys, μ, σ = standardize_y(p.gp,p.ys_non_std)
@@ -221,19 +250,22 @@ function standardize_problem(p::BOProblem)
 end
 
 """
-    optimize(p::BOProblem;fn=nothing, standardize=true, hyper_params=true)
+    optimize(p::BOProblem;fn=nothing, standardize=true, hyper_params="all")
+
 This function implements the EGO framework:
     While some criterion is not met,
-    (1) optimize the acquisition function to obtain the new best candidate,
-    (2) query the target function f,            
-    (3) update the GP and the overall optimization state.
+        (1) optimize the acquisition function to obtain the new best candidate,
+        (2) query the target function f,            
+        (3) update the GP and the overall optimization state.
+    returns best found solution.
+
 
 Arguments:
 - `p::BOProblem`: The Bayesian Optimization problem to solve.
 - `fn::String`: Optional filename for saving plots.
 - `standardize::Bool`: Whether to standardize the problem.
 - `hyper_params::String`: Specifies how to handle hyperparameters.
-    - If "all", re-optimize hyperparameters every 20 iterations.
+    - If "all", re-optimize hyperparameters every 10 iterations.
     - If 'length_scale_only', only optimize the lengthscale.
     - If nothing, do not re-optimize hyperparameters.
 
@@ -262,7 +294,6 @@ function optimize(p::BOProblem;
     end
 
     original_mean = p.gp.gp.mean
-    @assert isa(original_mean,ZeroMean) 
     i = 0
     while !stop_criteria(p) & !p.flag
 

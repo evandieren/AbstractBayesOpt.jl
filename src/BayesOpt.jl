@@ -38,7 +38,6 @@ include("acquisition/UpperConfidenceBound.jl")
 export UpperConfidenceBound, ucb
 include("acquisition/gradNormUCB.jl")
 export GradientNormUCB, gradUCB
-#include("acquisition/ProbabilityDescent.jl")
 include("acquisition/ProbabilityImprovement.jl")
 export ProbabilityImprovement, pi
 #include("acquisition/KnowledgeGradient.jl")
