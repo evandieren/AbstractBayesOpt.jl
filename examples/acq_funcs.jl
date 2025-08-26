@@ -1,16 +1,3 @@
-# filepath: /home/vandiere/.julia/dev/BayesOpt/examples/acq_funcs.jl
-"""
-Comparison of acquisition functions for 1D Bayesian Optimization using Gradient GP.
-
-This example compares:
-1. Expected Improvement (EI)
-2. Probability of Improvement (PI) 
-4. Ensemble of UCB and GradientNormUCB
-5. Ensemble of EI and GradientNormUCB
-
-All using GradientGP with gradient information.
-"""
-
 using AbstractGPs
 using KernelFunctions
 using Plots
@@ -19,6 +6,7 @@ using ForwardDiff
 using BayesOpt
 using LinearAlgebra
 using LaTeXStrings
+using QuasiMonteCarlo
 import Random
 using Optim
 Random.seed!(555)
@@ -39,7 +27,10 @@ domain = ContinuousDomain(lower, upper)
 
 # Generate initial training data
 n_train = 5
-x_train = [lower .+ (upper .- lower) .* rand(d) for _ in 1:n_train]
+
+x_train = [collect(col) for col in eachcol(QuasiMonteCarlo.sample(n_train, lower, upper, SobolSample()))]
+
+# x_train = [lower .+ (upper .- lower) .* rand(d) for _ in 1:n_train]
 val_grad = f_val_grad.(x_train)
 y_train = [val_grad[i] for i = eachindex(val_grad)]
 
@@ -63,8 +54,8 @@ function setup_acquisition_functions(y_train)
     ucb_acq = UpperConfidenceBound(2.0)
 
     # 4. Tracked Ensemble of UCB and GradientNormUCB
-    ucb_acq_for_ensemble = UpperConfidenceBound(2.0)
-    grad_ucb_acq = GradientNormUCB(2.0)
+    ucb_acq_for_ensemble = UpperConfidenceBound(1.96)
+    grad_ucb_acq = GradientNormUCB(1.5)
     ensemble_ucb_grad = EnsembleAcquisition([0.7, 0.3], [ucb_acq_for_ensemble, grad_ucb_acq])
     
     # 5. Tracked Ensemble of EI and GradientNormUCB
@@ -129,13 +120,6 @@ function run_comparison(n_iterations=30)
         
         # Extract ensemble tracking data if available
         component_data = nothing
-        if isa(acqf_list[end], TrackedEnsemble)
-            component_data = (
-                values = acqf_list[end].component_values,
-                names = acqf_list[end].component_names,
-                weights = acqf_list[end].ensemble.weights
-            )
-        end
         
         results[name] = (
             xs = xs,
@@ -153,7 +137,7 @@ end
 
 # Run the comparison
 println("Starting acquisition function comparison...")
-results = run_comparison(50)  # Reduced iterations to avoid numerical issues
+results = run_comparison(30)  # Reduced iterations to avoid numerical issues
 
 # Plot convergence comparison
 function plot_convergence(results)
@@ -161,7 +145,7 @@ function plot_convergence(results)
             xlabel="Function evaluations",
             ylabel=L"|| f(x^*_n) - f^* ||",
             yaxis=:log,
-            legend=:topright,
+            legend=:bottomleft,
             linewidth=2)
     
     colors = [:blue, :red, :green, :orange, :purple]
@@ -186,65 +170,3 @@ end
 # Create and display convergence plot
 conv_plot = plot_convergence(results)
 display(conv_plot)
-
-# Print summary statistics
-println("\n=== SUMMARY ===")
-println("Method\t\t\tFinal Error\tOptimal Point\t\tOptimal Value")
-println("="^80)
-for (name, result) in results
-    println("$(rpad(name, 15))\t$(round(result.error, digits=6))\t$(round(result.optimal_point[1], digits=4))\t\t$(round(result.optimal_value, digits=6))")
-end
-
-# Plot final GP fit for best performing method
-function plot_best_gp_fit(results)
-    # Find best method (lowest error)
-    best_result, best_name = findmin(results) do result
-        result.error
-    end
-    
-    println("\nBest performing method: $(best_name) with error $(round(best_result, digits=6))")
-    
-    # Create detailed plot of the best method's final GP
-    plot_domain = collect(lower[1]:0.01:upper[1])
-    
-    # For visualization, we'd need to access the final GP state
-    # This would require modifying the optimization loop to return the final model
-    # For now, just plot the function and found points
-    
-    p2 = plot(plot_domain, f.(plot_domain),
-             label="True function",
-             xlim=(lower[1], upper[1]),
-             xlabel="x",
-             ylabel="f(x)",
-             title="Best Method: $(best_name[1]) - Final Result",
-             linewidth=2,
-             color=:black)
-    
-    # Plot initial training points
-    scatter!(p2, [x[1] for x in x_train], [f(x) for x in x_train],
-            label="Initial data", 
-            color=:blue, 
-            markersize=6)
-    
-    # Plot optimization trajectory
-    scatter!(p2, [x[1] for x in results[best_name].xs[n_train+1:end]], 
-            results[best_name].ys[n_train+1:end],
-            label="BO samples",
-            color=:red,
-            markersize=4,
-            alpha=0.7)
-    
-    # Highlight best point
-    scatter!(p2, [results[best_name].optimal_point[1]], [results[best_name].optimal_value],
-            label="Best found",
-            color=:green,
-            markersize=8,
-            markershape=:star)
-    
-    return p2
-end
-
-best_plot = plot_best_gp_fit(results)
-display(best_plot)
-
-println("\nComparison complete!")
