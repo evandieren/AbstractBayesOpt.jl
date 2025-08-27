@@ -68,7 +68,7 @@ problem = BOProblem(
 print_info(problem)
 
 @info "Starting Bayesian Optimization..."
-result, acqf_list, standard_params = BayesOpt.optimize(problem,hyper_params="all")
+result, acqf_list, standard_params = BayesOpt.optimize(problem)
 xs = reduce(vcat,result.xs)
 ys = result.ys_non_std 
 ys = hcat(ys...)[1,:]

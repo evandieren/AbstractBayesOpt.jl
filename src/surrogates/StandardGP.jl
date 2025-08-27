@@ -144,9 +144,9 @@ get_scale(model::StandardGP) = model.gp.kernel.σ²
 
 prep_input(model::StandardGP,x::AbstractVector) = x
 
-posterior_mean(model::StandardGP,x) = Statistics.mean(model.gpx(x))[1]
+posterior_mean(model::StandardGP,x_buf::Vector{Vector{Float64}}) = Statistics.mean(model.gpx(x_buf))[1]
 
-posterior_var(model::StandardGP,x) = Statistics.var(model.gpx(x))[1]
+posterior_var(model::StandardGP,x_buf::Vector{Vector{Float64}}) = Statistics.var(model.gpx(x_buf))[1]
 
 
 """

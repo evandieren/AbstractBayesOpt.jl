@@ -346,9 +346,6 @@ function optimize(p::BOProblem;
         println("Time update GP")
         
         if standardize
-            #push!(p.xs, x_cand)
-            # @time p, (μ, σ) = standardize_problem(p)
-            # Standardize new observation using existing parameters
             y_cand_std = (y_cand .- μ) ./ σ
             
             @time p = update!(p, x_cand, y_cand_std, i)

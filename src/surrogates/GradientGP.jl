@@ -219,9 +219,9 @@ get_scale(model::GradientGP) = model.gp.kernel.base_kernel.σ²
 prep_input(model::GradientGP, x::AbstractVector) = KernelFunctions.MOInputIsotopicByOutputs(x, model.p)
 
 
-posterior_mean(model::GradientGP,x_buf) = mean(model.gpx(x_buf))[1]
+posterior_mean(model::GradientGP,x_buf::Vector{Tuple{Vector{Float64}, Int}}) = mean(model.gpx(x_buf))[1]
 
-posterior_var(model::GradientGP,x_buf) = var(model.gpx(x_buf))[1]
+posterior_var(model::GradientGP,x_buf::Vector{Tuple{Vector{Float64}, Int}}) = var(model.gpx(x_buf))[1]
 
 # posterior_mean(model::GradientGP,x) = mean(model.gpx([(x,1)]))[1]
 

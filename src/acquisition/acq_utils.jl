@@ -16,12 +16,13 @@ function optimize_acquisition!(acqf::AbstractAcquisition,
     best_acq = -Inf
     best_x = nothing
 
+    x_buf = nothing
     if surrogate isa GradientGP
         # Preallocate buffer for GradientGP
         x_buf = [(zeros(length(domain.bounds)), 1)]  # preallocate once
     else
         # Preallocate buffer for standard GP
-        x_buf = zeros(1, length(domain.bounds))  # preallocate once
+        x_buf = [zeros(length(domain.bounds))] 
     end
 
     # Random search
