@@ -24,7 +24,6 @@ QuasiMonteCarlo = "8a4e6c94-4038-4cdc-81c3-7e6ffdb2a71b"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
-StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
@@ -48,7 +47,6 @@ QuasiMonteCarlo = "0.3.3"
 Random = "1.11.0"
 ReverseDiff = "1.16.1"
 SpecialFunctions = "2.5.0"
-StaticArrays = "1.9.14"
 Statistics = "1.11.1"
 julia = "1.10"
 

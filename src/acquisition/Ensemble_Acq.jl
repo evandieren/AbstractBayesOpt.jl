@@ -15,8 +15,8 @@ struct EnsembleAcquisition <: AbstractAcquisition
     end
 end
 
-function (ea::EnsembleAcquisition)(surrogate::AbstractSurrogate, x)
-    sum(ea.weights[i] * ea.acquisitions[i](surrogate, x) for i in eachindex(ea.weights))
+function (ea::EnsembleAcquisition)(surrogate::AbstractSurrogate, x, x_buf=nothing)
+    sum(ea.weights[i] * ea.acquisitions[i](surrogate, x, x_buf) for i in eachindex(ea.weights))
 end
 
 function update!(ea::EnsembleAcquisition, ys::AbstractVector, surrogate::AbstractSurrogate)

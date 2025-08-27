@@ -7,13 +7,22 @@ function (pi::ProbabilityImprovement)(surrogate::AbstractSurrogate, x, x_buf=not
 
     # Allocate buffer if not provided
     if x_buf === nothing
-        x_buf = reshape(x, 1, :)   # create 1×d buffer
+        if surrogate isa GradientGP
+            x_buf = [(copy(x), 1)]
+        else
+            x_buf = [copy(x)]
+        end
     else
-        x_buf[1, :] .= x           # reuse existing buffer
-    end
+        # Reuse buffer
+        if surrogate isa GradientGP
+            x_buf[1][1] .= x  # copy x into the tuple buffer
+        else
+            x_buf[1] .= x  # copy into 1×d matrix
+        end
+    end 
 
-    μ = posterior_mean(surrogate, x)
-    σ² = posterior_var(surrogate, x)
+    μ = posterior_mean(surrogate, x_buf)
+    σ² = posterior_var(surrogate, x_buf)
     Δ = (pi.best_y - pi.ξ) - μ # we are substracting ξ because we are minimising.
     
     max(σ²,0) == 0 && return max(Δ,0.0)

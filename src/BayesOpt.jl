@@ -7,7 +7,6 @@ using FillArrays
 using Statistics
 using SpecialFunctions
 using Plots
-using StaticArrays
 using Distributions
 using LinearAlgebra
 using Random
