@@ -159,7 +159,7 @@ Arguments:
 returns:
 - nlml : The negative log marginal likelihood of the model.
 """
-function nlml(mod::GradientGP,params,kernel,x,y;mean=ZeroMean())
+function nlml(mod::GradientGP,params,kernel::Kernel,x::AbstractVector,y::AbstractVector;mean=ZeroMean())
     log_ℓ, log_scale = params
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
@@ -218,15 +218,20 @@ get_scale(model::GradientGP) = model.gp.kernel.base_kernel.σ²
 
 prep_input(model::GradientGP, x::AbstractVector) = KernelFunctions.MOInputIsotopicByOutputs(x, model.p)
 
-posterior_mean(model::GradientGP,x) = mean(model.gpx([(x,1)]))[1]
 
-posterior_grad_mean(model::GradientGP,x) = mean(model.gpx(prep_input(model, [x]))) # the whole vector
+posterior_mean(model::GradientGP,x_buf) = mean(model.gpx(x_buf))[1]
 
-posterior_var(model::GradientGP,x) = var(model.gpx([(x,1)]))[1] # we do the function value only for now
+posterior_var(model::GradientGP,x_buf) = var(model.gpx(x_buf))[1]
 
-posterior_grad_var(model::GradientGP,x) = var(model.gpx(prep_input(model, [x])))
+# posterior_mean(model::GradientGP,x) = mean(model.gpx([(x,1)]))[1]
 
-posterior_grad_cov(model::GradientGP,x) = cov(model.gpx(prep_input(model, [x]))) # the matrix itself
+posterior_grad_mean(model::GradientGP,x) = mean(model.gpx(prep_input(model, x))) # the whole vector
+
+# posterior_var(model::GradientGP,x) = var(model.gpx([(x,1)]))[1] # we do the function value only for now
+
+posterior_grad_var(model::GradientGP,x) = var(model.gpx(prep_input(model, x)))
+
+posterior_grad_cov(model::GradientGP,x) = cov(model.gpx(prep_input(model, x))) # the matrix itself
 
 
 """

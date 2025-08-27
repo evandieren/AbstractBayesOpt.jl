@@ -16,16 +16,24 @@ function optimize_acquisition!(acqf::AbstractAcquisition,
     best_acq = -Inf
     best_x = nothing
 
+    if surrogate isa GradientGP
+        # Preallocate buffer for GradientGP
+        x_buf = [(zeros(length(domain.bounds)), 1)]  # preallocate once
+    else
+        # Preallocate buffer for standard GP
+        x_buf = zeros(1, length(domain.bounds))  # preallocate once
+    end
+
     # Random search
     d = length(domain.bounds)
     grid_points = [domain.lower .+ rand(d) .* (domain.upper .- domain.lower) for _ in 1:n_grid]
-    evaluated = [(x, acqf(surrogate, x)) for x in grid_points]
+    evaluated = [(x, acqf(surrogate, x,x_buf)) for x in grid_points]
     sorted_points = sort(evaluated, by = x -> -x[2])  # higher EI is better
     top_points = first.(sorted_points[1:min(n_local, length(sorted_points))])
     
     # Loop over a number of random starting points
     for initial_x in top_points
-        result = Optim.optimize(x -> -acqf(surrogate, x),
+        result = Optim.optimize(x -> -acqf(surrogate, x, x_buf),
                                 domain.lower,
                                 domain.upper,
                                 initial_x,

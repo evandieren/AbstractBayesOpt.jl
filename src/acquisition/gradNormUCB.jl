@@ -5,7 +5,15 @@ struct GradientNormUCB <: AbstractAcquisition
     β::Float64  # exploration-exploitation balance parameter
 end
 
-function (gradUCB::GradientNormUCB)(surrogate::AbstractSurrogate, x)
+function (gradUCB::GradientNormUCB)(surrogate::AbstractSurrogate, x, x_buf=nothing)
+
+    # Allocate buffer if not provided
+    if x_buf === nothing
+        x_buf = reshape(x, 1, :)   # create 1×d buffer
+    else
+        x_buf[1, :] .= x           # reuse existing buffer
+    end
+
     m = posterior_grad_mean(surrogate, x)[2:end]      # Vector{Float64}
     Σ = posterior_grad_cov(surrogate, x)[2:end,2:end]       # Matrix{Float64}
 

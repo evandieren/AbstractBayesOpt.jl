@@ -9,7 +9,8 @@ Remark: this is a simple wrapper around AbstractGPs that implements the Abstract
 struct StandardGP <: AbstractSurrogate
     gp::AbstractGPs.GP
     noise_var::Float64
-    gpx
+    gpx::Union{Nothing,AbstractGPs.PosteriorGP} 
+    # gpx is the posterior GP after conditioning on data, nothing if not conditioned yet
 end
 
 Base.copy(s::StandardGP) = StandardGP(s.gp, s.noise_var, copy(s.gpx))
@@ -68,8 +69,28 @@ Arguments:
 returns:
 - nlml : The negative log marginal likelihood of the model.
 """
-function nlml(mod::StandardGP,params,kernel,x,y;mean=ZeroMean())
+function nlml(mod::StandardGP,params::AbstractVector{T},kernel::Kernel,x::AbstractVector,y::AbstractVector;mean::AbstractGPs.MeanFunction=ZeroMean()) where T
+
     log_ℓ, log_scale = params
+    ℓ = exp(log_ℓ)
+    scale = exp(log_scale)
+
+    # Kernel with current parameters
+    k = scale * (kernel ∘ ScaleTransform(1/ℓ))
+    #println("creation time of standardgp")
+    gp = StandardGP(k, mod.noise_var,mean=mean) # Use fixed noise here, or optimize σ² too
+
+    # Evaluate GP at training points with noise, creates a FiniteGP
+    #println("finite gpx time")
+    gpx = gp.gp(x,mod.noise_var)
+
+    #println("logpdf")
+    -AbstractGPs.logpdf(gpx, y)
+end
+
+
+function nlml_ls(mod::StandardGP,log_ℓ::T,log_scale,kernel::Kernel,x::AbstractVector,y::AbstractVector;mean::AbstractGPs.MeanFunction=ZeroMean()) where T
+
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
 
@@ -123,9 +144,9 @@ get_scale(model::StandardGP) = model.gp.kernel.σ²
 
 prep_input(model::StandardGP,x::AbstractVector) = x
 
-posterior_mean(model::StandardGP,x) = Statistics.mean(model.gpx([x]))[1]
+posterior_mean(model::StandardGP,x) = Statistics.mean(model.gpx(x))[1]
 
-posterior_var(model::StandardGP,x) = Statistics.var(model.gpx([x]))[1]
+posterior_var(model::StandardGP,x) = Statistics.var(model.gpx(x))[1]
 
 
 """

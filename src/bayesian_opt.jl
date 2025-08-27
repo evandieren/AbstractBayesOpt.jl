@@ -90,16 +90,15 @@ function stop_criteria(p::BOProblem)
     return p.iter > p.max_iter
 end
 
-
-function optimize_hyperparameters(gp_model,
-                                  X_train,
-                                  y_train,
-                                  kernel_constructor,
-                                  old_params,
-                                  classic_bo;
-                                  length_scale_only=false,
-                                  mean=ZeroMean(),
-                                  num_restarts=1)
+function optimize_hyperparameters(gp_model::AbstractSurrogate,
+                                  X_train::AbstractVector,
+                                  y_train::AbstractVector,
+                                  kernel_constructor::Kernel,
+                                  old_params::Vector{Float64},
+                                  classic_bo::Bool;
+                                  length_scale_only::Bool=false,
+                                  mean::AbstractGPs.MeanFunction=ZeroMean(),
+                                  num_restarts::Int=1)
 
     # old_params is always a 2-element vector: [log(lengthscale), log(scale)]
     if length(old_params) != 2
@@ -126,11 +125,11 @@ function optimize_hyperparameters(gp_model,
 
     obj = nothing
     if length_scale_only
-        # Only optimize lengthscale (scalar p), keep scale fixed at original log value (second parameter)
-        obj = p -> nlml(gp_model, [p; old_params[2]], kernel_constructor, x_train_prepped, y_train_prepped, mean=mean)
+        # Only optimize lengthscale, keep scale fixed at original log value (second parameter)
+        obj = p -> nlml_ls(gp_model, p[1], old_params[2], kernel_constructor, x_train_prepped, y_train_prepped, mean=mean)
     else
         # Optimize both lengthscale and scale (vector p)
-        obj = p -> nlml(gp_model, p, kernel_constructor, x_train_prepped, y_train_prepped, mean=mean)
+        obj = p -> nlml(gp_model,p, kernel_constructor, x_train_prepped, y_train_prepped, mean=mean)
     end
 
     grad_obj! = nothing
@@ -159,7 +158,6 @@ function optimize_hyperparameters(gp_model,
                                         Fminbox(inner_optimizer), opts)
                 #result = Optim.optimize(obj, lower_bounds, upper_bounds, init_guesses[i], Fminbox(inner_optimizer),opts) # work-around for now.
             end
-            println("Restart $i starting from $(init_guesses[i]): Optimized parameters: ", result.minimizer, " with minimum value: ", result.minimum)
             println("Optimization result: ", result)
             if Optim.converged(result)
                 current_nlml = Optim.minimum(result)

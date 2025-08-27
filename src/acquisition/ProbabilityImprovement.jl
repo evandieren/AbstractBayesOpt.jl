@@ -3,7 +3,15 @@ struct ProbabilityImprovement <: AbstractAcquisition
     best_y::Float64
 end
 
-function (pi::ProbabilityImprovement)(surrogate::AbstractSurrogate, x)
+function (pi::ProbabilityImprovement)(surrogate::AbstractSurrogate, x, x_buf=nothing)
+
+    # Allocate buffer if not provided
+    if x_buf === nothing
+        x_buf = reshape(x, 1, :)   # create 1×d buffer
+    else
+        x_buf[1, :] .= x           # reuse existing buffer
+    end
+
     μ = posterior_mean(surrogate, x)
     σ² = posterior_var(surrogate, x)
     Δ = (pi.best_y - pi.ξ) - μ # we are substracting ξ because we are minimising.
