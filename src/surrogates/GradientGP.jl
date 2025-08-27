@@ -48,11 +48,11 @@ struct gradMean
     end
 end
 
-mutable struct gradKernel <: MOKernel 
-    base_kernel
-    function gradKernel(Tk)
-        return new(Tk)
-    end
+mutable struct gradKernel{K} <: MOKernel 
+    base_kernel::K
+    #function gradKernel(Tk)
+    #    return new(Tk)
+    #end
 end
 
 function (κ::gradKernel)((x, px)::Tuple{Any,Int}, (y, py)::Tuple{Any,Int})
@@ -70,7 +70,7 @@ function (κ::gradKernel)((x, px)::Tuple{Any,Int}, (y, py)::Tuple{Any,Int})
     (px > length(x) + 1 || py > length(y) + 1 || px < 1 || py < 1) &&
         error("`px` and `py` must be within the range of the number of outputs")
     
-    onehot(n, i) = collect(1:n) .== i
+    onehot(n, i) = 1:n .== i # collect(1:n) .== i
     
 
     val = px == 1 && py == 1 # we are looking at f(x), f(y)
@@ -81,14 +81,15 @@ function (κ::gradKernel)((x, px)::Tuple{Any,Int}, (y, py)::Tuple{Any,Int})
     if val # we are just computing the usual matrix K
         κ.base_kernel(x,y)
     elseif ∇_val_1
-        vi = onehot(length(x), px-1) # as px is 1 for func obvs, and goes from 2 to d+1 for gradients, so we need to substract 1
-        return ForwardDiff.derivative(h -> κ.base_kernel(x + h * vi, y), 0.)
+        #vi = onehot(length(x), px-1) # as px is 1 for func obvs, and goes from 2 to d+1 for gradients, so we need to substract 1
+        return ForwardDiff.derivative(h -> κ.base_kernel(x .+ h .* (1:length(x) .== (px-1)), y), 0.)
     elseif ∇_val_2 # we are looking at f(x)-∇f(y)
-        vj = onehot(length(y), py-1) # same for py.
-        return ForwardDiff.derivative(h -> κ.base_kernel(x, y + h * vj), 0.)
+        #vj = onehot(length(y), py-1) # same for py.
+        return ForwardDiff.derivative(h -> κ.base_kernel(x, y .+ h .* (1:length(y) .== (py-1))), 0.)
     else # we are looking at ∇f(x)-∇f(y), this avoids computing the entire hessian each time.
-        vi = onehot(length(x), px-1); vj = onehot(length(y), py-1)
-        return ForwardDiff.derivative(h1 -> ForwardDiff.derivative(h2 -> κ.base_kernel(x + h1 * vi, y + h2 * vj), 0.), 0.)
+        #_vi = onehot(length(x), px-1); _vj = onehot(length(y), py-1)
+        return ForwardDiff.derivative(h1 -> ForwardDiff.derivative(h2 -> κ.base_kernel(x .+ h1 .* (1:length(x) .== (px-1)), 
+                        y .+ h2 .* (1:length(y) .== (py-1))), 0.), 0.)
     end
 end
 
