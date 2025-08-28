@@ -51,7 +51,7 @@ include("bayesian_opt.jl")
 export optimize, print_info, update!, BOStruct, stop_criteria, optimize_hyperparameters, standardize_problem, rescale_output
 
 
-include("plotting.jl")
-export plot_state
+# include("plotting.jl")
+# export plot_state
 
 end
