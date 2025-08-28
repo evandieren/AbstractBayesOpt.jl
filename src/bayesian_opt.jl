@@ -1,5 +1,10 @@
 """
 This module contains the structures and functions for the Bayesian Optimization framework.
+
+
+Parts of the code are inspired by:
+- BayesianOptimization (python package) (optimization acq functions)
+- GradientGPs.jl (internal package) of MatMat group at EPFL (BOStruct, and update routines)
 """
 
 mutable struct BOStruct{F, M<:AbstractSurrogate, A<:AbstractAcquisition}
