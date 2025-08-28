@@ -1,9 +1,9 @@
 """
-    StandardGP.jl
+    StandardGP
 
 Implementation of the Abstract structures for the standard GP.
 
-Remark: this is a simple wrapper around AbstractGPs that implements the AbstractSurrogate abstract type
+Remark: this is a simple wrapper around AbstractGPs.jl that implements the AbstractSurrogate abstract type
 """
 
 struct StandardGP <: AbstractSurrogate
@@ -28,7 +28,7 @@ Arguments:
 returns:
 - `StandardGP`: An instance of the StandardGP model.
 """
-function StandardGP(kernel::Kernel,noise_var::Float64;mean=ZeroMean())
+function StandardGP(kernel::Kernel, noise_var::Float64; mean=ZeroMean())
     gp = AbstractGPs.GP(mean,kernel) # Creates GP(0,k) for the prior
     StandardGP(gp, noise_var, nothing)
 end
@@ -54,7 +54,7 @@ end
 
 
 """
-    nlml(mod::StandardGP,params,kernel,x,y;mean=ZeroMean())
+    nlml(model::StandardGP,params,kernel,x,y;mean=ZeroMean())
 
 Compute the negative log marginal likelihood (NLML) of the GP model given hyperparameters.
 
@@ -69,7 +69,7 @@ Arguments:
 returns:
 - nlml : The negative log marginal likelihood of the model.
 """
-function nlml(mod::StandardGP,params::AbstractVector{T},kernel::Kernel,x::AbstractVector,y::AbstractVector;mean::AbstractGPs.MeanFunction=ZeroMean()) where T
+function nlml(model::StandardGP, params::AbstractVector{T}, kernel::Kernel, x::AbstractVector, y::AbstractVector; mean::AbstractGPs.MeanFunction=ZeroMean()) where T
 
     log_ℓ, log_scale = params
     ℓ = exp(log_ℓ)
@@ -78,18 +78,18 @@ function nlml(mod::StandardGP,params::AbstractVector{T},kernel::Kernel,x::Abstra
     # Kernel with current parameters
     k = scale * (kernel ∘ ScaleTransform(1/ℓ))
     #println("creation time of standardgp")
-    gp = StandardGP(k, mod.noise_var,mean=mean) # Use fixed noise here, or optimize σ² too
+    gp = StandardGP(k, model.noise_var,mean=mean) # Use fixed noise here, or optimize σ² too
 
     # Evaluate GP at training points with noise, creates a FiniteGP
     #println("finite gpx time")
-    gpx = gp.gp(x,mod.noise_var)
+    gpx = gp.gp(x,model.noise_var)
 
     #println("logpdf")
     -AbstractGPs.logpdf(gpx, y)
 end
 
 
-function nlml_ls(mod::StandardGP,log_ℓ::T,log_scale,kernel::Kernel,x::AbstractVector,y::AbstractVector;mean::AbstractGPs.MeanFunction=ZeroMean()) where T
+function nlml_ls(model::StandardGP,log_ℓ::T, log_scale::Float64, kernel::Kernel, x::AbstractVector, y::AbstractVector; mean::AbstractGPs.MeanFunction=ZeroMean()) where T
 
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
@@ -97,11 +97,11 @@ function nlml_ls(mod::StandardGP,log_ℓ::T,log_scale,kernel::Kernel,x::Abstract
     # Kernel with current parameters
     k = scale * (kernel ∘ ScaleTransform(1/ℓ))
     #println("creation time of standardgp")
-    gp = StandardGP(k, mod.noise_var,mean=mean) # Use fixed noise here, or optimize σ² too
+    gp = StandardGP(k, model.noise_var,mean=mean) # Use fixed noise here, or optimize σ² too
 
     # Evaluate GP at training points with noise, creates a FiniteGP
     #println("finite gpx time")
-    gpx = gp.gp(x,mod.noise_var)
+    gpx = gp.gp(x,model.noise_var)
 
     #println("logpdf")
     -AbstractGPs.logpdf(gpx, y)
@@ -109,12 +109,12 @@ end
 
 
 """
-    standardize_y(mod::StandardGP,y_train::AbstractVector)
+    standardize_y(model::StandardGP,y_train::AbstractVector)
 
 Standardize the output values of the training data.
 
 Arguments:
-- `mod::StandardGP`: The GP model.
+- `model::StandardGP`: The GP model.
 - `y_train::AbstractVector`: A vector of observed function values.
 
 returns:
@@ -122,14 +122,14 @@ returns:
 - `y_mean`: The mean of the original function values.
 - `std_mean`: The standard deviation of the original function values.
 """
-function standardize_y(mod::StandardGP,y_train::AbstractVector)
+function standardize_y(model::StandardGP,y_train::AbstractVector)
     y_flat = reduce(vcat, y_train)
     y_mean = mean(y_flat)
     std_mean = std(y_flat)
     
     # Protect against very small standard deviations
     if std_mean < 1e-12
-        @warn "Very small standard deviation detected: $std_mean. Using std = 1.0"
+        @warn "Very small standard deviation detected: $std_mean. Not scaling."
         std_mean = 1.0
     end
     
@@ -144,18 +144,24 @@ get_scale(model::StandardGP) = model.gp.kernel.σ²
 
 prep_input(model::StandardGP,x::AbstractVector) = x
 
-posterior_mean(model::StandardGP,x_buf::Vector{Vector{Float64}}) = Statistics.mean(model.gpx(x_buf))[1]
 
+# These functions are used when we need to query one point
+posterior_mean(model::StandardGP,x::AbstractVector) = mean(model.gpx([x]))[1] # we do the function values
+posterior_var(model::StandardGP,x::AbstractVector) = var(model.gpx([x]))[1] # we do the function values
+
+
+# These functions are used in a buffer way within the optimisation of the acquisition function
+posterior_mean(model::StandardGP,x_buf::Vector{Vector{Float64}}) = Statistics.mean(model.gpx(x_buf))[1]
 posterior_var(model::StandardGP,x_buf::Vector{Vector{Float64}}) = Statistics.var(model.gpx(x_buf))[1]
 
 
 """
-    unstandardized_mean_and_var(gp::StandardGP, X, params::Tuple)
+    unstandardized_mean_and_var(model::StandardGP, X, params::Tuple)
 
 Compute the unstandardized mean and variance of the GP predictions at new input points.
 
 Arguments:
-- `gp::StandardGP`: The GP model.
+- `model::StandardGP`: The GP model.
 - `X`: A vector of new input points where predictions are to be made.
 - `params::Tuple`: A tuple containing the mean and standard deviation used for standardization.
 
@@ -163,9 +169,9 @@ returns:
 - `m_unstd`: The unstandardized mean predictions at the input points.
 - `v_unstd`: The unstandardized variance predictions at the input points.
 """
-function unstandardized_mean_and_var(gp::StandardGP, X, params::Tuple)
+function unstandardized_mean_and_var(model::StandardGP, X, params::Tuple)
     μ, σ = params
-    m, v = mean_and_var(gp.gpx(X))
+    m, v = mean_and_var(model.gpx(X))
     # Un-standardize mean and variance
     m_unstd = (m .* σ) .+ μ
     v_unstd = v .* (σ.^2)

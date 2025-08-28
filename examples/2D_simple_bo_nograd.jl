@@ -70,7 +70,7 @@ model = StandardGP(kernel,σ²) # Instantiates the StandardGP (gives it the prio
 acqf = ExpectedImprovement(ξ, minimum(y_train)[1])
 
 # This maximises the function
-problem = BOStruct(
+bo_struct = BOStruct(
                     f,
                     acqf,
                     model,
@@ -82,25 +82,13 @@ problem = BOStruct(
                     0.0
                     )
 
-print_info(problem)
+print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-@time result,acq_list, std_params = BayesOpt.optimize(problem)
+@time result,acq_list, std_params = BayesOpt.optimize(bo_struct,standardize=false)
 xs = result.xs
 ys = result.ys_non_std 
 # ys = (reduce(vcat,result.ys).*y_std) .+ y_mean
-
-
-# using ImageMagick, FileIO
-
-# # Load frames into an array
-# frames = [load("./examples/plots/himmel_iter_$(i).png") for i in 0:(result.iter-1)]
-
-# # Save as GIF (set delay between frames in seconds)
-# save("my_animation_himmel.gif", cat(frames...; dims=3), fps=0.5)
-
-# p = Plots.plot(max.(acq_list,1e-15),yaxis=:log,title="selected EI for classical BO over iterations, Himmelblau")
-# Plots.savefig("EI_iter_bo_himmel.pdf")
 
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))

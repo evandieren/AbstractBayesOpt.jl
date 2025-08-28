@@ -47,7 +47,7 @@ acqf = ExpectedImprovement(ξ, minimum(reduce(vcat,y_train)))
 # This maximises the function
 bo_struct = BOStruct(f,
                    acqf,
-                   model,
+                   copy(model),
                    kernel_constructor,
                    domain,
                    x_train,

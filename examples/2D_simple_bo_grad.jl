@@ -61,7 +61,7 @@ acqf = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
 
 
 # This maximises the function
-problem = BOStruct(
+bo_struct = BOStruct(
                     f_val_grad, # because we probe both the function value and its gradients.
                     acqf,
                     model,
@@ -73,10 +73,10 @@ problem = BOStruct(
                     σ²
                     )
 
-print_info(problem)
+print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-result, acq_list, standard_params = BayesOpt.optimize(problem)
+result, acq_list, standard_params = BayesOpt.optimize(bo_struct,standardize=false, hyper_params=nothing)
 xs = result.xs
 ys = result.ys_non_std
 

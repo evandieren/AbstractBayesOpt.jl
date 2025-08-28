@@ -53,7 +53,7 @@ model = GradientGP(grad_kernel,d+1,σ²)
 acqf = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
 
 # This maximises the function
-problem = BOStruct(
+bo_struct = BOStruct(
                     f_val_grad,
                     acqf,
                     model,
@@ -65,10 +65,10 @@ problem = BOStruct(
                     0.0
                     )
 
-print_info(problem)
+print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-result, acqf_list, standard_params = BayesOpt.optimize(problem)
+result, acqf_list, standard_params = BayesOpt.optimize(bo_struct)
 xs = reduce(vcat,result.xs)
 ys = result.ys_non_std 
 ys = hcat(ys...)[1,:]
@@ -92,7 +92,7 @@ plot_domain = collect(lower[1]:0.01:upper[1])
 
 plot_x = map(x -> [x], plot_domain)
 plot_x = prep_input(model,plot_x)
-post_mean, post_var = unstandardized_mean_and_var(result.gp,plot_x, standard_params)
+post_mean, post_var = unstandardized_mean_and_var(result.model,plot_x, standard_params)
 
 post_mean = reshape(post_mean, :, d+1)[:,1] # This returns f(x) to match the StandardGP
 post_var = reshape(post_var, :, d+1)[:,1]

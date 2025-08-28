@@ -3,14 +3,12 @@ module BayesOpt
 using AbstractGPs, KernelFunctions
 using ForwardDiff, ReverseDiff
 using Optim
-#using FillArrays
 using Statistics
 using SpecialFunctions
 using Plots
 using Distributions
 using LinearAlgebra
 using Random
-#using GLMakie
 using Distances
 
 # Interface definitions
@@ -41,11 +39,12 @@ export GradientNormUCB
 include("acquisition/ProbabilityImprovement.jl")
 export ProbabilityImprovement
 #include("acquisition/KnowledgeGradient.jl")
+# export KnowledgeGradient, KG
 include("acquisition/EnsembleAcq.jl")
 export EnsembleAcquisition
 
 # include("acquisition/ThompsonSampling.jl")
-# export ThompsonSampling, ts
+# export ThompsonSampling, TS
 
 # Core Bayesian Optimization framework
 include("bayesian_opt.jl")

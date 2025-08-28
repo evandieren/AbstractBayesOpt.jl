@@ -3,6 +3,9 @@ This is the todo list for the BayesOpt.jl package
 
 ## Features
 
+### BO Loop
+- Ensure we copy, and do not modify by reference the inputs.
+
 ### Surrogates
 - Potentially look at Multi-Fidelity GPs (AR1 models?)
 

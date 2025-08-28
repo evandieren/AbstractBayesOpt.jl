@@ -17,7 +17,8 @@ using Random
             domain = ContinuousDomain(lower, upper)
             
             # Create surrogate
-            kernel = SqExponentialKernel()
+            kernel_constructor = SqExponentialKernel()
+            kernel = 1 * (kernel_constructor ∘ ScaleTransform(1.0)) 
             gp = StandardGP(kernel, 0.1)
             
             # Create training data
@@ -29,7 +30,7 @@ using Random
             acqf = ExpectedImprovement(0.01, minimum(reduce(vcat, y_train)))
             
             # Create BOStruct
-            problem = BOStruct(f, acqf, gp, SqExponentialKernel(), 
+            problem = BOStruct(f, acqf, gp, kernel_constructor, 
                                domain, x_train, y_train, 10, 0.1)
             
             @test problem.func === f
@@ -52,7 +53,8 @@ using Random
             domain = ContinuousDomain(lower, upper)
             
             # Create surrogate with training data
-            kernel = SqExponentialKernel()
+            kernel_constructor = SqExponentialKernel()
+            kernel = 1 * (kernel_constructor ∘ ScaleTransform(1.0)) 
             gp = StandardGP(kernel, 0.1)
             
             # Create initial training data and update GP
@@ -65,7 +67,7 @@ using Random
             acqf = ExpectedImprovement(0.01, minimum(reduce(vcat, y_train)))
             
             # Create BOStruct with updated GP
-            problem = BOStruct(f, acqf, updated_gp, SqExponentialKernel(), 
+            problem = BOStruct(f, acqf, updated_gp, kernel_constructor, 
                                domain, x_train, y_train, 10, 0.1)
             
             # Test update
@@ -91,7 +93,8 @@ using Random
             domain = ContinuousDomain(lower, upper)
             
             # Create surrogate
-            kernel = SqExponentialKernel()
+            kernel_constructor = SqExponentialKernel()
+            kernel = 1 * (kernel_constructor ∘ ScaleTransform(1.0))
             gp = StandardGP(kernel, 0.1)
             
             # Create training data
@@ -103,7 +106,7 @@ using Random
             acqf = ExpectedImprovement(0.01, minimum(reduce(vcat, y_train)))
             
             # Create BOStruct
-            problem = BOStruct(f, acqf, gp, SqExponentialKernel(), 
+            problem = BOStruct(f, acqf, gp, kernel_constructor, 
                                domain, x_train, y_train, 3, 0.1)
             
             # Test stop criteria
@@ -199,7 +202,8 @@ using Random
             domain = ContinuousDomain(lower, upper)
             
             # Create surrogate
-            kernel = SqExponentialKernel()
+            kernel_constructor = SqExponentialKernel()
+            kernel = 1 * (kernel_constructor ∘ ScaleTransform(1.0))
             gp = StandardGP(kernel, 0.01)
             
             # Create initial training data
@@ -211,7 +215,7 @@ using Random
             acqf = ExpectedImprovement(0.01, minimum(reduce(vcat, y_train)))
             
             # Create BOStruct with small number of iterations
-            problem = BOStruct(f, acqf, gp, SqExponentialKernel(), 
+            problem = BOStruct(f, acqf, gp, kernel_constructor, 
                                domain, x_train, y_train, 3, 0.01)
             
             # Run optimization (should work without errors)
