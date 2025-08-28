@@ -1,5 +1,5 @@
 normpdf(μ, σ²) = 1 / √(2π * σ²) * exp(-μ^2 / (2 * σ²))
-normcdf(μ, σ²) = 1 / 2 * (1 + erf(μ / √(2σ²)))
+normcdf(μ, σ²) = 1 / 2 * (1 + SpecialFunctions.erf(μ / √(2σ²)))
 
 using Optim
 using Random

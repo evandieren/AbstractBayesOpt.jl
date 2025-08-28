@@ -2,7 +2,7 @@ struct UpperConfidenceBound <: AbstractAcquisition
      β::Float64  # exploration-exploitation balance parameter
 end
 
-function (ucb::UpperConfidenceBound)(surrogate::AbstractSurrogate, x, x_buf=nothing)
+function (UCB::UpperConfidenceBound)(surrogate::AbstractSurrogate, x, x_buf=nothing)
 
     # Allocate buffer if not provided
     if x_buf === nothing
@@ -22,7 +22,7 @@ function (ucb::UpperConfidenceBound)(surrogate::AbstractSurrogate, x, x_buf=noth
 
     μ = posterior_mean(surrogate, x_buf)
     σ² = posterior_var(surrogate, x_buf)
-    return -μ + ucb.β*σ²
+    return -μ + UCB.β*σ²
 end
 
 function update!(acqf::UpperConfidenceBound,ys::AbstractVector, surrogate::AbstractSurrogate)

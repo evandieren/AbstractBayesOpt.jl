@@ -3,7 +3,7 @@ struct ProbabilityImprovement <: AbstractAcquisition
     best_y::Float64
 end
 
-function (pi::ProbabilityImprovement)(surrogate::AbstractSurrogate, x, x_buf=nothing)
+function (PI::ProbabilityImprovement)(surrogate::AbstractSurrogate, x, x_buf=nothing)
 
     # Allocate buffer if not provided
     if x_buf === nothing
@@ -23,13 +23,13 @@ function (pi::ProbabilityImprovement)(surrogate::AbstractSurrogate, x, x_buf=not
 
     μ = posterior_mean(surrogate, x_buf)
     σ² = posterior_var(surrogate, x_buf)
-    Δ = (pi.best_y - pi.ξ) - μ # we are substracting ξ because we are minimising.
+    Δ = (PI.best_y -PI.ξ) - μ # we are substracting ξ because we are minimising.
     
     max(σ²,0) == 0 && return max(Δ,0.0)
 
     σ = sqrt(σ²)
 
-    z = (pi.best_y .- μ) ./ σ
+    z = (PI.best_y .- μ) ./ σ
     return normcdf(Δ/σ,1)
 end
 

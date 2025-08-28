@@ -1,6 +1,6 @@
 using GLMakie
 
-function plot_state(p::BOProblem,n_train,x_cand,fn)
+function plot_state(p::BOStruct,n_train,x_cand,fn)
     d = length(p.domain.lower)
     plot_domain = nothing
 

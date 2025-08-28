@@ -65,7 +65,7 @@ function (κ::gradKernel)((x, px)::Tuple{Any,Int}, (y, py)::Tuple{Any,Int})
           if ``p \neq 1, p' = 1`` returns ``(\nabla_{\vec{x}} k(\vec{x}),\vec{x}')_{p}``,
           and if ``p \neq 1, p' \neq 1``, returns ``(\nabla_x \nabla_{x'} k(\vec{x},\vec{x}')_{(p,p')}``
 
-    Snippets given by Niklas Schmitz, EPFL.
+    Some snippets kindly provided by Niklas Schmitz, MatMat group, EPFL.
     """
     (px > length(x) + 1 || py > length(y) + 1 || px < 1 || py < 1) &&
         error("`px` and `py` must be within the range of the number of outputs")

@@ -3,7 +3,7 @@ module BayesOpt
 using AbstractGPs, KernelFunctions
 using ForwardDiff, ReverseDiff
 using Optim
-using FillArrays
+#using FillArrays
 using Statistics
 using SpecialFunctions
 using Plots
@@ -31,25 +31,25 @@ export GradientGP, ApproxMatern52Kernel, gradMean, gradKernel, prep_input, poste
 
 # Acquisition functions
 include("acquisition/acq_utils.jl")
-export normcdf, normpdf,optimize_mean!,optimize_acquisition!, sample_gp_function
+export normcdf, normpdf,optimize_mean!,optimize_acquisition!#, sample_gp_function
 include("acquisition/ExpectedImprovement.jl")
-export ExpectedImprovement, ei
+export ExpectedImprovement
 include("acquisition/UpperConfidenceBound.jl")
-export UpperConfidenceBound, ucb
+export UpperConfidenceBound
 include("acquisition/gradNormUCB.jl")
-export GradientNormUCB, gradUCB
+export GradientNormUCB
 include("acquisition/ProbabilityImprovement.jl")
-export ProbabilityImprovement, pi
+export ProbabilityImprovement
 #include("acquisition/KnowledgeGradient.jl")
 include("acquisition/Ensemble_Acq.jl")
-export EnsembleAcquisition, ea
+export EnsembleAcquisition
 
 # include("acquisition/ThompsonSampling.jl")
 # export ThompsonSampling, ts
 
 # Core Bayesian Optimization framework
 include("bayesian_opt.jl")
-export optimize, print_info, update!, BOProblem, stop_criteria, optimize_hyperparameters, standardize_problem, rescale_output
+export optimize, print_info, update!, BOStruct, stop_criteria, optimize_hyperparameters, standardize_problem, rescale_output
 
 
 include("plotting.jl")

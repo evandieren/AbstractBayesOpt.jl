@@ -18,7 +18,7 @@ Random.seed!(555)
 # Objective Function
 f(x) = sin(sum(x.+1)) + sin((10.0 / 3.0) * sum(x .+1))
 min_f = −1.988699758534925
-problem_dim = 1
+dim = 1
 lower = [-10.0]
 upper = [10.0]
 domain = ContinuousDomain(lower, upper)
@@ -27,7 +27,7 @@ domain = ContinuousDomain(lower, upper)
 
 # Generate uniform random samples
 n_train = 10
-x_train = [lower .+ (upper .- lower) .* rand(problem_dim) for _ in 1:n_train]
+x_train = [lower .+ (upper .- lower) .* rand(dim) for _ in 1:n_train]
 
 y_train = f.(x_train) #+ sqrt(σ²).* randn(n_train);
 y_train = map(x -> [x], y_train)
@@ -45,22 +45,21 @@ model = StandardGP(kernel, σ²)
 acqf = ExpectedImprovement(ξ, minimum(reduce(vcat,y_train)))
 
 # This maximises the function
-problem = BOProblem(
-                    f,
-                    domain,
-                    model,
-                    kernel_constructor,
-                    copy(x_train),
-                    copy(y_train),
-                    acqf,
-                    100,
-                    0.0
-                    )
+bo_struct = BOStruct(f,
+                   acqf,
+                   model,
+                   kernel_constructor,
+                   domain,
+                   x_train,
+                   y_train,
+                   100,
+                   0.0
+                   )
 
-print_info(problem)
+print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-result, acq_list, standard_params = BayesOpt.optimize(problem)
+result, acq_list, standard_params = BayesOpt.optimize(bo_struct)
 xs = reduce(vcat,result.xs)
 ys = reduce(vcat,result.ys_non_std)
 

@@ -3,7 +3,7 @@ struct ExpectedImprovement <: AbstractAcquisition
     best_y::Float64
 end
 
-function (ei::ExpectedImprovement)(surrogate::AbstractSurrogate, x, x_buf=nothing)
+function (EI::ExpectedImprovement)(surrogate::AbstractSurrogate, x, x_buf=nothing)
 
     # Allocate buffer if not provided
     if x_buf === nothing
@@ -23,7 +23,7 @@ function (ei::ExpectedImprovement)(surrogate::AbstractSurrogate, x, x_buf=nothin
 
     μ = posterior_mean(surrogate, x_buf)
     σ² = posterior_var(surrogate, x_buf)
-    Δ = (ei.best_y - ei.ξ) - μ # we are substracting ξ because we are minimising.
+    Δ = (EI.best_y - EI.ξ) - μ # we are substracting ξ because we are minimising.
 
     if σ² <= 1e-12
         return max(Δ, 0.0)
