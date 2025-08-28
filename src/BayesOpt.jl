@@ -41,7 +41,7 @@ export GradientNormUCB
 include("acquisition/ProbabilityImprovement.jl")
 export ProbabilityImprovement
 #include("acquisition/KnowledgeGradient.jl")
-include("acquisition/Ensemble_Acq.jl")
+include("acquisition/EnsembleAcq.jl")
 export EnsembleAcquisition
 
 # include("acquisition/ThompsonSampling.jl")
