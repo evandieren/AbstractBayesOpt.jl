@@ -1,7 +1,0 @@
-- Do the tests, both mathematical and software related
-- Continue the profiling of the optimize function
-- Implement the KG 
-- Implement Thompson Sampling
-- Use Documenter.jl and Literate.jl for the docs
-- Work on the coverage and travis CI
-- Check how to register the package

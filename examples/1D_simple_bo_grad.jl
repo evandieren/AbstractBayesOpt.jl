@@ -53,14 +53,14 @@ model = GradientGP(grad_kernel,d+1,σ²)
 acqf = ExpectedImprovement(ξ, minimum(hcat(y_train...)[1,:]))
 
 # This maximises the function
-problem = BOProblem(
+problem = BOStruct(
                     f_val_grad,
-                    domain,
+                    acqf,
                     model,
                     kernel_constructor,
+                    domain,
                     copy(x_train),
                     copy(y_train),
-                    acqf,
                     30,
                     0.0
                     )

@@ -57,13 +57,14 @@ model = update!(model, x_train, y_train, σ²)
 acqf = ExpectedImprovement(ξ, minimum(y_train)[1])
 
 # This maximises the function
-problem = BOProblem(
+problem = BOStruct(
                     f,
-                    domain,
+                    acqf,
                     model,
+                    kernel_constructor,
+                    domain,
                     x_train,
                     y_train,
-                    acqf,
                     200,
                     σ²
                     )

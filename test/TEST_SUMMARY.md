@@ -27,7 +27,7 @@
 #### 4. Bayesian Optimization Tests (21 tests)
 - **File**: `test/test_bayesian_opt.jl`
 - **Coverage**:
-  - **BOProblem**: Construction, updates, utilities
+  - **BOStruct**: Construction, updates, utilities
   - **Hyperparameter optimization**: MLE optimization of GP parameters
   - **Standardization**: Data standardization and rescaling
   - **Optimization loop**: End-to-end BO execution
@@ -39,7 +39,7 @@
 3. **Data Structures**: Fixed gradient GP dimension handling and multi-output structures
 4. **Acquisition Updates**: Fixed `update!` calls to require surrogate parameters
 5. **Kernel Structures**: Adapted tests to work with actual kernel implementations
-6. **BOProblem**: Fixed initialization with proper GP states
+6. **BOStruct**: Fixed initialization with proper GP states
 
 ### Test Organization
 

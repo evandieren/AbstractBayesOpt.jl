@@ -6,8 +6,8 @@ using Statistics
 using Random
 
 @testset "Bayesian Optimization Tests" begin
-    @testset "BOProblem Tests" begin
-        @testset "BOProblem Construction" begin
+    @testset "BOStruct Tests" begin
+        @testset "BOStruct Construction" begin
             # Define a simple test function
             f(x) = sum(x.^2)
             
@@ -28,11 +28,11 @@ using Random
             # Create acquisition function
             acqf = ExpectedImprovement(0.01, minimum(reduce(vcat, y_train)))
             
-            # Create BOProblem
-            problem = BOProblem(f, domain, gp, SqExponentialKernel(), 
-                               x_train, y_train, acqf, 10, 0.1)
+            # Create BOStruct
+            problem = BOStruct(f, acqf, gp, SqExponentialKernel(), 
+                               domain, x_train, y_train, 10, 0.1)
             
-            @test problem.f === f
+            @test problem.func === f
             @test problem.domain === domain
             @test problem.max_iter == 10
             @test problem.noise == 0.1
@@ -42,7 +42,7 @@ using Random
             @test length(problem.ys) == 3
         end
         
-        @testset "BOProblem Update" begin
+        @testset "BOStruct Update" begin
             # Define a simple test function
             f(x) = sum(x.^2)
             
@@ -64,9 +64,9 @@ using Random
             # Create acquisition function
             acqf = ExpectedImprovement(0.01, minimum(reduce(vcat, y_train)))
             
-            # Create BOProblem with updated GP
-            problem = BOProblem(f, domain, updated_gp, SqExponentialKernel(), 
-                               x_train, y_train, acqf, 10, 0.1)
+            # Create BOStruct with updated GP
+            problem = BOStruct(f, acqf, updated_gp, SqExponentialKernel(), 
+                               domain, x_train, y_train, 10, 0.1)
             
             # Test update
             x_new = [1.0, 1.0]
@@ -81,7 +81,7 @@ using Random
             @test updated_problem.iter >= 1  # Should be at least 1
         end
         
-        @testset "BOProblem Utilities" begin
+        @testset "BOStruct Utilities" begin
             # Define a simple test function
             f(x) = sum(x.^2)
             
@@ -102,9 +102,9 @@ using Random
             # Create acquisition function
             acqf = ExpectedImprovement(0.01, minimum(reduce(vcat, y_train)))
             
-            # Create BOProblem
-            problem = BOProblem(f, domain, gp, SqExponentialKernel(), 
-                               x_train, y_train, acqf, 3, 0.1)
+            # Create BOStruct
+            problem = BOStruct(f, acqf, gp, SqExponentialKernel(), 
+                               domain, x_train, y_train, 3, 0.1)
             
             # Test stop criteria
             @test !stop_criteria(problem)  # Should not stop initially
@@ -169,9 +169,9 @@ using Random
             # Create acquisition function
             acqf = ExpectedImprovement(0.01, minimum(reduce(vcat, y_train)))
             
-            # Create BOProblem
-            problem = BOProblem(f, domain, gp, SqExponentialKernel(), 
-                               x_train, y_train, acqf, 10, 0.1)
+            # Create BOStruct
+            problem = BOStruct(f, acqf, gp, SqExponentialKernel(), 
+                               domain, x_train, y_train, 10, 0.1)
             
             # Test standardization
             standardized_problem, params = standardize_problem(problem)
@@ -210,9 +210,9 @@ using Random
             # Create acquisition function
             acqf = ExpectedImprovement(0.01, minimum(reduce(vcat, y_train)))
             
-            # Create BOProblem with small number of iterations
-            problem = BOProblem(f, domain, gp, SqExponentialKernel(), 
-                               x_train, y_train, acqf, 3, 0.01)
+            # Create BOStruct with small number of iterations
+            problem = BOStruct(f, acqf, gp, SqExponentialKernel(), 
+                               domain, x_train, y_train, 3, 0.01)
             
             # Run optimization (should work without errors)
             try
@@ -231,7 +231,7 @@ using Random
             catch e
                 @warn "Optimization failed: $e"
                 # For now, just test that basic structure is correct
-                @test isa(problem, BOProblem)
+                @test isa(problem, BOStruct)
             end
         end
     end

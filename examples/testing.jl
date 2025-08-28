@@ -46,14 +46,14 @@ model = StandardGP(kernel, σ²,mean=mean(y_train)[1])
 acqf = ExpectedImprovement(ξ, minimum(reduce(vcat,y_train)))
 
 # This maximises the function
-problem = BOProblem(
+problem = BOStruct(
                     f,
-                    domain,
+                    acqf,
                     model,
                     kernel_constructor,
+                    domain,
                     copy(x_train),
                     copy(y_train),
-                    acqf,
                     210,
                     0.0
                     )

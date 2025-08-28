@@ -1,4 +1,3 @@
-# --- Ensemble of multiple acquisitions ---
 struct EnsembleAcquisition <: AbstractAcquisition
     weights::Vector{Float64}
     acquisitions::Vector{AbstractAcquisition}
@@ -11,7 +10,7 @@ struct EnsembleAcquisition <: AbstractAcquisition
         @assert total > 0                         "sum of weights must be positive"
 
         normalized = weights / total
-        new(normalized, acqs)      # <-- calls the *inner* constructor
+        new(normalized, acqs) 
     end
 end
 

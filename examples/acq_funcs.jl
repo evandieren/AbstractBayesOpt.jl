@@ -80,14 +80,14 @@ function run_comparison(n_iterations=30)
         println("\n=== Running optimization with $name ===")
         
         # Create problem for this acquisition function
-        problem = BOProblem(
+        problem = BOStruct(
             f_val_grad,
-            domain,
+            acq_func,
             model,
             kernel_constructor,
+            domain,
             copy(x_train),
             copy(y_train),
-            acq_func,
             n_iterations,
             0.0
         )

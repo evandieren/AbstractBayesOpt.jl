@@ -70,14 +70,14 @@ model = StandardGP(kernel,σ²) # Instantiates the StandardGP (gives it the prio
 acqf = ExpectedImprovement(ξ, minimum(y_train)[1])
 
 # This maximises the function
-problem = BOProblem(
+problem = BOStruct(
                     f,
-                    domain,
+                    acqf,
                     model,
                     kernel_constructor,
+                    domain,
                     copy(x_train),
                     copy(y_train),
-                    acqf,
                     100,
                     0.0
                     )
