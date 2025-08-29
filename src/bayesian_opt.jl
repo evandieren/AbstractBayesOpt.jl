@@ -6,6 +6,8 @@ Parts of the code are inspired by:
 - BayesianOptimization (python package) (optimization acq functions)
 - GradientGPs.jl (internal package) of MatMat group at EPFL (BOStruct, and update routines)
 """
+
+
 mutable struct BOStruct{F, M<:AbstractSurrogate, A<:AbstractAcquisition}
 
     # Core components of Bayesian Optimization problem
@@ -27,6 +29,33 @@ mutable struct BOStruct{F, M<:AbstractSurrogate, A<:AbstractAcquisition}
     flag::Bool
 end
 
+"""
+    BOStruct(func::Function,
+              acq::AbstractAcquisition,
+              model::AbstractSurrogate,
+              kernel_constructor::KernelFunctions.Kernel,
+              domain::AbstractDomain, 
+              x_train::AbstractVector, 
+              y_train::AbstractVector, 
+              max_iter::Int, 
+              noise::Float64)
+
+Initialize the Bayesian Optimization problem.
+
+Arguments:
+- `func::Function`: The target function to be optimized.
+- `acq::AbstractAcquisition`: The acquisition function guiding the optimization.
+- `model::AbstractSurrogate`: The surrogate model (e.g., Gaussian Process).
+- `kernel_constructor::KernelFunctions.Kernel`: The kernel function used in the GP.
+- `domain::AbstractDomain`: The domain over which to optimize.
+- `x_train::AbstractVector`: Initial input training points.
+- `y_train::AbstractVector`: Corresponding output training values.
+- `max_iter::Int`: Maximum number of iterations for the optimization.
+- `noise::Float64`: Noise level in the observations.
+
+returns:
+- `BOStruct`: An instance of the BOStruct containing all components for Bayesian Optimization.
+"""
 function BOStruct(func::Function,
                   acq::AbstractAcquisition,
                   model::AbstractSurrogate,
