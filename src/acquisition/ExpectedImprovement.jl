@@ -18,6 +18,11 @@ struct ExpectedImprovement <: AbstractAcquisition
     best_y::Float64
 end
 
+
+Base.copy(EI::ExpectedImprovement) = ExpectedImprovement(EI.ξ, EI.best_y)
+
+
+
 function (EI::ExpectedImprovement)(surrogate::AbstractSurrogate, x, x_buf=nothing)
 
     # Allocate buffer if not provided

@@ -11,7 +11,7 @@ Should think about changing package name because conflicting with the Wrapper ht
 
 ### Surrogates
 - Potentially look at Multi-Fidelity GPs (AR1 models?)
-- Rank-1 updates of kernel matrix? This might creates numerical instability, but perhaps interesting for KG implementation. See [Chevalier and Ginsbourger, 2012](https://arxiv.org/pdf/1203.6452)
+- Rank-1 updates of kernel matrix? This might creates numerical instability, but perhaps interesting for KG implementation. See [Chevalier and Ginsbourger, 2012](https://arxiv.org/abs/1203.6452)
 
 
 ### Optimization routines

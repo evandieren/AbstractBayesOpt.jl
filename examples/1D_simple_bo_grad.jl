@@ -61,7 +61,7 @@ bo_struct = BOStruct(
                     domain,
                     copy(x_train),
                     copy(y_train),
-                    30,
+                    50,
                     0.0
                     )
 

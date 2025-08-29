@@ -56,7 +56,7 @@ function BOStruct(func::Function,
     
     #TODO get rid of kernel_constructor if we can get it from model
     
-    BOStruct(func, acq, model, kernel_constructor, domain, copy(x_train), copy(y_train), copy(y_train), max_iter, 0, noise, false)
+    BOStruct(func, copy(acq), model, kernel_constructor, domain, copy(x_train), copy(y_train), copy(y_train), max_iter, 0, noise, false)
 end
 
 
