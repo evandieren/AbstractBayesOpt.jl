@@ -4,7 +4,8 @@ This is the todo list for the BayesOpt.jl package
 ## Features
 
 ### BO Loop
-- Ensure we copy, and do not modify by reference the inputs.
+- Ensure we copy, and do not modify by reference the inputs. This is not the case for the model, which is a shame. 
+    The BOStruct will have the updated model which is not ideal if we wish to run it several times.
 
 ### Surrogates
 - Potentially look at Multi-Fidelity GPs (AR1 models?)
