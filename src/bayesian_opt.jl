@@ -6,7 +6,6 @@ Parts of the code are inspired by:
 - BayesianOptimization (python package) (optimization acq functions)
 - GradientGPs.jl (internal package) of MatMat group at EPFL (BOStruct, and update routines)
 """
-
 mutable struct BOStruct{F, M<:AbstractSurrogate, A<:AbstractAcquisition}
 
     # Core components of Bayesian Optimization problem
@@ -28,19 +27,6 @@ mutable struct BOStruct{F, M<:AbstractSurrogate, A<:AbstractAcquisition}
     flag::Bool
 end
 
-
-function print_info(BO::BOStruct)
-    println("== Printing information about the BOStruct ==")
-    println("Target function: ",BO.func)
-    println("Domain: ",BO.domain)
-    println("xs: ",BO.xs)
-    println("ys: ",BO.ys)
-    println("Surrogate: ",BO.model)
-    println("ACQ: ",BO.acq)
-    println("max_iter: ",BO.max_iter)
-    println("noise: ",BO.noise)
-end
-
 function BOStruct(func::Function,
                   acq::AbstractAcquisition,
                   model::AbstractSurrogate,
@@ -59,7 +45,17 @@ function BOStruct(func::Function,
     BOStruct(func, copy(acq), model, kernel_constructor, domain, copy(x_train), copy(y_train), copy(y_train), max_iter, 0, noise, false)
 end
 
-
+function print_info(BO::BOStruct)
+    println("== Printing information about the BOStruct ==")
+    println("Target function: ",BO.func)
+    println("Domain: ",BO.domain)
+    println("xs: ",BO.xs)
+    println("ys: ",BO.ys)
+    println("Surrogate: ",BO.model)
+    println("ACQ: ",BO.acq)
+    println("max_iter: ",BO.max_iter)
+    println("noise: ",BO.noise)
+end
 
 """
     update!(BO::BOStruct, x::AbstractVector, y::AbstractVector, i::Int)
