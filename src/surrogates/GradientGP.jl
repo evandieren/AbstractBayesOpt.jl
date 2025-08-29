@@ -7,7 +7,6 @@ Implementation of the Abstract structures for the gradient GP.
 This relies on MOGP from AbstractGPs.jl and KernelFunctions.jl.
 As we are leveraging AutoDiff with Matern 5/2 kernel, we need to approximate it around d ≈ 0 because of differentiation issues.
 """
-
 struct GradientGP <: AbstractSurrogate
     gp::AbstractGPs.GP
     noise_var::Float64
@@ -21,6 +20,18 @@ Base.copy(s::GradientGP) = GradientGP(s.gp, s.noise_var ,s.p, copy(s.gpx))
 
 # Need to approximate around d ≈ 0 because of differentiation issues.
 # We will use the squared euclidean distance because this is fine to differentiate when d ≈ 0.
+
+"""
+    ApproxMatern52Kernel(; metric=Distances.SqEuclidean())
+
+Approximate Matern 5/2 kernel using a second-order Taylor expansion around d=0.
+
+Arguments:
+- `metric`: The distance metric to be used, defaults to squared Euclidean distance.
+
+returns:
+- `ApproxMatern52Kernel`: An instance of the approximate Matern 5/2 kernel.
+"""
 struct ApproxMatern52Kernel{M} <: KernelFunctions.SimpleKernel
     metric::M
 end
@@ -39,6 +50,18 @@ function Base.show(io::IO, k::ApproxMatern52Kernel)
     return print(io, "Matern 5/2 Kernel, quadratic approximation around d=0 (metric = ", k.metric, ")")
 end
 
+
+"""
+    gradMean(c::AbstractVector)
+
+Custom mean function for the GradientGP model.
+
+Arguments:
+- `c::AbstractVector`: A vector of constants for the mean function.
+
+returns:
+- `gradMean`: An instance of the custom mean function.
+"""
 struct gradMean
     c::AbstractVector
     function f_mean(vec_const, (x, px)::Tuple{Any,Int})
@@ -50,6 +73,17 @@ struct gradMean
     end
 end
 
+"""
+    gradKernel(base_kernel::KernelFunctions.Kernel)
+
+Custom kernel function for the GradientGP model that handles both function values and gradients.
+
+Arguments:
+- `base_kernel::KernelFunctions.Kernel`: The base kernel function to be used.
+
+returns:
+- `gradKernel`: An instance of the custom gradient kernel function.
+"""
 mutable struct gradKernel{K} <: MOKernel 
     base_kernel::K
 end
@@ -170,7 +204,7 @@ end
 """
     nlml_ls(model::GradientGP,log_ℓ::T, log_scale::Float64, kernel::Kernel, x::AbstractVector, y::AbstractVector; mean=ZeroMean()) where T
 
-    Compute the negative log marginal likelihood (NLML) of the gradient GP model for a fixed scale and varying lengthscale.
+Compute the negative log marginal likelihood (NLML) of the gradient GP model for a fixed scale and varying lengthscale.
 
 Arguments:
 - `model::GradientGP`: The GP model.

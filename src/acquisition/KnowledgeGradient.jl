@@ -1,7 +1,17 @@
 """
-We will implement here the Knowledge Gradient acquisition function first using the simulation based algorithm.
+    KnowledgeGradient(domain::ContinuousDomain, best_μ::AbstractVector)
 
-Later on, we will implement the approximate gradient one.
+Knowledge Gradient acquisition function. **UNDER DEVELOPMENT**
+
+Arguments:
+- `domain::ContinuousDomain`: Domain over which to optimize the acquisition function
+- `best_μ::AbstractVector`: Best predicted mean value from the surrogate model
+
+returns:
+- `KG::KnowledgeGradient`: Knowledge Gradient acquisition function instance
+
+References:
+[Frazier et al., 2009](https://pubsonline.informs.org/doi/10.1287/ijoc.1080.0314)
 """
 struct KnowledgeGradient <: AbstractAcquisition
     domain::ContinuousDomain
@@ -25,6 +35,20 @@ function (KG::KnowledgeGradient)(surrogate::AbstractSurrogate, x, J=1_000)
     return mean(Δ)
 end
 
+
+"""
+    update!(acqf::KnowledgeGradient, ys::AbstractVector, surrogate::AbstractSurrogate)
+
+Update the Knowledge Gradient acquisition function with new array of observations.
+
+Arguments:
+- `acqf::KnowledgeGradient`: Current Knowledge Gradient acquisition function
+- `ys::AbstractVector`: Array of updated observations
+- `surrogate::AbstractSurrogate`: Surrogate model
+
+returns:
+- `KG::KnowledgeGradient`: Updated Knowledge Gradient acquisition function
+"""
 function update!(acqf::KnowledgeGradient,ys::AbstractVector, surrogate::AbstractSurrogate)
     return KnowledgeGradient(domain,optimize_mean!(surrogate, acqf.domain)[2])
 end

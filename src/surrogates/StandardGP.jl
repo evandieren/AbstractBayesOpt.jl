@@ -5,7 +5,6 @@ Implementation of the Abstract structures for the standard GP.
 
 Remark: this is a simple wrapper around AbstractGPs.jl that implements the AbstractSurrogate abstract type
 """
-
 struct StandardGP <: AbstractSurrogate
     gp::AbstractGPs.GP
     noise_var::Float64
@@ -59,7 +58,7 @@ end
 Compute the negative log marginal likelihood (NLML) of the GP model given hyperparameters.
 
 Arguments:
-- `mod::StandardGP`: The GP model.
+- `model::StandardGP`: The GP model.
 - `params::Tuple`: A tuple containing the log lengthscale and log scale parameters.
 - `kernel`: The kernel function used in the GP.
 - `x`: The input data points.
@@ -88,7 +87,25 @@ function nlml(model::StandardGP, params::AbstractVector{T}, kernel::Kernel, x::A
     -AbstractGPs.logpdf(gpx, y)
 end
 
+"""
+    nlml_ls(model::StandardGP,log_ℓ::T, log_scale::Float64, kernel::Kernel, x::AbstractVector, y::AbstractVector; mean=ZeroMean()) where T
 
+Compute the negative log marginal likelihood (NLML) of the GP model given log lengthscale and log scale parameters.
+
+Arguments:
+- `model::StandardGP`: The GP model.
+- `log_ℓ::T`: The log lengthscale parameter.
+- `log_scale::Float64`: The log scale parameter.
+- `kernel`: The kernel function used in the GP.
+- `x`: The input data points.
+- `y`: The observed function values.
+- `mean`: (optional) The mean function of the GP, defaults to ZeroMean()
+
+returns:
+- nlml : The negative log marginal likelihood of the model.
+
+Remark: This function is useful for optimizing only the lengthscale and scale parameters while keeping other parameters fixed.
+"""
 function nlml_ls(model::StandardGP,log_ℓ::T, log_scale::Float64, kernel::Kernel, x::AbstractVector, y::AbstractVector; mean::AbstractGPs.MeanFunction=ZeroMean()) where T
 
     ℓ = exp(log_ℓ)

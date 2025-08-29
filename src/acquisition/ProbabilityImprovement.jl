@@ -1,3 +1,18 @@
+"""
+    ProbabilityImprovement(ξ::Float64, best_y::Float64)
+
+Probability of Improvement acquisition function.
+
+Arguments:
+- `ξ::Float64`: Exploration parameter
+- `best_y::Float64`: Best observed objective value
+
+returns:
+- `PI::ProbabilityImprovement`: Probability of Improvement acquisition function instance
+
+References:
+[Kushner, 1964](https://asmedigitalcollection.asme.org/fluidsengineering/article/86/1/97/392213/A-New-Method-of-Locating-the-Maximum-Point-of-an)
+"""
 struct ProbabilityImprovement <: AbstractAcquisition
     ξ::Float64
     best_y::Float64
@@ -33,6 +48,20 @@ function (PI::ProbabilityImprovement)(surrogate::AbstractSurrogate, x, x_buf=not
     return normcdf(Δ/σ,1)
 end
 
+
+"""
+    update!(acqf::ProbabilityImprovement, ys::AbstractVector, surrogate::AbstractSurrogate)
+
+Update the Probability of Improvement acquisition function with new array of observations.
+
+Arguments:
+- `acqf::ProbabilityImprovement`: Current Probability of Improvement acquisition function
+- `ys::AbstractVector`: Array of updated observations
+- `surrogate::AbstractSurrogate`: Surrogate model
+
+returns:
+- `PI::ProbabilityImprovement`: Updated Probability of Improvement acquisition function
+"""
 function update!(acqf::ProbabilityImprovement,ys::AbstractVector, surrogate::AbstractSurrogate)
     if isa(ys[1],Float64) # we are in 1d
         ProbabilityImprovement(acqf.ξ, minimum(reduce(vcat,ys)))

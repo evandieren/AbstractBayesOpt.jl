@@ -1,3 +1,17 @@
+"""
+    UpperConfidenceBound(β::Float64)
+
+Upper Confidence Bound (UCB) acquisition function.
+
+Arguments:
+- `β::Float64`: Exploration-exploitation balance parameter
+
+returns:
+- `UCB::UpperConfidenceBound`: Upper Confidence Bound acquisition function instance
+
+References:
+[Srinivas et al., 2012](https://ieeexplore.ieee.org/document/6138914)
+"""
 struct UpperConfidenceBound <: AbstractAcquisition
      β::Float64  # exploration-exploitation balance parameter
 end
@@ -25,6 +39,20 @@ function (UCB::UpperConfidenceBound)(surrogate::AbstractSurrogate, x, x_buf=noth
     return -μ + UCB.β*σ²
 end
 
+
+"""
+    update!(acqf::UpperConfidenceBound, ys::AbstractVector, surrogate::AbstractSurrogate)
+
+Update the Upper Confidence Bound acquisition function with new array of observations.
+
+Arguments:
+- `acqf::UpperConfidenceBound`: Current Upper Confidence Bound acquisition function
+- `ys::AbstractVector`: Array of updated observations
+- `surrogate::AbstractSurrogate`: Surrogate model
+
+returns:
+- `UCB::UpperConfidenceBound`: Updated Upper Confidence Bound acquisition function
+"""
 function update!(acqf::UpperConfidenceBound,ys::AbstractVector, surrogate::AbstractSurrogate)
     acqf
 end

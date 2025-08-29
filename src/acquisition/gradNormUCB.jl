@@ -1,6 +1,19 @@
-#using LinearAlgebra
+"""
+    GradientNormUCB(β)
 
-# --- UCB on the squared norm of the gradient ---
+Acquisition function implementing the Squared 2-norm of the gradient with Upper Confidence Bound (UCB) exploration strategy.
+
+
+Arguments:
+- `β::Float64`: Exploration-exploitation balance parameter
+
+returns:
+- `gradUCB::GradientNormUCB`: GradientNormUCB acquisition function instance
+
+References:
+    Derived by Van Dieren, E. but open to previous references if existing.
+    Originally proposed by [Makrygiorgos et al., 2023](https://www.sciencedirect.com/science/article/pii/S2405896323020487) but adapted to the squared 2-norm of the gradient.
+"""
 struct GradientNormUCB <: AbstractAcquisition
     β::Float64  # exploration-exploitation balance parameter
 end
@@ -18,6 +31,19 @@ function (gradUCB::GradientNormUCB)(surrogate::AbstractSurrogate, x, x_buf=nothi
     return -μ_sqnorm + gradUCB.β * sqrt(max(var_sqnorm, 1e-12))
 end
 
+"""
+    update!(acqf::GradientNormUCB, ys::AbstractVector, surrogate::AbstractSurrogate)
+
+Update the GradientNormUCB acquisition function with new array of observations.
+
+Arguments:
+- `acqf::GradientNormUCB`: Current GradientNormUCB acquisition function
+- `ys::AbstractVector`: Array of updated observations
+- `surrogate::AbstractSurrogate`: Surrogate model
+
+returns:
+- `gradUCB::GradientNormUCB`: Updated GradientNormUCB acquisition function
+"""
 function update!(acqf::GradientNormUCB, ys::AbstractVector, surrogate::AbstractSurrogate)
     return acqf
 end
