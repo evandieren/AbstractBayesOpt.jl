@@ -1,6 +1,8 @@
 # TODO list for the BayesOpt.jl package
 This is the todo list for the BayesOpt.jl package
 
+Should think about changing package name because conflicting with the Wrapper https://github.com/jbrea/BayesOpt.jl :)
+
 ## Features
 
 ### BO Loop
@@ -9,6 +11,8 @@ This is the todo list for the BayesOpt.jl package
 
 ### Surrogates
 - Potentially look at Multi-Fidelity GPs (AR1 models?)
+- Rank-1 updates of kernel matrix? This might creates numerical instability, but perhaps interesting for KG implementation. See [Chevalier and Ginsbourger, 2012](https://arxiv.org/pdf/1203.6452)
+
 
 ### Optimization routines
 - Work out AD rule to not rely on ReverseDiff for the MLE optimization for GradientGPs.
