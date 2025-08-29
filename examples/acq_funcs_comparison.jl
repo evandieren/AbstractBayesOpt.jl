@@ -3,7 +3,6 @@ using KernelFunctions
 using Plots
 using Distributions
 using ForwardDiff
-using BayesOpt
 using LinearAlgebra
 using LaTeXStrings
 using QuasiMonteCarlo

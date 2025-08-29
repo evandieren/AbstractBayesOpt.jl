@@ -18,6 +18,8 @@ struct GradientNormUCB <: AbstractAcquisition
     β::Float64  # exploration-exploitation balance parameter
 end
 
+Base.copy(gradUCB::GradientNormUCB) = GradientNormUCB(gradUCB.β)
+
 function (gradUCB::GradientNormUCB)(surrogate::AbstractSurrogate, x, x_buf=nothing)
 
     # no buf needed here because we prep everything

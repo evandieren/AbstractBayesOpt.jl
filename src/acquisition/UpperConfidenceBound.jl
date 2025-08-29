@@ -16,6 +16,8 @@ struct UpperConfidenceBound <: AbstractAcquisition
      β::Float64  # exploration-exploitation balance parameter
 end
 
+Base.copy(UCB::UpperConfidenceBound) = UpperConfidenceBound(UCB.β)
+
 function (UCB::UpperConfidenceBound)(surrogate::AbstractSurrogate, x, x_buf=nothing)
 
     # Allocate buffer if not provided

@@ -9,7 +9,6 @@ using KernelFunctions
 using Plots
 using Distributions
 using ForwardDiff
-using BayesOpt
 using LinearAlgebra
 using LaTeXStrings
 import Random
@@ -122,4 +121,3 @@ scatter!(
     [minimum(ys)];
     label="Best candidate"
 )
-# #savefig("gradgp_matern_1D_ensemble_EI_ucb_grad.pdf")

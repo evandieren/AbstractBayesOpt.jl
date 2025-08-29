@@ -18,6 +18,9 @@ struct ProbabilityImprovement <: AbstractAcquisition
     best_y::Float64
 end
 
+
+Base.copy(PI::ProbabilityImprovement) = ProbabilityImprovement(PI.ξ, PI.best_y)
+
 function (PI::ProbabilityImprovement)(surrogate::AbstractSurrogate, x, x_buf=nothing)
 
     # Allocate buffer if not provided

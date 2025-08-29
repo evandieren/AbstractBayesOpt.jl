@@ -14,6 +14,8 @@ struct EnsembleAcquisition <: AbstractAcquisition
     end
 end
 
+Base.copy(EA::EnsembleAcquisition) = EnsembleAcquisition(copy(EA.weights), [Base.copy(acq) for acq in EA.acquisitions])
+
 function (EA::EnsembleAcquisition)(surrogate::AbstractSurrogate, x, x_buf=nothing)
     sum(EA.weights[i] * EA.acquisitions[i](surrogate, x, x_buf) for i in eachindex(EA.weights))
 end
