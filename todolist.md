@@ -35,6 +35,7 @@ Things to do **before Oct 1st** are in **bold**
 - **Do the tests, both mathematical and software related.**
 
 ## Package-julia related tasks
+- **Understand and define what needs to be exported or not in AbstractBayesOpt.jl**
 - **Use Documenter.jl and Literate.jl for the docs for some examples and docs**
 - **Work on the coverage and travis CI.**
 - **Register the package**
