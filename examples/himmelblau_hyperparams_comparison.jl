@@ -14,7 +14,7 @@ using AbstractGPs, KernelFunctions
 using Plots
 using Distributions
 using ForwardDiff
-using BayesOpt
+using AbstractBayesOpt
 using LinearAlgebra
 using LaTeXStrings
 using QuasiMonteCarlo
@@ -94,7 +94,7 @@ function run_himmelblau_comparison(n_iterations=40)
         
         # Run optimization with specified configuration
         try
-            result, _, standard_params = BayesOpt.optimize(
+            result, _, standard_params = AbstractBayesOpt.optimize(
                 problem, 
                 hyper_params=hyper_params,
                 standardize=standardize

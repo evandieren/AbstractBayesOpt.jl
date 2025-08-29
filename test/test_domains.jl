@@ -1,5 +1,5 @@
 using Test
-using BayesOpt
+using AbstractBayesOpt
 
 @testset "Domain Tests" begin
     @testset "ContinuousDomain Construction" begin

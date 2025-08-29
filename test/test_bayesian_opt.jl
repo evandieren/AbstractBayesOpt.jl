@@ -1,5 +1,5 @@
 using Test
-using BayesOpt
+using AbstractBayesOpt
 using AbstractGPs, KernelFunctions
 using Distributions
 using Statistics
@@ -220,7 +220,7 @@ using Random
             
             # Run optimization (should work without errors)
             try
-                result, acqf_list, std_params = BayesOpt.optimize(problem, standardize=false)
+                result, acqf_list, std_params = AbstractBayesOpt.optimize(problem, standardize=false)
                 
                 @test length(result.xs) >= length(x_train)
                 @test length(result.ys) >= length(y_train)

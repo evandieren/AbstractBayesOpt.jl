@@ -11,6 +11,7 @@ using Distributions
 using LaTeXStrings
 using BayesOpt
 using LinearAlgebra
+using AbstractBayesOpt
 
 import Random
 Random.seed!(555)
@@ -85,7 +86,7 @@ bo_struct = BOStruct(
 print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-@time result,acq_list, std_params = BayesOpt.optimize(bo_struct,standardize=false)
+@time result,acq_list, std_params = AbstractBayesOpt.optimize(bo_struct,standardize=false)
 xs = result.xs
 ys = result.ys_non_std 
 # ys = (reduce(vcat,result.ys).*y_std) .+ y_mean

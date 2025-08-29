@@ -8,7 +8,7 @@ using AbstractGPs
 using KernelFunctions
 using Plots
 using Distributions
-using BayesOpt
+using AbstractBayesOpt
 using Optim
 using LinearAlgebra
 using LaTeXStrings
@@ -59,7 +59,7 @@ bo_struct = BOStruct(f,
 print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-result, acq_list, standard_params = BayesOpt.optimize(bo_struct)
+result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct)
 xs = reduce(vcat,result.xs)
 ys = reduce(vcat,result.ys_non_std)
 
@@ -83,7 +83,7 @@ Plots.display(p)
 #         xlim=(lower[1], upper[1]),
 #         xlabel="x",
 #         ylabel="y",
-#         title="BayesOpt, EI ξ=$(ξ), σ²=$(σ²)",
+#         title="AbstractBayesOpt, EI ξ=$(ξ), σ²=$(σ²)",
 #         legend=:outertopright)
 # plot!(plot_domain, post_mean; label="GP", ribbon=sqrt.(abs.(post_var)),ribbon_scale=2,color="green")
 # scatter!(

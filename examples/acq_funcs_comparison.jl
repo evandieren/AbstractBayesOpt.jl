@@ -9,6 +9,7 @@ using LaTeXStrings
 using QuasiMonteCarlo
 import Random
 using Optim
+using AbstractBayesOpt
 Random.seed!(555)
 
 # Objective Function - same as 1D example
@@ -93,7 +94,7 @@ function run_comparison(n_iterations=30)
         )
         
         # Run optimization
-        result, acqf_list, standard_params = BayesOpt.optimize(problem, hyper_params="all")
+        result, acqf_list, standard_params = AbstractBayesOpt.optimize(problem, hyper_params="all")
         
         # Extract results - handle early termination
         xs = reduce(vcat, result.xs)

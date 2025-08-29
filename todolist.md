@@ -1,5 +1,5 @@
-# TODO list for the BayesOpt.jl package
-This is the todo list for the BayesOpt.jl package
+# TODO list for the AbstractBayesOpt.jl package
+This is the todo list for the AbstractBayesOpt.jl package
 
 Should think about changing package name because conflicting with the Wrapper https://github.com/jbrea/BayesOpt.jl :)
 

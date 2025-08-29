@@ -14,7 +14,7 @@
 #         label="target function",
 #         xlim=(p.domain.lower[1], p.domain.upper[1]),
 #         ylabel="y",
-#         title="BayesOpt, EI ξ=$(p.acqf.ξ), σ²=$(p.noise), iter=$(p.iter)",
+#         title="AbstractBayesOpt, EI ξ=$(p.acqf.ξ), σ²=$(p.noise), iter=$(p.iter)",
 #         legend=:outertopright, size=(800,600))
 #         Plots.plot!(plot_domain, grid_mean; label="GP", ribbon=sqrt.(abs.(grid_var)),ribbon_scale=2,color="green")
 #         Plots.scatter!(

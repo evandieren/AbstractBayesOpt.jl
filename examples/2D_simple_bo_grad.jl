@@ -11,6 +11,7 @@ using Distributions
 using ForwardDiff
 using BayesOpt
 using LaTeXStrings
+using AbstractBayesOpt
 
 using BenchmarkTools
 
@@ -76,7 +77,7 @@ bo_struct = BOStruct(
 print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-result, acq_list, standard_params = BayesOpt.optimize(bo_struct)
+result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct)
 xs = result.xs
 ys = result.ys_non_std
 

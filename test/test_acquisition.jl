@@ -1,5 +1,5 @@
 using Test
-using BayesOpt
+using AbstractBayesOpt
 using AbstractGPs, KernelFunctions
 using Distributions
 using Statistics

@@ -1,4 +1,4 @@
-module BayesOpt
+module AbstractBayesOpt
 
 using AbstractGPs, KernelFunctions
 using ForwardDiff

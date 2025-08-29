@@ -8,7 +8,7 @@ using AbstractGPs
 using KernelFunctions
 using Plots
 using Distributions
-using BayesOpt
+using AbstractBayesOpt
 using Optim
 using LinearAlgebra
 using LaTeXStrings

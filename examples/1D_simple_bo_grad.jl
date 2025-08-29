@@ -14,6 +14,7 @@ using LinearAlgebra
 using LaTeXStrings
 import Random
 using Optim
+using AbstractBayesOpt
 Random.seed!(555)
 
 # Objective Function
@@ -68,7 +69,7 @@ bo_struct = BOStruct(
 print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-result, acqf_list, standard_params = BayesOpt.optimize(bo_struct)
+result, acqf_list, standard_params = AbstractBayesOpt.optimize(bo_struct)
 xs = reduce(vcat,result.xs)
 ys = result.ys_non_std 
 ys = hcat(ys...)[1,:]
@@ -103,7 +104,7 @@ plot(plot_domain, f.(plot_domain),
         xlim=(lower[1], upper[1]),
         xlabel="x",
         ylabel="y",
-        title="BayesOpt, σ²=$(σ²)",
+        title="AbstractBayesOpt, σ²=$(σ²)",
         legend=:outertopright)
 plot!(plot_domain, post_mean; label="GP", ribbon=sqrt.(post_var),ribbon_scale=2,color="green")
 scatter!(
