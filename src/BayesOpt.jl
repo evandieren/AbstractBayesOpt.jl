@@ -1,7 +1,7 @@
 module BayesOpt
 
 using AbstractGPs, KernelFunctions
-using ForwardDiff, ReverseDiff
+using ForwardDiff
 using Optim
 using Statistics
 using SpecialFunctions

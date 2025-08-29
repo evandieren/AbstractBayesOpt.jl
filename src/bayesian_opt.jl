@@ -196,13 +196,10 @@ function optimize_hyperparameters(model::AbstractSurrogate,
         obj = p -> nlml(model,p, kernel_constructor, x_train_prepped, y_train_prepped, mean=mean)
     end
 
-    grad_obj! = nothing
-    if !classic_bo
-        grad_obj! = (G, p) -> ReverseDiff.gradient!(G, obj, p)
-    end
-
-
-
+    #grad_obj! = nothing
+    #if !classic_bo
+    #    grad_obj! = (G, p) -> ReverseDiff.gradient!(G, obj, p)
+    #end
 
     opts = Optim.Options(g_tol=1e-5,f_abstol=1e-6,x_abstol=1e-4,outer_iterations=100)
 
@@ -217,13 +214,15 @@ function optimize_hyperparameters(model::AbstractSurrogate,
 
     for i in 1:num_restarts
         try
-            if classic_bo
-                result = Optim.optimize(obj, lower_bounds, upper_bounds, init_guesses[i], Fminbox(inner_optimizer),opts,autodiff = :forward)
-            else
-                result = Optim.optimize(obj, grad_obj!,
-                                        lower_bounds, upper_bounds, init_guesses[i], 
-                                        Fminbox(inner_optimizer), opts)
-            end
+            # if classic_bo
+            #    result = Optim.optimize(obj, lower_bounds, upper_bounds, init_guesses[i], Fminbox(inner_optimizer),opts,autodiff = :forward)
+            #else
+            #    result = Optim.optimize(obj, grad_obj!,
+            #                            lower_bounds, upper_bounds, init_guesses[i], 
+            #                           Fminbox(inner_optimizer), opts)
+            #end
+            result = Optim.optimize(obj,lower_bounds, upper_bounds, init_guesses[i], Fminbox(inner_optimizer),opts, autodiff = :forward)
+
             println("Optimization result: ", result)
             if Optim.converged(result)
                 current_nlml = Optim.minimum(result)

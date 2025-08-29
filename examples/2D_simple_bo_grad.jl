@@ -76,7 +76,7 @@ bo_struct = BOStruct(
 print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-result, acq_list, standard_params = BayesOpt.optimize(bo_struct,standardize=false, hyper_params=nothing)
+result, acq_list, standard_params = BayesOpt.optimize(bo_struct)
 xs = result.xs
 ys = result.ys_non_std
 
