@@ -11,6 +11,7 @@ This is the todo list for the BayesOpt.jl package
 
 ### Optimization routines
 - Work out AD rule to not rely on ReverseDiff for the MLE optimization for GradientGPs.
+- Allow for custom choice of optimizer for the acq function maximisation, and/or hyper-parameter tuning if needed
 
 ### Acquisition functions
 - Implement the KG. 
@@ -22,6 +23,7 @@ This is the todo list for the BayesOpt.jl package
 
 ## Performance-related 
 - Continue the profiling of the optimize function.
+- Identified issues: posterior_mean and posterior_var suffer from GC
 
 ## Tests
 - Do the tests, both mathematical and software related.
