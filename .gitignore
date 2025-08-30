@@ -3,6 +3,17 @@
 *.jl.mem
 /Manifest.toml
 
+
+*.ipynb
+.DS_Store
+
 *.pdf
 
 *.png
+
+/dev/
+/docs/build/
+/docs/src/generated/
+/docs/site/
+
+.vscode/settings.json

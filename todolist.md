@@ -40,3 +40,4 @@ Things to do **before Oct 1st** are in **bold**
 - **Work on the coverage and travis CI.**
 - **Register the package**
 - **Check the dependenies of the module, and clean up not used packages and compat.**
+- Try to refactor the code using [BlueStyle](https://github.com/JuliaDiff/BlueStyle)
