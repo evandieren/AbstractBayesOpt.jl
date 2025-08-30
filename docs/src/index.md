@@ -1,9 +1,3 @@
 # AbstractBayesOpt.jl
 
-
-```@docs
-optimize(BO::BOStruct;
-                  fn=nothing,
-                  standardize=true,
-                  hyper_params="all")
-```
+Index for the documentation of AbstractBayesOpt.jl

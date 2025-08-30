@@ -3,7 +3,8 @@ using Documenter
 
 
 makedocs(sitename="AbstractBayesOpt.jl",
-         modules=[AbstractBayesOpt])
+         modules=[AbstractBayesOpt],
+         checkdocs=:none)
 
 
 deploydocs(
