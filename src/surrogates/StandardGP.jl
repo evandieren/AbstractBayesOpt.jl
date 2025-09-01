@@ -126,33 +126,39 @@ end
 
 
 """
-    standardize_y(model::StandardGP,y_train::AbstractVector)
+    standardize_y(model::StandardGP,y_train::AbstractVector; scale_only=false)
 
 Standardize the output values of the training data.
 
 Arguments:
 - `model::StandardGP`: The GP model.
 - `y_train::AbstractVector`: A vector of observed function values.
-
+- `scale_only::Bool`: If true, only scale the outputs without centering (in case we set a non-zero mean function with empirical mean).
 returns:
 - `y_standardized`: A vector of standardized function values.
-- `y_mean`: The mean of the original function values.
-- `std_mean`: The standard deviation of the original function values.
+- `y_mean`: Mean standardization applied to outputs.
+- `y_std`: Standard deviation standardization applied to outputs.
 """
-function standardize_y(model::StandardGP,y_train::AbstractVector)
+function standardize_y(model::StandardGP,y_train::AbstractVector; scale_only=false)
     y_flat = reduce(vcat, y_train)
     y_mean = mean(y_flat)
-    std_mean = std(y_flat)
-    
-    # Protect against very small standard deviations
-    if std_mean < 1e-12
-        @warn "Very small standard deviation detected: $std_mean. Not scaling."
-        std_mean = 1.0
+    y_std = std(y_flat)
+
+    if y_std < 1e-12
+        y_std = 1.0 # avoid division by zero
+        println("Warning: standard deviation of y is too small, setting to 1.0 to avoid division by zero.")
     end
-    
-    y_standardized = [(y .- y_mean) ./ std_mean for y in y_train]
+
+    y_standardized = nothing
+    if scale_only
+        y_standardized = [(y) ./ y_std for y in y_train]
+        y_mean = 0.0 # we do not center if scale_only
+    else
+        y_standardized = [(y .- y_mean) ./ y_std for y in y_train]
+    end
+
     # this re-creates a Vector{Vector{Float64}}, which is what we need
-    return y_standardized, y_mean, std_mean
+    return y_standardized, [y_mean], [y_std]
 end
 
 get_lengthscale(model::StandardGP) = 1 ./ model.gp.kernel.kernel.transform.s

@@ -37,16 +37,15 @@ println(x_train)
 val_grad = f_val_grad.(x_train)
 # Create flattened output
 y_train = [val_grad[i] for i = eachindex(val_grad)]
-#y_train = [val_grad[i] + sqrt(σ²)*randn(d+1) for i = eachindex(val_grad)]
+
+
+prior_mean = gradMean([mean(y_train)[1]; zeros(d)])
 
 kernel_constructor = ApproxMatern52Kernel()
 
 kernel = 1 *(kernel_constructor ∘ ScaleTransform(1))
 grad_kernel = gradKernel(kernel)
 model = GradientGP(grad_kernel,d+1,σ²)
-# Conditioning: should not be necessary
-# We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed anyway)
-# model = update!(model, x_train, y_train)
 
 # Init of the acquisition function
 ξ = 0.0

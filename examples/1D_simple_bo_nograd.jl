@@ -32,9 +32,11 @@ x_train = [lower .+ (upper .- lower) .* rand(dim) for _ in 1:n_train]
 y_train = f.(x_train) #+ sqrt(σ²).* randn(n_train);
 y_train = map(x -> [x], y_train)
 
+prior_mean = ConstMean(mean(reduce(vcat,y_train))) # set prior mean to empirical mean of data
+
 kernel_constructor = ApproxMatern52Kernel()
 kernel = 1 *(kernel_constructor ∘ ScaleTransform(1)) # needed because I need to do MLE
-model = StandardGP(kernel, σ²)
+model = StandardGP(kernel, σ², mean=prior_mean)
 
 # # Conditioning:  no need if standardize == true
 # model = update!(model, x_train, y_train)
@@ -59,7 +61,7 @@ bo_struct = BOStruct(f,
 print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct)
+result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct,scale_only=true)
 xs = reduce(vcat,result.xs)
 ys = reduce(vcat,result.ys_non_std)
 

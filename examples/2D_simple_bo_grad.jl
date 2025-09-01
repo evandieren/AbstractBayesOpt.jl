@@ -37,9 +37,6 @@ upper = [6.0,6.0]
 domain = ContinuousDomain(lower, upper)
 σ² = 1e-12
 
-kernel_constructor = ApproxMatern52Kernel()
-kernel = 1 * (kernel_constructor ∘ ScaleTransform(1))
-grad_kernel = gradKernel(kernel)
 
 # Generate uniform random samples
 n_train = 10
@@ -49,6 +46,15 @@ x_train = [lower .+ (upper .- lower) .* rand(d) for _ in 1:n_train]
 val_grad = f_val_grad.(x_train)
 # Create flattened output
 y_train = [val_grad[i] for i = eachindex(val_grad)]
+
+
+y_train
+
+kernel_constructor = ApproxMatern52Kernel()
+kernel = 1 * (kernel_constructor ∘ ScaleTransform(1))
+grad_kernel = gradKernel(kernel)
+
+
 model = GradientGP(grad_kernel,d+1,σ²)
 
 # Conditioning: 

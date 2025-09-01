@@ -239,20 +239,22 @@ function nlml_ls(model::GradientGP,log_ℓ::T, log_scale::Float64, kernel::Kerne
 end
 
 """
-    standardize_y(mod::GradientGP,y_train::AbstractVector)
+    standardize_y(mod::GradientGP,y_train::AbstractVector; scale_only=false)
 
 Standardize the output values (y_train) for the GradientGP model.
+If scale_only is true, only scale the outputs without centering (in case we set a non-zero mean function with empirical mean).
 
 Arguments:
 - `mod::GradientGP`: The GP model.
 - `y_train::AbstractVector`: A vector of observed function values and gradients.
+- `scale_only::Bool`: If true, only scale the outputs without centering.
 
 returns:
 - `ys_std`: A vector of standardized output values.
-- `μ`: The mean of the original output values.
-- `σ`: The standard deviation of the original output values.
+- `μ`: Mean standardization applied to function values (first output), zeros for gradients.
+- `σ`: Standard deviation standardization applied to all outputs (function values and gradients).
 """
-function standardize_y(mod::GradientGP,y_train::AbstractVector)
+function standardize_y(mod::GradientGP,y_train::AbstractVector; scale_only=false)
     y_mat = reduce(hcat, y_train)
 
     μ = vec(mean(y_mat; dims=2))
@@ -267,7 +269,14 @@ function standardize_y(mod::GradientGP,y_train::AbstractVector)
     
     σ[2:end] .= σ[1]  # Use same scaling for gradients
     
-    ys_std = [(y .- μ) ./ σ for y in y_train]
+    ys_std = nothing
+    if scale_only
+        ys_std = [(y) ./ σ for y in y_train]
+        μ .= 0.0 # we do not center if scale_only
+    else
+        ys_std = [(y .- μ) ./ σ for y in y_train]
+    end
+
     # this re-creates a Vector{Vector{Float64}}, which is what we need
     return ys_std, μ, σ
 end

@@ -185,6 +185,7 @@ function optimize_hyperparameters(model::AbstractSurrogate,
                                   kernel_constructor::Kernel,
                                   old_params::Vector{Float64},
                                   classic_bo::Bool;
+                                  scale_std::Float64=1.0,
                                   length_scale_only::Bool=false,
                                   mean::AbstractGPs.MeanFunction=ZeroMean(),
                                   num_restarts::Int=1)
@@ -200,8 +201,8 @@ function optimize_hyperparameters(model::AbstractSurrogate,
     # Store original scale for length_scale_only case
     original_scale = exp(old_params[2])
 
-    length_scale_only ? lower_bounds = log.([1e-3]) : lower_bounds = log.([1e-3, 1e-6])
-    length_scale_only ? upper_bounds = log.([1e1]) : upper_bounds = log.([1e1, 1e2])
+    length_scale_only ? lower_bounds = log.([1e-3]) : lower_bounds = log.([1e-3, 1e-6/scale_std])
+    length_scale_only ? upper_bounds = log.([1e1]) : upper_bounds = log.([1e2, 1e2/scale_std])
 
     
     x_train_prepped = prep_input(model, x_train)
@@ -316,21 +317,21 @@ function rescale_output(ys::AbstractVector, params::Tuple)
 end
 
 """
-    standardize_problem(p::BOStruct)
+    standardize_problem(p::BOStruct; scale_only=false)
 
 Standardize the output values of the BOStruct and update the GP and acquisition function accordingly.
-
+If scale_only is true, only scale the outputs without centering (in case we set a non-zero mean function with empirical mean).
 
 Arguments:
 - `p::BOStruct`: The Bayesian Optimization problem to standardize.
+- `scale_only::Bool`: If true, only scale the outputs without centering.
 
 returns:
 - `p::BOStruct`: The updated Bayesian Optimization problem with standardized outputs.
 - `params::Tuple`: A tuple containing the mean and standard deviation used for standardization.
 """
-function standardize_problem(BO::BOStruct)    
-    μ=nothing; σ=nothing
-    BO.ys, μ, σ = standardize_y(BO.model,BO.ys_non_std)
+function standardize_problem(BO::BOStruct; scale_only=false)    
+    BO.ys, μ, σ = standardize_y(BO.model,BO.ys_non_std, scale_only=scale_only)
     println("Standardization applied: μ=$μ, σ=$σ")
     BO.model = update!(BO.model, BO.xs, BO.ys)
     BO.acq = update!(BO.acq,BO.ys, BO.model)
@@ -338,7 +339,7 @@ function standardize_problem(BO::BOStruct)
 end
 
 """
-    optimize(BO::BOStruct;fn=nothing, standardize=true, hyper_params="all")
+    optimize(BO::BOStruct;fn=nothing, standardize=true, hyper_params="all", scale_only=false)
 
 This function implements the EGO framework:
     While some criterion is not met,
@@ -356,6 +357,7 @@ Arguments:
     - If "all", re-optimize hyperparameters every 10 iterations.
     - If 'length_scale_only', only optimize the lengthscale.
     - If nothing, do not re-optimize hyperparameters.
+- `scale_only::Bool`: If true, only scale the outputs without centering (in case we set a non-zero mean function with empirical mean).
 
 returns:
 - `BO::BOStruct`: The updated Bayesian Optimization problem after optimization.
@@ -365,7 +367,8 @@ returns:
 function optimize(BO::BOStruct;
                   fn=nothing,
                   standardize=true,
-                  hyper_params="all")
+                  hyper_params="all",
+                  scale_only=false)
 
     @assert hyper_params in ["all", "length_scale_only", "none", nothing] "hyper_params must be one of: 'all', 'length_scale_only', 'none', or nothing."
 
@@ -374,9 +377,11 @@ function optimize(BO::BOStruct;
     
     classic_bo = (length(BO.ys[1])==1)
     
-    μ=0.0; σ=1.0
+    μ=zeros(length(BO.ys[1]))
+    σ=ones(length(BO.ys[1])) # default values if we do not standardize
+    
     if standardize
-        BO, (μ, σ) = standardize_problem(BO)
+        BO, (μ, σ) = standardize_problem(BO, scale_only=scale_only)
     else 
         BO.model = update!(BO.model, BO.xs, BO.ys) # because we might not to that before
     end
@@ -393,10 +398,10 @@ function optimize(BO::BOStruct;
             out = nothing
             if hyper_params == "length_scale_only"
                 @time out = optimize_hyperparameters(BO.model, BO.xs, BO.ys,BO.kernel_constructor,old_params,classic_bo, 
-                                                    length_scale_only=true,mean=original_mean)
+                                                    length_scale_only=true,mean=original_mean, scale_std=σ[1])
             elseif hyper_params == "all"
                 @time out = optimize_hyperparameters(BO.model, BO.xs, BO.ys,BO.kernel_constructor,old_params,classic_bo,
-                                                length_scale_only = false, mean=original_mean)
+                                                length_scale_only = false, mean=original_mean, scale_std=σ[1])
             else
                 out = nothing
             end
