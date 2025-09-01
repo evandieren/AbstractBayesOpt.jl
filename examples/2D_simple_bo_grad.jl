@@ -48,18 +48,13 @@ val_grad = f_val_grad.(x_train)
 y_train = [val_grad[i] for i = eachindex(val_grad)]
 
 
-y_train
+mean_prior = gradMean([mean(y_train)[1];zeros(d)])
 
 kernel_constructor = ApproxMatern52Kernel()
 kernel = 1 * (kernel_constructor ∘ ScaleTransform(1))
 grad_kernel = gradKernel(kernel)
 
-
-model = GradientGP(grad_kernel,d+1,σ²)
-
-# Conditioning: 
-# We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed)
-# model = update!(model, x_train, y_train)
+model = GradientGP(grad_kernel,d+1,σ²,mean=prior_mean)
 
 # Init of the acquisition function
 ξ = 0.0
@@ -82,7 +77,7 @@ bo_struct = BOStruct(
 print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct)
+result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct,scale_only=true)
 xs = result.xs
 ys = result.ys_non_std
 
