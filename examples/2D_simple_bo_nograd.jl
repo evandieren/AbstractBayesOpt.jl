@@ -9,7 +9,6 @@ using KernelFunctions
 using Plots
 using Distributions
 using LaTeXStrings
-using BayesOpt
 using LinearAlgebra
 using AbstractBayesOpt
 
@@ -86,7 +85,7 @@ bo_struct = BOStruct(
 print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-@time result,acq_list, std_params = AbstractBayesOpt.optimize(bo_struct,standardize=false)
+@time result,acq_list, std_params = AbstractBayesOpt.optimize(bo_struct,scale_only=true)
 xs = result.xs
 ys = result.ys_non_std 
 # ys = (reduce(vcat,result.ys).*y_std) .+ y_mean

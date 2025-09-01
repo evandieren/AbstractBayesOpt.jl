@@ -65,6 +65,8 @@ returns:
 struct gradMean
     c::AbstractVector
     function f_mean(vec_const, (x, px)::Tuple{Any,Int})
+        #println(vec_const)
+    
         return vec_const[px]
     end
 
@@ -132,12 +134,15 @@ Arguments:
 - `kernel::gradKernel`: The gradient kernel function to be used in the GP.
 - `p::Int`: The number of outputs (1 for function value + d for gradients).
 - `noise_var::Float64`: The noise variance of the observations.
-- `mean`: (optional) The mean function of the GP, defaults to ZeroMean()
+- `mean`: (optional) The mean function of the GP, defaults to gradMean with 0 constant
 
 returns:
 - `GradientGP`: An instance of the GradientGP model.
 """
-function GradientGP(kernel::gradKernel,p::Int,noise_var::Float64;mean=ZeroMean())
+function GradientGP(kernel::gradKernel,p::Int,noise_var::Float64; mean=nothing)
+    if isnothing(mean)
+        mean = gradMean(zeros(p))
+    end
     gp = AbstractGPs.GP(mean,kernel) # Creates GP(0,k) for the prior
     GradientGP(gp,noise_var,p,nothing)
 end

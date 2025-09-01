@@ -379,7 +379,6 @@ function optimize(BO::BOStruct;
     
     μ=zeros(length(BO.ys[1]))
     σ=ones(length(BO.ys[1])) # default values if we do not standardize
-    
     if standardize
         BO, (μ, σ) = standardize_problem(BO, scale_only=scale_only)
     else 
