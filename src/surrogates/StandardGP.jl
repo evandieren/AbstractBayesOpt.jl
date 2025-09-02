@@ -129,45 +129,44 @@ end
 
 
 """
-    standardize_y(model::StandardGP,y_train::AbstractVector; choice="center_scale")
-
-Standardize the output values of the training data.
+Gets the empirical mean and std of y_train (Vector of Vector of Float64)
 
 Arguments:
 - `model::StandardGP`: The GP model.
 - `y_train::AbstractVector`: A vector of observed function values.
-- `choice`: A string indicating the type of standardization to apply. Options are:
-    - "center_scale": Center and scale the outputs (default).
-    - "scale_only": Only scale the outputs without centering.
-    - "mean_only": Only center the outputs without scaling.
+
+returns:
+- `y_mean`: Empirical mean
+- `y_std`: Empirical standard deviation
+"""
+function get_mean_std(model::StandardGP,y_train::AbstractVector)
+    y_flat = reduce(vcat, y_train)
+   
+    y_mean::Float64 = mean(y_flat)
+    y_std::Float64 = std(y_flat)
+    
+    [y_mean], [y_std]
+end
+"""
+Rescale the output values of the training data (centering is done via standardize_BO)
+
+Arguments:
+- `model::StandardGP`: The GP model.
+- `y_train::AbstractVector`: A vector of observed function values.
+- `y_std::AbstractVector`: Empirical standard deviation
 
 returns:
 - `y_standardized`: A vector of standardized function values.
-- `y_mean`: Mean standardization applied to outputs.
-- `y_std`: Standard deviation standardization applied to outputs.
 """
-function standardize_y(model::StandardGP,y_train::AbstractVector; choice="center_scale")
+function rescale_y(model::StandardGP,y_train::AbstractVector, y_std::AbstractVector)
 
-    @assert choice in ["center_scale", "scale_only", "mean_only"] "choice must be one of: 'center_scale', 'scale_only', 'mean_only'"
-
-    y_flat = reduce(vcat, y_train)
-    y_mean::Float64 = mean(y_flat)
-    y_std::Float64 = std(y_flat)
-
-    if y_std < 1e-12
-        y_std = 1.0 # avoid division by zero
+    if y_std[1] < 1e-12
+        y_std .= 1.0 # avoid division by zero
         println("Warning: standard deviation of y is too small, setting to 1.0 to avoid division by zero.")
     end
 
-
-    if choice == "scale_only"
-        y_mean = 0.0 # we do not center if scale_only
-    elseif choice == "mean_only"
-        y_std = 1.0 # we do not scale if mean_only
-    end
-
-    y_standardized = [(y .- y_mean) ./ y_std for y in y_train]
-    return y_standardized, [y_mean], [y_std]
+    y_rescaled = [y ./ y_std[1] for y in y_train]
+    return y_rescaled
 end
 
 get_lengthscale(model::StandardGP) = 1 ./ model.gp.kernel.kernel.transform.s

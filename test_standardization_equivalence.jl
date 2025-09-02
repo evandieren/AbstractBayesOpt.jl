@@ -34,13 +34,18 @@ y_test_standard = [[y] for y in y_test_standard]
 empirical_mean = mean(reduce(vcat, y_test_standard))
 println("Empirical mean: $empirical_mean")
 
+
+
+
+
+
+println("Testing equivalence of zero-mean + mean_only and prior mean with no standardization")
 # Setup 1: ZeroMean + center_scale
 kernel = 1*(SqExponentialKernel() ∘ ScaleTransform(1))
 model1 = StandardGP(kernel, 1e-12)
 bo1 = BOStruct(f, ExpectedImprovement(0.01, minimum(reduce(vcat, y_test_standard))), 
                model1, SqExponentialKernel(), ContinuousDomain([-5.0, -5.0], [5.0, 5.0]), 
                x_test, y_test_standard, 10, 0.0)
-
 # Setup 2: ConstMean(empirical_mean) + scale_only  
 model2 = StandardGP(kernel, 1e-12, mean=ConstMean(empirical_mean))
 bo2 = BOStruct(f, ExpectedImprovement(0.01, minimum(reduce(vcat, y_test_standard))), 
@@ -48,14 +53,13 @@ bo2 = BOStruct(f, ExpectedImprovement(0.01, minimum(reduce(vcat, y_test_standard
                x_test, y_test_standard, 10, 0.0)
 
 # Apply standardizations
-bo1_std, params1 = standardize_problem(bo1, choice="center_scale")
-bo2_std, params2 = standardize_problem(bo2, choice="scale_only")
-
+bo1_std, params1 = standardize_problem(bo1, choice="mean_only")
+# Checking whether mean_only with zero mean  + \bar{Y} is equivalent to prior mean without doing anything else -> true 
+bo2.model = update!(bo2.model,x_test,y_test_standard)
+params2 = ([0.0],[1.0])
 
 println(bo1_std.model.gp.kernel)
-
-println(bo2_std.model.gp.kernel)
-
+println(bo2.model.gp.kernel)
 
 println("Setup 1 (ZeroMean + center_scale): μ=$(params1[1]), σ=$(params1[2])")
 println("Setup 2 (ConstMean + scale_only): μ=$(params2[1]), σ=$(params2[2])")
@@ -67,27 +71,78 @@ x_pred = [[0.5, -0.3], [-1.2, 0.8], [2.1, -1.5]]
 pred1_mean = [posterior_mean(bo1_std.model, x) for x in x_pred]
 pred1_var = [posterior_var(bo1_std.model, x) for x in x_pred]
 
-pred2_mean = [posterior_mean(bo2_std.model, x) for x in x_pred]
-pred2_var = [posterior_var(bo2_std.model, x) for x in x_pred]
-
-# Un-standardize predictions to compare
-pred1_unstd_mean = [(m * params1[2][1]) + params1[1][1] for m in pred1_mean]
-pred1_unstd_var = [v * (params1[2][1])^2 for v in pred1_var]
-
-pred2_unstd_mean = [(m * params2[2][1]) + params2[1][1] for m in pred2_mean]
-pred2_unstd_var = [v * (params2[2][1])^2 for v in pred2_var]
+pred2_mean = [posterior_mean(bo2.model, x) for x in x_pred]
+pred2_var = [posterior_var(bo2.model, x) for x in x_pred]
 
 println("\nStandardGP Predictions (un-standardized):")
-println("Setup 1 means: $pred1_unstd_mean")
-println("Setup 2 means: $pred2_unstd_mean")
-println("Setup 1 vars:  $pred1_unstd_var")
-println("Setup 2 vars:  $pred2_unstd_var")
+println("Setup 1 means: $pred1_mean")
+println("Setup 2 means: $pred2_mean")
+println("Setup 1 vars:  $pred1_var")
+println("Setup 2 vars:  $pred2_var")
 
-mean_diff = maximum(abs.(pred1_unstd_mean .- pred2_unstd_mean))
-var_diff = maximum(abs.(pred1_unstd_var .- pred2_unstd_var))
+mean_diff = maximum(abs.(pred1_mean .- pred2_mean))
+var_diff = maximum(abs.(pred1_var .- pred2_var))
 println("Max mean difference: $mean_diff")
 println("Max variance difference: $var_diff")
 println("StandardGP equivalence: $(mean_diff < 1e-10 && var_diff < 1e-10)")
+
+
+println("Now testing zero mean + center_scale should be equal to prior mean + scale_only")
+# Setup 1: ZeroMean + center_scale
+kernel = 1*(SqExponentialKernel() ∘ ScaleTransform(1))
+model1 = StandardGP(kernel, 1e-12)
+bo1 = BOStruct(f, ExpectedImprovement(0.01, minimum(reduce(vcat, y_test_standard))), 
+               model1, SqExponentialKernel(), ContinuousDomain([-5.0, -5.0], [5.0, 5.0]), 
+               x_test, y_test_standard, 10, 0.0)
+# Setup 2: ConstMean(empirical_mean) + scale_only  
+model2 = StandardGP(kernel, 1e-12, mean=ConstMean(empirical_mean))
+bo2 = BOStruct(f, ExpectedImprovement(0.01, minimum(reduce(vcat, y_test_standard))), 
+               model2, SqExponentialKernel(), ContinuousDomain([-5.0, -5.0], [5.0, 5.0]), 
+               x_test, y_test_standard, 10, 0.0)
+
+# Apply standardizations
+bo1_std, params1 = standardize_problem(bo1, choice="center_scale")
+bo2_std, params2 = standardize_problem(bo2, choice="scale_only")
+# Checking whether mean_only with zero mean  + \bar{Y} is equivalent to prior mean without doing anything else -> true 
+
+println(bo1_std.model.gp.kernel)
+println(bo2_std.model.gp.kernel)
+
+println("Setup 1 (ZeroMean + center_scale): μ=$(params1[1]), σ=$(params1[2])")
+println("Setup 2 (ConstMean + scale_only): μ=$(params2[1]), σ=$(params2[2])")
+
+# Test points for prediction
+x_pred = [[0.5, -0.3], [-1.2, 0.8], [2.1, -1.5]]
+
+# Get predictions from both setups
+pred1_mean = [posterior_mean(bo1_std.model, x) for x in x_pred]
+pred1_var = [posterior_var(bo1_std.model, x) for x in x_pred]
+
+pred2_mean = [posterior_mean(bo2.model, x) for x in x_pred]
+pred2_var = [posterior_var(bo2.model, x) for x in x_pred]
+
+println("\nStandardGP Predictions (un-standardized):")
+println("Setup 1 means: $pred1_mean")
+println("Setup 2 means: $pred2_mean")
+println("Setup 1 vars:  $pred1_var")
+println("Setup 2 vars:  $pred2_var")
+
+
+
+mean_diff = maximum(abs.(pred1_mean .- pred2_mean))
+var_diff = maximum(abs.(pred1_var .- pred2_var))
+println("Max mean difference: $mean_diff")
+println("Max variance difference: $var_diff")
+println("StandardGP equivalence: $(mean_diff < 1e-10 && var_diff < 1e-10)")
+pred1_unstd_mean = [(m * params1[2][1]) for m in pred1_mean]
+pred1_unstd_var = [v .* (params1[2][1].^2) for v in pred1_var]
+pred2_unstd_mean = [(m * params2[2][1]) for m in pred2_mean]
+pred2_unstd_var = [v .* (params2[2][1].^2) for v in pred2_var]
+
+
+println("Okay, so both are equivalent")
+
+
 
 # Test for GradientGP
 println("\n=== Testing GradientGP ===")

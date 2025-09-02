@@ -54,10 +54,6 @@ y_train = f.(x_train) #+ sqrt(σ²).* randn(n_train)
 
 y_train = map(x -> [x], y_train)
 
-mean_y = mean(y_train)
-
-# f̃(x) = (himmelblau(x)-y_mean)/y_std
-
 kernel = 1 *(kernel_constructor ∘ ScaleTransform(1))
 model = StandardGP(kernel,σ²) # Instantiates the StandardGP (gives it the prior).
 
@@ -85,7 +81,7 @@ bo_struct = BOStruct(
 print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-@time result,acq_list, std_params = AbstractBayesOpt.optimize(bo_struct,scale_only=true)
+@time result,acq_list, std_params = AbstractBayesOpt.optimize(bo_struct,standardize="mean_scale")
 xs = result.xs
 ys = result.ys_non_std 
 # ys = (reduce(vcat,result.ys).*y_std) .+ y_mean
