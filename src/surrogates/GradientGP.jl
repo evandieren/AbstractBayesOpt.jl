@@ -52,17 +52,17 @@ end
 
 
 """
-    gradMean(c::AbstractVector)
+    gradConstMean(c::AbstractVector)
 
-Custom mean function for the GradientGP model.
+Custom mean function for the GradientGP model. Returns a constant per-output
+mean across MO inputs (function value + gradients). The first element corresponds
+to the function value, the following ones to the gradient outputs.
 
-Arguments:
-- `c::AbstractVector`: A vector of constants for the mean function.
-
-returns:
-- `gradMean`: An instance of the custom mean function.
+Use gradConstMean([μ_f; zeros(d)]) to set a constant prior mean μ_f for the function
+value and zero for the gradients.
 """
-struct gradMean
+
+struct gradConstMean
     c::AbstractVector
     function f_mean(vec_const, (x, px)::Tuple{Any,Int})
         #println(vec_const)
@@ -70,9 +70,14 @@ struct gradMean
         return vec_const[px]
     end
 
-    function gradMean(c)
+    function gradConstMean(c::AbstractVector)
         return CustomMean(x -> f_mean(c,x))
     end
+end
+
+
+function Base.show(io::IO, m::gradConstMean)
+    return print(io, "gradConstMean(c=$(m.c))")
 end
 
 """
@@ -126,7 +131,7 @@ function (κ::gradKernel)((x, px)::Tuple{Any,Int}, (y, py)::Tuple{Any,Int})
 end
 
 """
-    GradientGP(kernel::gradKernel, p::Int, noise_var::Float64; mean=ZeroMean())
+    GradientGP(kernel::gradKernel, p::Int, noise_var::Float64; mean=nothing)
 
 Constructor for the GradientGP model.
 
@@ -141,7 +146,7 @@ returns:
 """
 function GradientGP(kernel::gradKernel,p::Int,noise_var::Float64; mean=nothing)
     if isnothing(mean)
-        mean = gradMean(zeros(p))
+        mean = gradConstMean(zeros(p))
     end
     gp = AbstractGPs.GP(mean,kernel) # Creates GP(0,k) for the prior
     GradientGP(gp,noise_var,p,nothing)
@@ -244,42 +249,50 @@ function nlml_ls(model::GradientGP,log_ℓ::T, log_scale::Float64, kernel::Kerne
 end
 
 """
-    standardize_y(mod::GradientGP,y_train::AbstractVector; scale_only=false)
+    standardize_y(mod::GradientGP,y_train::AbstractVector; choice="center_scale")
 
 Standardize the output values (y_train) for the GradientGP model.
-If scale_only is true, only scale the outputs without centering (in case we set a non-zero mean function with empirical mean).
 
 Arguments:
 - `mod::GradientGP`: The GP model.
 - `y_train::AbstractVector`: A vector of observed function values and gradients.
-- `scale_only::Bool`: If true, only scale the outputs without centering.
+- `choice`: A string indicating the type of standardization to apply. Options are:
+    - "center_scale": Center and scale the outputs (default).
+    - "scale_only": Only scale the outputs without centering.
+    - "mean_only": Only center the outputs without scaling.
 
 returns:
 - `ys_std`: A vector of standardized output values.
 - `μ`: Mean standardization applied to function values (first output), zeros for gradients.
 - `σ`: Standard deviation standardization applied to all outputs (function values and gradients).
 """
-function standardize_y(mod::GradientGP,y_train::AbstractVector; scale_only=false)
+function standardize_y(model::GradientGP,y_train::AbstractVector; choice="center_scale")
+    
+    @assert choice in ["center_scale", "scale_only", "mean_only"] "choice must be one of 'center_scale', 'scale_only', or 'mean_only'"
+    
+    
     y_mat = reduce(hcat, y_train)
 
     μ = vec(mean(y_mat; dims=2))
     μ[2:end] .= 0.0  # Only standardize function values, not gradients
     σ = vec(std(y_mat; dims=2))
+    σ[2:end] .= σ[1]  # Use same scaling for gradients
     
     # Protect against very small standard deviations
     if σ[1] < 1e-12
-        @warn "Very small standard deviation detected: $(σ[1]). Using std = 1.0"
-        σ[1] = 1.0
+        @warn "Very small standard deviation detected: $(σ[1]). Using mean-only standardization."
+        choice = "mean_only" # if std is too small, we cannot scale, so we just center
     end
     
-    σ[2:end] .= σ[1]  # Use same scaling for gradients
-    
     ys_std = nothing
-    if scale_only
+    if choice == "center_scale"
+        ys_std = [(y .- μ) ./ σ for y in y_train]
+    elseif choice == "mean_only"
+        ys_std = [(y .- μ) for y in y_train]
+        σ .= 1.0 # we do not scale if mean_only
+    else
         ys_std = [(y) ./ σ for y in y_train]
         μ .= 0.0 # we do not center if scale_only
-    else
-        ys_std = [(y .- μ) ./ σ for y in y_train]
     end
 
     # this re-creates a Vector{Vector{Float64}}, which is what we need

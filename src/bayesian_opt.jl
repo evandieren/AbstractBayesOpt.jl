@@ -240,13 +240,6 @@ function optimize_hyperparameters(model::AbstractSurrogate,
 
     for i in 1:num_restarts
         try
-            # if classic_bo
-            #    result = Optim.optimize(obj, lower_bounds, upper_bounds, init_guesses[i], Fminbox(inner_optimizer),opts,autodiff = :forward)
-            #else
-            #    result = Optim.optimize(obj, grad_obj!,
-            #                            lower_bounds, upper_bounds, init_guesses[i], 
-            #                           Fminbox(inner_optimizer), opts)
-            #end
             result = Optim.optimize(obj,lower_bounds, upper_bounds, init_guesses[i], Fminbox(inner_optimizer),opts, autodiff = :forward)
 
             println("Optimization result: ", result)
@@ -317,29 +310,78 @@ function rescale_output(ys::AbstractVector, params::Tuple)
 end
 
 """
-    standardize_problem(p::BOStruct; scale_only=false)
+    standardize_problem(BO::BOStruct; choice="center_scale")
 
 Standardize the output values of the BOStruct and update the GP and acquisition function accordingly.
-If scale_only is true, only scale the outputs without centering (in case we set a non-zero mean function with empirical mean).
 
 Arguments:
-- `p::BOStruct`: The Bayesian Optimization problem to standardize.
-- `scale_only::Bool`: If true, only scale the outputs without centering.
+- `BO::BOStruct`: The Bayesian Optimization problem to standardize.
+- `choice::String`: Standardization mode:
+    - "center_scale": remove empirical mean and scale by empirical std.
+    - "scale_only": only scale by empirical std (no centering). If the GP has a non-zero prior mean, it is rescaled accordingly for consistency.
+    - "mean_only": only remove the empirical mean (no scaling).
+    - "none": do not standardize.
 
 returns:
-- `p::BOStruct`: The updated Bayesian Optimization problem with standardized outputs.
-- `params::Tuple`: A tuple containing the mean and standard deviation used for standardization.
+- `BO::BOStruct`: The updated BOStruct with standardized outputs and updated model/acquisition.
+- `params::Tuple`: A tuple containing the mean and standard deviation used for standardization (vectors matching the output dimension).
 """
-function standardize_problem(BO::BOStruct; scale_only=false)    
-    BO.ys, μ, σ = standardize_y(BO.model,BO.ys_non_std, scale_only=scale_only)
+function standardize_problem(BO::BOStruct; choice="center_scale")
+    @assert choice in ["center_scale", "scale_only", "mean_only"] "choice must be one of: 'center_scale', 'scale_only', 'mean_only'"
+
+    ys_non_std = BO.ys_non_std
+
+    # Helper to take care of the prior mean when scaling without centering
+    function _rescale_model(BO::BOStruct,μ::AbstractVector, σ::AbstractVector)
+        if BO.model isa GradientGP
+            m = (BO.model::GradientGP).gp.mean
+            if isa(m,CustomMean)
+                new_mean = gradConstMean((m.f.c.-μ) ./ σ)
+                new_kernel = (1/σ[1])*(BO.model.gp.kernel.base_kernel.kernel.kernel ∘ BO.model.gp.kernel.base_kernel.kernel.transform)
+                BO.model = GradientGP(gradKernel(new_kernel),BO.model.p, BO.model.noise_var, mean=new_mean)          
+            else
+                error("Currently only gradConstMean is supported for GradientGP.")
+            end
+        elseif BO.model isa StandardGP
+            m = (BO.model::StandardGP).gp.mean
+            if !isa(m,AbstractGPs.ZeroMean)
+                # Scale any mean function output by 1/σ[1]
+                if isa(m,ConstMean)
+                    new_mean = ConstMean((m.c-μ[1]) ./ σ[1])
+                else 
+                    new_mean = CustomMean(x -> (m(x) .- μ[1]) ./ σ[1])
+                end
+            else 
+                new_mean = ZeroMean()
+            end
+
+            new_kernel = (1/σ[1])*(BO.model.gp.kernel.kernel.kernel ∘ BO.model.gp.kernel.kernel.transform)
+            BO.model = StandardGP(new_kernel, BO.model.noise_var, mean=new_mean)
+            end
+        BO
+    end
+
+    # Center and scale BO.ys and obtain μ and σ
+    BO.ys, μ, σ = standardize_y(BO.model, ys_non_std, choice=choice)
+
+
+    if choice == "scale_only"
+        @assert iszero(μ)
+    elseif choice == "mean_only"
+        @assert all(==(1), σ)
+    end
+
+    BO = _rescale_model(BO, μ, σ)
     println("Standardization applied: μ=$μ, σ=$σ")
+    
     BO.model = update!(BO.model, BO.xs, BO.ys)
-    BO.acq = update!(BO.acq,BO.ys, BO.model)
+    BO.acq = update!(BO.acq, BO.ys, BO.model)
+    
     return BO, (μ, σ)
 end
 
 """
-    optimize(BO::BOStruct;fn=nothing, standardize=true, hyper_params="all", scale_only=false)
+    optimize(BO::BOStruct; standardize="center_scale", hyper_params="all")
 
 This function implements the EGO framework:
     While some criterion is not met,
@@ -351,13 +393,15 @@ This function implements the EGO framework:
 
 Arguments:
 - `BO::BOStruct`: The Bayesian Optimization structure.
-- `fn::Union{Nothing, String}`: If provided, the function will save plots of the optimization state at each iteration to files named with this prefix.
-- `standardize::Bool`: If true, standardize the output values before starting the optimization.
+- `standardize::String`: Specifies how to standardize the outputs.
+    - If "center_scale", standardize by removing mean and scaling by std.
+    - If "scale_only", only scale the outputs without centering (in case we set a non-zero mean function with empirical mean).
+    - If "mean_only", only remove the mean without scaling.
+    - If nothing, do not standardize the outputs.
 - `hyper_params::String`: Specifies how to handle hyperparameters.
     - If "all", re-optimize hyperparameters every 10 iterations.
-    - If 'length_scale_only', only optimize the lengthscale.
+    - If "length_scale_only", only optimize the lengthscale.
     - If nothing, do not re-optimize hyperparameters.
-- `scale_only::Bool`: If true, only scale the outputs without centering (in case we set a non-zero mean function with empirical mean).
 
 returns:
 - `BO::BOStruct`: The updated Bayesian Optimization problem after optimization.
@@ -365,12 +409,13 @@ returns:
 - `standard_params::Tuple`: Tuple containing the mean and standard deviation used for standardization
 """
 function optimize(BO::BOStruct;
-                  fn=nothing,
-                  standardize=true,
-                  hyper_params="all",
-                  scale_only=false)
+                  standardize="center_scale",
+                  hyper_params="all")
 
-    @assert hyper_params in ["all", "length_scale_only", "none", nothing] "hyper_params must be one of: 'all', 'length_scale_only', 'none', or nothing."
+    @assert hyper_params in ["all", "length_scale_only", nothing] "hyper_params must be one of: 'all', 'length_scale_only', or nothing."
+
+
+    @assert standardize in ["center_scale", "scale_only", "mean_only", "none", nothing] "standardize must be one of: 'center_scale', 'scale_only', 'mean_only', or nothing."
 
     acq_list = []
     n_train = length(BO.xs)
@@ -379,10 +424,10 @@ function optimize(BO::BOStruct;
     
     μ=zeros(length(BO.ys[1]))
     σ=ones(length(BO.ys[1])) # default values if we do not standardize
-    if standardize
-        BO, (μ, σ) = standardize_problem(BO, scale_only=scale_only)
-    else 
+    if isnothing(standardize)
         BO.model = update!(BO.model, BO.xs, BO.ys) # because we might not to that before
+    else 
+        BO, (μ, σ) = standardize_problem(BO, choice=standardize)
     end
 
     original_mean = BO.model.gp.mean
@@ -424,9 +469,6 @@ function optimize(BO::BOStruct;
         println("Time acq update:")
         @time x_cand = optimize_acquisition!(BO.acq,BO.model,BO.domain)
         
-        if !isnothing(fn)
-            plot_state(BO,n_train,x_cand,"./$(fn)_iter_$(i).png")
-        end
 
         println("New point acquired: $(x_cand) with acq func $(BO.acq(BO.model, x_cand))")
         push!(acq_list,BO.acq(BO.model, x_cand))
@@ -438,14 +480,16 @@ function optimize(BO::BOStruct;
         println("New value probed: ",y_cand)
         i +=1
         println("Time update GP")
+       
         
-        if standardize
-            y_cand_std = (y_cand .- μ) ./ σ
-            
-            @time BO = update!(BO, x_cand, y_cand_std, i)
-        else
-            @time BO = update!(BO, x_cand, y_cand, i)
-        end
+        # here we have μ and σ according to the standardization choice
+        # The vectors are given as (pseudo-code):
+        # if mean_only, μ ≠ 0 and σ = 1
+        # if scale_only, μ = 0 and σ ≠ 1
+        # if center_scale, μ ≠ 0 and σ ≠ 1
+        # if nothing, μ = 0 and σ = 1
+        y_cand = (y_cand .- μ) ./ σ
+        @time BO = update!(BO, x_cand, y_cand, i)
     end
 
     return BO, acq_list, (μ,σ)

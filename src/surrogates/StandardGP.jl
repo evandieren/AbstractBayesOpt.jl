@@ -22,12 +22,15 @@ StandardGP constructor with the specified kernel and noise variance.
 Arguments:
 - `kernel::Kernel`: The kernel function to be used in the GP.
 - `noise_var::Float64`: The noise variance of the observations.
-- `mean`: (optional) The mean function of the GP, defaults to ZeroMean()
+- `mean`: (optional) The mean function of the GP, defaults to nothing (creates a ZeroMean() if not provided).
 
 returns:
 - `StandardGP`: An instance of the StandardGP model.
 """
-function StandardGP(kernel::Kernel, noise_var::Float64; mean=ZeroMean())
+function StandardGP(kernel::Kernel, noise_var::Float64; mean=nothing)
+    if isnothing(mean)
+        mean = ZeroMean()
+    end
     gp = AbstractGPs.GP(mean,kernel) # Creates GP(0,k) for the prior
     StandardGP(gp, noise_var, nothing)
 end
@@ -126,38 +129,44 @@ end
 
 
 """
-    standardize_y(model::StandardGP,y_train::AbstractVector; scale_only=false)
+    standardize_y(model::StandardGP,y_train::AbstractVector; choice="center_scale")
 
 Standardize the output values of the training data.
 
 Arguments:
 - `model::StandardGP`: The GP model.
 - `y_train::AbstractVector`: A vector of observed function values.
-- `scale_only::Bool`: If true, only scale the outputs without centering (in case we set a non-zero mean function with empirical mean).
+- `choice`: A string indicating the type of standardization to apply. Options are:
+    - "center_scale": Center and scale the outputs (default).
+    - "scale_only": Only scale the outputs without centering.
+    - "mean_only": Only center the outputs without scaling.
+
 returns:
 - `y_standardized`: A vector of standardized function values.
 - `y_mean`: Mean standardization applied to outputs.
 - `y_std`: Standard deviation standardization applied to outputs.
 """
-function standardize_y(model::StandardGP,y_train::AbstractVector; scale_only=false)
+function standardize_y(model::StandardGP,y_train::AbstractVector; choice="center_scale")
+
+    @assert choice in ["center_scale", "scale_only", "mean_only"] "choice must be one of: 'center_scale', 'scale_only', 'mean_only'"
+
     y_flat = reduce(vcat, y_train)
-    y_mean = mean(y_flat)
-    y_std = std(y_flat)
+    y_mean::Float64 = mean(y_flat)
+    y_std::Float64 = std(y_flat)
 
     if y_std < 1e-12
         y_std = 1.0 # avoid division by zero
         println("Warning: standard deviation of y is too small, setting to 1.0 to avoid division by zero.")
     end
 
-    y_standardized = nothing
-    if scale_only
-        y_standardized = [(y) ./ y_std for y in y_train]
+
+    if choice == "scale_only"
         y_mean = 0.0 # we do not center if scale_only
-    else
-        y_standardized = [(y .- y_mean) ./ y_std for y in y_train]
+    elseif choice == "mean_only"
+        y_std = 1.0 # we do not scale if mean_only
     end
 
-    # this re-creates a Vector{Vector{Float64}}, which is what we need
+    y_standardized = [(y .- y_mean) ./ y_std for y in y_train]
     return y_standardized, [y_mean], [y_std]
 end
 
