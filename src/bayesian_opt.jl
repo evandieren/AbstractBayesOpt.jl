@@ -201,9 +201,11 @@ function optimize_hyperparameters(model::AbstractSurrogate,
     # Store original scale for length_scale_only case
     original_scale = exp(old_params[2])
 
-    length_scale_only ? lower_bounds = log.([1e-3]) : lower_bounds = log.([1e-3, 1e-6/scale_std])
-    length_scale_only ? upper_bounds = log.([1e1]) : upper_bounds = log.([1e2, 1e2/scale_std])
+    length_scale_only ? lower_bounds = log.([1e-3]) : lower_bounds = log.([1e-3, 1e-6/(scale_std^2)])
+    length_scale_only ? upper_bounds = log.([1e2]) : upper_bounds = log.([1e2, 1e5/(scale_std^2)])
 
+    println("lower bounds: $(lower_bounds)")
+    println("upper bounds: $(upper_bounds)")
     
     x_train_prepped = prep_input(model, x_train)
     y_train_prepped = nothing
@@ -355,7 +357,8 @@ function standardize_problem(BO::BOStruct; choice="mean_scale")
 
 
                 # Rescale kernel amplitude by 1/σ[1]
-                new_kernel = (1/σ[1])*(BO.model.gp.kernel.base_kernel.kernel.kernel ∘ BO.model.gp.kernel.base_kernel.kernel.transform)
+                old_scale = get_scale(BO.model) 
+                new_kernel = (old_scale/σ[1])*(BO.model.gp.kernel.base_kernel.kernel.kernel ∘ BO.model.gp.kernel.base_kernel.kernel.transform)
                 BO.model = GradientGP(gradKernel(new_kernel),BO.model.p, BO.model.noise_var, mean=new_mean)          
             else
                 error("Currently only gradConstMean is supported for GradientGP.")
