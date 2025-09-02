@@ -65,3 +65,36 @@ println("Un-standardized predictions:")
 println("Setup 1: $pred1_unstd")
 println("Setup 2: $pred2_unstd")
 println("Difference: $(abs(pred1_unstd - pred2_unstd))")
+
+
+
+# Test GradientGP equivalence
+f(x) = x[1]^2
+∇f(x) = [2 * x[1]]
+f_val_grad(x) = [f(x); ∇f(x)]
+
+y_test_gradient = f_val_grad.(x_test)
+empirical_mean_grad = mean(hcat(y_test_gradient...)[1, :])
+prior_mean_vector = [empirical_mean_grad; zeros(1)]
+
+grad_kernel = gradKernel(kernel)
+model1_grad = GradientGP(grad_kernel, 2, 1e-6)
+bo1_grad = BOStruct(f_val_grad, ExpectedImprovement(0.01, minimum(hcat(y_test_gradient...)[1, :])), 
+                    model1_grad, SqExponentialKernel(), ContinuousDomain([-2.0], [2.0]), 
+                    x_test, y_test_gradient, 10, 0.0)
+
+model2_grad = GradientGP(grad_kernel, 2, 1e-6, mean=gradConstMean(prior_mean_vector))
+bo2_grad = BOStruct(f_val_grad, ExpectedImprovement(0.01, minimum(hcat(y_test_gradient...)[1, :])), 
+                    model2_grad, SqExponentialKernel(), ContinuousDomain([-2.0], [2.0]), 
+                    x_test, y_test_gradient, 10, 0.0)
+
+bo1_grad_std, params1_grad = standardize_problem(bo1_grad, choice="center_scale")
+bo2_grad_std, params2_grad = standardize_problem(bo2_grad, choice="scale_only")
+
+pred1_grad_mean = posterior_grad_mean(bo1_grad_std.model, x_pred)
+pred2_grad_mean = posterior_grad_mean(bo2_grad_std.model, x_pred)
+
+pred1_grad_unstd = (pred1_grad_mean .* params1_grad[2]) .+ params1_grad[1]
+pred2_grad_unstd = (pred2_grad_mean .* params2_grad[2]) .+ params2_grad[1]
+
+isapprox(pred1_grad_unstd, pred2_grad_unstd; atol=1e-10)

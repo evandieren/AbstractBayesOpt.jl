@@ -51,6 +51,12 @@ bo2 = BOStruct(f, ExpectedImprovement(0.01, minimum(reduce(vcat, y_test_standard
 bo1_std, params1 = standardize_problem(bo1, choice="center_scale")
 bo2_std, params2 = standardize_problem(bo2, choice="scale_only")
 
+
+println(bo1_std.model.gp.kernel)
+
+println(bo2_std.model.gp.kernel)
+
+
 println("Setup 1 (ZeroMean + center_scale): μ=$(params1[1]), σ=$(params1[2])")
 println("Setup 2 (ConstMean + scale_only): μ=$(params2[1]), σ=$(params2[2])")
 

@@ -65,8 +65,6 @@ value and zero for the gradients.
 struct gradConstMean
     c::AbstractVector
     function f_mean(vec_const, (x, px)::Tuple{Any,Int})
-        #println(vec_const)
-    
         return vec_const[px]
     end
 
@@ -283,19 +281,17 @@ function standardize_y(model::GradientGP,y_train::AbstractVector; choice="center
         @warn "Very small standard deviation detected: $(σ[1]). Using mean-only standardization."
         choice = "mean_only" # if std is too small, we cannot scale, so we just center
     end
-    
-    ys_std = nothing
-    if choice == "center_scale"
-        ys_std = [(y .- μ) ./ σ for y in y_train]
-    elseif choice == "mean_only"
-        ys_std = [(y .- μ) for y in y_train]
-        σ .= 1.0 # we do not scale if mean_only
-    else
-        ys_std = [(y) ./ σ for y in y_train]
-        μ .= 0.0 # we do not center if scale_only
-    end
 
-    # this re-creates a Vector{Vector{Float64}}, which is what we need
+    if choice == "scale_only" 
+        μ .= 0.0 # we do not center if scale_only
+    elseif choice == "mean_only"
+        σ .= 1.0 # we do not scale if mean_only
+    end 
+    
+
+
+    ys_std = [(y .- μ) ./ σ for y in y_train]
+    
     return ys_std, μ, σ
 end
 

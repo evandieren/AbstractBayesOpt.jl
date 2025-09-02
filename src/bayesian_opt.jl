@@ -336,7 +336,48 @@ function standardize_problem(BO::BOStruct; choice="center_scale")
         if BO.model isa GradientGP
             m = (BO.model::GradientGP).gp.mean
             if isa(m,CustomMean)
-                new_mean = gradConstMean((m.f.c.-μ) ./ σ)
+                @assert iszero(μ[2:end])
+
+                # Extract constant vector from our gradConstMean-based CustomMean
+                c = try
+                    m.f.c
+                catch
+                    println("Warning: Could not extract constant vector from CustomMean. Assuming zero vector.")
+                    # Fallback: assume zero vector if not retrievable
+                    zeros(length(μ))
+                end
+
+                # new_mean = begin
+                #     zero_prior = all(iszero, c)
+                #     scale_only = iszero(μ) && !all(==(1.0), σ)
+                #     mean_only = all(==(1.0), σ)
+                #     if zero_prior
+                #         if scale_only
+                #             # Only scale the (zero) prior -> stays zero
+                #             gradConstMean(c) # zeros
+                #         else
+                #             # center_scale or mean_only: keep zero mean like StandardGP
+                #             gradConstMean(c) # zeros
+                #         end
+                #     else
+                #         if mean_only
+                #             gradConstMean(c .- μ) # only remove mean
+                #         elseif scale_only
+                #             gradConstMean(c ./ σ[1]) # only scale
+                #         else
+                #             # center_scale
+                #             gradConstMean((c .- μ) ./ σ[1])
+                #         end
+                #     end
+                # end
+                
+                println(μ)
+                println(σ)
+
+                new_mean = gradConstMean((c .- μ) ./ σ[1])
+
+
+                # Rescale kernel amplitude by 1/σ[1]
                 new_kernel = (1/σ[1])*(BO.model.gp.kernel.base_kernel.kernel.kernel ∘ BO.model.gp.kernel.base_kernel.kernel.transform)
                 BO.model = GradientGP(gradKernel(new_kernel),BO.model.p, BO.model.noise_var, mean=new_mean)          
             else
