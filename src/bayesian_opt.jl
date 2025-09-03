@@ -224,11 +224,6 @@ function optimize_hyperparameters(model::AbstractSurrogate,
         obj = p -> nlml(model,p, kernel_constructor, x_train_prepped, y_train_prepped, mean=mean)
     end
 
-    #grad_obj! = nothing
-    #if !classic_bo
-    #    grad_obj! = (G, p) -> ReverseDiff.gradient!(G, obj, p)
-    #end
-
     opts = Optim.Options(g_tol=1e-5,f_abstol=1e-6,x_abstol=1e-4,outer_iterations=100)
 
     random_inits = [rand.(Uniform.(lower_bounds, upper_bounds)) for _ in 1:(num_restarts - 1)]
@@ -358,7 +353,7 @@ function standardize_problem(BO::BOStruct; choice="mean_scale")
 
                 # Rescale kernel amplitude by 1/σ[1]
                 old_scale = get_scale(BO.model) 
-                new_kernel = (old_scale/σ[1])*(BO.model.gp.kernel.base_kernel.kernel.kernel ∘ BO.model.gp.kernel.base_kernel.kernel.transform)
+                new_kernel = (old_scale/(σ[1]^2))*(BO.model.gp.kernel.base_kernel.kernel.kernel ∘ BO.model.gp.kernel.base_kernel.kernel.transform)
                 BO.model = GradientGP(gradKernel(new_kernel),BO.model.p, BO.model.noise_var, mean=new_mean)          
             else
                 error("Currently only gradConstMean is supported for GradientGP.")
@@ -376,7 +371,7 @@ function standardize_problem(BO::BOStruct; choice="mean_scale")
                 new_mean = ConstMean(μ[1] / σ[1]) # We will add a prior mean of μ to do like if we did the standardization, but not really standardize.
             end
 
-            new_kernel = (1/σ[1]^2[1])*(BO.model.gp.kernel.kernel.kernel ∘ BO.model.gp.kernel.kernel.transform)
+            new_kernel = (1/(σ[1]^2))*(BO.model.gp.kernel.kernel.kernel ∘ BO.model.gp.kernel.kernel.transform)
             BO.model = StandardGP(new_kernel, BO.model.noise_var, mean=new_mean)
             end
         BO
@@ -460,6 +455,8 @@ function optimize(BO::BOStruct;
     @assert iszero(μ)
 
     original_mean = BO.model.gp.mean
+
+    println(original_mean)
     i = 0
     while !stop_criteria(BO) & !BO.flag
 

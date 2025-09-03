@@ -101,7 +101,7 @@ bo2 = BOStruct(f, ExpectedImprovement(0.01, minimum(reduce(vcat, y_test_standard
                x_test, y_test_standard, 10, 0.0)
 
 # Apply standardizations
-bo1_std, params1 = standardize_problem(bo1, choice="center_scale")
+bo1_std, params1 = standardize_problem(bo1, choice="mean_scale")
 bo2_std, params2 = standardize_problem(bo2, choice="scale_only")
 # Checking whether mean_only with zero mean  + \bar{Y} is equivalent to prior mean without doing anything else -> true 
 
