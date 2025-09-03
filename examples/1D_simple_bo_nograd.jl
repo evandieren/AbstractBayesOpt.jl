@@ -34,7 +34,7 @@ y_train = map(x -> [x], y_train)
 
 #prior_mean = ConstMean(mean(reduce(vcat,y_train))) # set prior mean to empirical mean of data
 
-kernel_constructor = ApproxMatern52Kernel()
+kernel_constructor = SqExponentialKernel()
 kernel = 1 *(kernel_constructor ∘ ScaleTransform(1)) # needed because I need to do MLE
 model = StandardGP(kernel, σ²)#, mean=prior_mean)
 

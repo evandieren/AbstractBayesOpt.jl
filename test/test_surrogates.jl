@@ -73,18 +73,19 @@ using Random
             noise_var = 0.1
             gp = StandardGP(kernel, noise_var)
             
-            # Test standardization
+            # Test standardization using the functions from bayesian_opt.jl
             y_train = [[1.0], [2.0], [3.0], [4.0], [5.0]]
-            y_std, μ, σ = standardize_y(gp, y_train)
+            μ, σ = get_mean_std(gp, y_train)
+            y_std = rescale_y(gp, y_train, σ)
             
             @test length(y_std) == length(y_train)
-            @test μ ≈ 3.0  # mean of [1,2,3,4,5]
-            @test σ > 0
+            @test μ[1] ≈ 3.0  # mean of [1,2,3,4,5]
+            @test σ[1] > 0
             
-            # Check that standardized data has approximately zero mean and unit variance
+            # Check that rescaled data has different scale
             y_flat_std = reduce(vcat, y_std)
-            @test abs(mean(y_flat_std)) < 1e-10
-            @test abs(std(y_flat_std) - 1.0) < 1e-10
+            y_flat_orig = reduce(vcat, y_train)
+            @test std(y_flat_std) ≈ 1.0 atol=1e-10
         end
         
         @testset "StandardGP Copy" begin
@@ -214,9 +215,10 @@ using Random
             noise_var = 0.1
             gp = GradientGP(grad_kernel, p, noise_var)
             
-            # Test standardization
+            # Test standardization using the functions from bayesian_opt.jl
             y_train = [[1.0, 0.1, 0.1], [2.0, 0.2, 0.2], [3.0, 0.3, 0.3]]
-            y_std, μ, σ = standardize_y(gp, y_train)
+            μ, σ = get_mean_std(gp, y_train)
+            y_std = rescale_y(gp, y_train, σ)
             
             @test length(y_std) == length(y_train)
             @test length(μ) == p
