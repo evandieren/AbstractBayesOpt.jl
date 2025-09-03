@@ -557,7 +557,7 @@ using Random
             ucb_val = ucb(updated_gp, test_x)
             mean_val = posterior_mean(updated_gp, test_x)
             var_val = posterior_var(updated_gp, test_x)
-            expected_ucb = -mean_val + β * var_val
+            expected_ucb = -mean_val + β * sqrt(var_val)
             @test abs(ucb_val - expected_ucb) < 1e-10
         end
         
@@ -642,7 +642,7 @@ using Random
                 initial_nlml = nlml(updated_gp, initial_params, SqExponentialKernel(), x_train, reduce(vcat, y_train))
                 
                 optimized_lengthscale = get_lengthscale(optimized_gp)[1]
-                optimized_scale = get_scale(optimized_gp)
+                optimized_scale = get_scale(optimized_gp)[1]
                 optimized_params = [log(optimized_lengthscale), log(optimized_scale)]
                 
                 optimized_nlml = nlml(optimized_gp, optimized_params, SqExponentialKernel(), x_train, reduce(vcat, y_train))
