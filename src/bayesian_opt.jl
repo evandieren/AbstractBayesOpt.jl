@@ -201,8 +201,21 @@ function optimize_hyperparameters(model::AbstractSurrogate,
     # Store original scale for length_scale_only case
     original_scale = exp(old_params[2])
 
-    length_scale_only ? lower_bounds = log.([1e-3]) : lower_bounds = log.([1e-3, 1e-6/(scale_std^2)])
-    length_scale_only ? upper_bounds = log.([1e2]) : upper_bounds = log.([1e2, 1e5/(scale_std^2)])
+    # Adjust scale bounds by 1/σ² to account for standardization
+    # This ensures bounds in original space remain 1e-6 to 1e5 regardless of standardization
+    # Define original space bounds
+    length_scale_lower, length_scale_upper = 1e-3, 1e3
+    scale_lower, scale_upper = 1e-6, 1e6
+
+    # Adjust scale bounds for standardized space
+    adjusted_scale_lower = scale_lower/(scale_std^2)
+    adjusted_scale_upper = scale_upper/(scale_std^2)
+
+    length_scale_only ? lower_bounds = log.([length_scale_lower]) : 
+                        lower_bounds = log.([length_scale_lower, adjusted_scale_lower])
+
+    length_scale_only ? upper_bounds = log.([length_scale_upper]) : 
+                        upper_bounds = log.([length_scale_upper, adjusted_scale_upper])
 
     println("lower bounds: $(lower_bounds)")
     println("upper bounds: $(upper_bounds)")
@@ -337,7 +350,6 @@ function standardize_problem(BO::BOStruct; choice="mean_scale")
         if BO.model isa GradientGP
             m = (BO.model::GradientGP).gp.mean
             if isa(m,CustomMean)
-                @assert iszero(μ[2:end])
 
                 # Extract constant vector from our gradConstMean-based CustomMean
                 c = try
@@ -347,12 +359,22 @@ function standardize_problem(BO::BOStruct; choice="mean_scale")
                     # Fallback: assume zero vector if not retrievable
                     zeros(length(μ))
                 end
+                
+                if !iszero(c)
+                    # Meaning we had a prior mean function before
+                    new_mean = gradConstMean(c ./ σ[1])
 
-                new_mean = gradConstMean((c .- μ) ./ σ[1])
+                    if choice in ["mean_scale","mean_only"]
+                        error("Mean-scale and mean-only are not compatible with non-zero prior mean functions. Consider using scale-only standardization.")
+                    end 
 
+                else
+                    # We had a zero prior mean function before
+                    new_mean = gradConstMean(μ ./ σ[1])
+                end
 
                 # Rescale kernel amplitude by 1/σ[1]
-                old_scale = get_scale(BO.model) 
+                old_scale = get_scale(BO.model)[1]
                 new_kernel = (old_scale/(σ[1]^2))*(BO.model.gp.kernel.base_kernel.kernel.kernel ∘ BO.model.gp.kernel.base_kernel.kernel.transform)
                 BO.model = GradientGP(gradKernel(new_kernel),BO.model.p, BO.model.noise_var, mean=new_mean)          
             else
@@ -363,15 +385,15 @@ function standardize_problem(BO::BOStruct; choice="mean_scale")
             if !isa(m,AbstractGPs.ZeroMean)
                 # Scale any mean function output by 1/σ[1]
                 if isa(m,ConstMean)
-                    new_mean = ConstMean((m.c-μ[1]) ./ σ[1])
+                    new_mean = ConstMean(m.c ./ σ[1])
                 else 
-                    new_mean = CustomMean(x -> (m(x) .- μ[1]) ./ σ[1])
+                    new_mean = CustomMean(x -> (m(x) ./ σ[1]))
                 end
             else 
                 new_mean = ConstMean(μ[1] / σ[1]) # We will add a prior mean of μ to do like if we did the standardization, but not really standardize.
             end
-
-            new_kernel = (1/(σ[1]^2))*(BO.model.gp.kernel.kernel.kernel ∘ BO.model.gp.kernel.kernel.transform)
+            old_scale = get_scale(BO.model)[1]
+            new_kernel = (old_scale/(σ[1]^2))*(BO.model.gp.kernel.kernel.kernel ∘ BO.model.gp.kernel.kernel.transform)
             BO.model = StandardGP(new_kernel, BO.model.noise_var, mean=new_mean)
             end
         BO
@@ -500,7 +522,7 @@ function optimize(BO::BOStruct;
         push!(acq_list,BO.acq(BO.model, x_cand))
 
         y_cand = BO.func(x_cand) 
-        y_cand = y_cand .+ sqrt(BO.noise)*randn(length(y_cand))
+        y_cand = y_cand .+ sqrt(BO.noise)/(σ[1])*randn(length(y_cand))
         # y_cand here is NOT standardized
         push!(BO.ys_non_std, y_cand)
         println("New value probed: ",y_cand)

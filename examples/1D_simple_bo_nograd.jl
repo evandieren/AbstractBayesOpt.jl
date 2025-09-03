@@ -61,7 +61,7 @@ bo_struct = BOStruct(f,
 print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct,standardize="mean_only")
+result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct,standardize="mean_scale")
 xs = reduce(vcat,result.xs)
 ys = reduce(vcat,result.ys_non_std)
 

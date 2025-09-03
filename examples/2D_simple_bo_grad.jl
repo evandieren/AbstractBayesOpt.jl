@@ -48,13 +48,12 @@ val_grad = f_val_grad.(x_train)
 y_train = [val_grad[i] for i = eachindex(val_grad)]
 
 
-mean_prior = gradMean([mean(y_train)[1];zeros(d)])
 
 kernel_constructor = ApproxMatern52Kernel()
 kernel = 1 * (kernel_constructor ∘ ScaleTransform(1))
 grad_kernel = gradKernel(kernel)
 
-model = GradientGP(grad_kernel,d+1,σ²,mean=prior_mean)
+model = GradientGP(grad_kernel,d+1,σ²)
 
 # Init of the acquisition function
 ξ = 0.0
@@ -77,7 +76,7 @@ bo_struct = BOStruct(
 print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct,scale_only=true)
+result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct)
 xs = result.xs
 ys = result.ys_non_std
 
@@ -93,3 +92,9 @@ p = Plots.plot((3*n_train):length(running_min),running_min[3*n_train:end],yaxis=
             label="GradBO",xlims=(1,length(running_min)))
 Plots.vspan!([1,3*n_train]; color=:blue,alpha=0.2, label="")
 Plots.display(p)
+
+
+x_train_prepped = prep_input(result.model,x_train)
+post_mean, post_var = unstandardized_mean_and_var(result.model,x_train_prepped, standard_params)
+post_mean = reshape(post_mean, :, d+1)
+post_var = reshape(post_var, :, d+1)

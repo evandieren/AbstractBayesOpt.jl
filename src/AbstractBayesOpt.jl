@@ -25,7 +25,8 @@ include("surrogates/StandardGP.jl")
 export StandardGP, prep_input, posterior_mean, posterior_var, nlml,nlml_ls, get_mean_std, rescale_y ,unstandardized_mean_and_var, get_lengthscale, get_scale
 
 include("surrogates/GradientGP.jl")
-export GradientGP, ApproxMatern52Kernel, gradConstMean, gradKernel, prep_input, posterior_mean, posterior_var, posterior_grad_mean, posterior_grad_cov,posterior_grad_var, nlml, standardize_y,unstandardized_mean_and_var, get_lengthscale, get_scale
+export GradientGP, ApproxMatern52Kernel, gradConstMean, gradKernel, prep_input, posterior_mean, posterior_var, posterior_grad_mean, posterior_grad_cov,posterior_grad_var
+export nlml, rescale_y, get_mean_std, unstandardized_mean_and_var, get_lengthscale, get_scale
 
 # Acquisition functions
 include("acquisition/acq_utils.jl")

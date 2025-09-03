@@ -247,28 +247,18 @@ function nlml_ls(model::GradientGP,log_ℓ::T, log_scale::Float64, kernel::Kerne
 end
 
 """
-    standardize_y(mod::GradientGP,y_train::AbstractVector; choice="center_scale")
-
-Standardize the output values (y_train) for the GradientGP model.
+Gets the empirical mean and std of y_train (Vector of Vector of Float64)
 
 Arguments:
-- `mod::GradientGP`: The GP model.
-- `y_train::AbstractVector`: A vector of observed function values and gradients.
-- `choice`: A string indicating the type of standardization to apply. Options are:
-    - "center_scale": Center and scale the outputs (default).
-    - "scale_only": Only scale the outputs without centering.
-    - "mean_only": Only center the outputs without scaling.
+- `model::GradientGP`: The GP model.
+- `y_train::AbstractVector`: A vector of observed function values.
 
 returns:
-- `ys_std`: A vector of standardized output values.
-- `μ`: Mean standardization applied to function values (first output), zeros for gradients.
-- `σ`: Standard deviation standardization applied to all outputs (function values and gradients).
+- `y_mean`: Empirical mean
+- `y_std`: Empirical standard deviation
 """
-function standardize_y(model::GradientGP,y_train::AbstractVector; choice="center_scale")
-    
-    @assert choice in ["center_scale", "scale_only", "mean_only"] "choice must be one of 'center_scale', 'scale_only', or 'mean_only'"
-    
-    
+function get_mean_std(model::GradientGP,y_train::AbstractVector)
+
     y_mat = reduce(hcat, y_train)
 
     μ = vec(mean(y_mat; dims=2))
@@ -276,23 +266,31 @@ function standardize_y(model::GradientGP,y_train::AbstractVector; choice="center
     σ = vec(std(y_mat; dims=2))
     σ[2:end] .= σ[1]  # Use same scaling for gradients
     
-    # Protect against very small standard deviations
-    if σ[1] < 1e-12
-        @warn "Very small standard deviation detected: $(σ[1]). Using mean-only standardization."
-        choice = "mean_only" # if std is too small, we cannot scale, so we just center
+    
+    μ, σ
+end
+
+
+"""
+Rescale the output values of the training data (centering is done via standardize_BO)
+
+Arguments:
+- `model::GradientGP`: The GP model.
+- `y_train::AbstractVector`: A vector of observed function values.
+- `y_std::AbstractVector`: Empirical standard deviation
+
+returns:
+- `y_standardized`: A vector of standardized function values.
+"""
+function rescale_y(model::GradientGP,y_train::AbstractVector, y_std::AbstractVector)
+
+    if y_std[1] < 1e-12
+        y_std .= 1.0 # avoid division by zero
+        println("Warning: standard deviation of y is too small, setting to 1.0 to avoid division by zero.")
     end
 
-    if choice == "scale_only" 
-        μ .= 0.0 # we do not center if scale_only
-    elseif choice == "mean_only"
-        σ .= 1.0 # we do not scale if mean_only
-    end 
-    
-
-
-    ys_std = [(y .- μ) ./ σ for y in y_train]
-    
-    return ys_std, μ, σ
+    y_rescaled = [y ./ y_std[1] for y in y_train]
+    return y_rescaled
 end
 
 get_lengthscale(model::GradientGP) = 1 ./ model.gp.kernel.base_kernel.kernel.transform.s
