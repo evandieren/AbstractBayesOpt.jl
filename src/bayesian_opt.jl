@@ -207,8 +207,8 @@ function optimize_hyperparameters(model::AbstractSurrogate,
     length_scale_only ? upper_bounds = log.([length_scale_upper]) : 
                         upper_bounds = log.([length_scale_upper, adjusted_scale_upper])
 
-    println("lower bounds (ℓ, scale): $(log.(lower_bounds))")
-    println("upper bounds (ℓ,scale): $(log.(upper_bounds))")
+    println("lower bounds (ℓ, scale): $(exp.(lower_bounds))")
+    println("upper bounds (ℓ,scale): $(exp.(upper_bounds))")
     
     x_train_prepped = prep_input(model, x_train)
     y_train_prepped = nothing
