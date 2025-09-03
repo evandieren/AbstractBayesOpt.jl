@@ -4,9 +4,15 @@ Comparison of Hyperparameter Tuning Methods and Standardization
 
 This example demonstrates gradient-enhanced Bayesian Optimization on the Himmelblau function
 with different configurations:
-1. Different hyperparameter optimization strategies ("all", "length_scale_only", "none")
-2. With and without standardization
+1. Different hyperparameter optimization strategies ("all", "length_scale_only", nothing)
+2. Different standardization modes ("mean_scale", "scale_only", "mean_only", nothing)
 3. Performance comparison and convergence analysis
+
+Standardization modes:
+- "mean_scale": Remove empirical mean and scale by std (default)
+- "scale_only": Only scale by std, keeping mean via prior function
+- "mean_only": Only remove empirical mean, no scaling
+- nothing: No standardization
 
 """
 
@@ -58,20 +64,26 @@ base_model = GradientGP(grad_kernel, d+1, σ²)
 
 # Define test configurations
 test_configs = [
-    # (name, hyper_params, standardize)
-    ("HP:all + Std", "all", true),
-    ("HP:all + NoStd", "all", false), 
-    ("HP:length + Std", "length_scale_only", true),
-    ("HP:length + NoStd", "length_scale_only", false),
-    ("HP:none + Std", nothing, true),
-    ("HP:none + NoStd", nothing, false)
+    # (name, hyper_params, standardize_mode)
+    ("HP:all + MeanScale", "all", "mean_scale"),
+    ("HP:all + ScaleOnly", "all", "scale_only"),
+    ("HP:all + MeanOnly", "all", "mean_only"),
+    ("HP:all + NoStd", "all", nothing),
+    ("HP:length + MeanScale", "length_scale_only", "mean_scale"),
+    ("HP:length + ScaleOnly", "length_scale_only", "scale_only"),
+    ("HP:length + MeanOnly", "length_scale_only", "mean_only"),
+    ("HP:length + NoStd", "length_scale_only", nothing),
+    ("HP:none + MeanScale", nothing, "mean_scale"),
+    ("HP:none + ScaleOnly", nothing, "scale_only"),
+    ("HP:none + MeanOnly", nothing, "mean_only"),
+    ("HP:none + NoStd", nothing, nothing)
 ]
 
 # Run optimization comparison
 function run_himmelblau_comparison(n_iterations=40)
     results = Dict()
     
-    for (config_name, hyper_params, standardize) in test_configs
+    for (config_name, hyper_params, standardize_mode) in test_configs
         
         model = deepcopy(base_model)
         
@@ -97,7 +109,7 @@ function run_himmelblau_comparison(n_iterations=40)
             result, _, standard_params = AbstractBayesOpt.optimize(
                 problem, 
                 hyper_params=hyper_params,
-                standardize=standardize
+                standardize=standardize_mode
             )
             
             # Record end time
@@ -138,7 +150,7 @@ function run_himmelblau_comparison(n_iterations=40)
                 error_from_global = abs(optimal_value - global_min),
                 elapsed_time = elapsed_time,
                 hyper_params = hyper_params,
-                standardize = standardize,
+                standardize = standardize_mode,
                 standard_params = standard_params,
                 n_evaluations = length(xs)
             )
@@ -150,7 +162,7 @@ function run_himmelblau_comparison(n_iterations=40)
                 error_from_global = Inf,
                 elapsed_time = Inf,
                 hyper_params = hyper_params,
-                standardize = standardize,
+                standardize = standardize_mode,
                 n_evaluations = 0
             )
         end
@@ -171,16 +183,20 @@ function plot_convergence_comparison(results)
             yaxis=:log,
             legend=:topright,
             linewidth=2,
-            size=(1000, 600))
+            size=(1200, 800))
     
     # Define colors and line styles for different configurations
-    colors = [:blue, :lightblue, :red, :pink, :green, :lightgreen]
-    styles = [:solid, :solid, :solid, :solid, :solid, :solid]
+    colors = [:blue, :lightblue, :cyan, :gray,
+              :red, :pink, :orange, :brown,
+              :green, :lightgreen, :yellow, :purple]
+    styles = [:solid, :dash, :dot, :dashdot,
+              :solid, :dash, :dot, :dashdot,
+              :solid, :dash, :dot, :dashdot]
     
     config_names = [
-        "HP:all + Std", "HP:all + NoStd",
-        "HP:length + Std", "HP:length + NoStd", 
-        "HP:none + Std", "HP:none + NoStd"
+        "HP:all + MeanScale", "HP:all + ScaleOnly", "HP:all + MeanOnly", "HP:all + NoStd",
+        "HP:length + MeanScale", "HP:length + ScaleOnly", "HP:length + MeanOnly", "HP:length + NoStd",
+        "HP:none + MeanScale", "HP:none + ScaleOnly", "HP:none + MeanOnly", "HP:none + NoStd"
     ]
     
     for (i, config_name) in enumerate(config_names)

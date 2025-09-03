@@ -58,10 +58,4 @@ problem = BOStruct(
                     0.0
                     )
 
-print_info(problem)
-
-obj = p -> nlml(model, p, kernel_constructor, x_train, reduce(vcat,y_train),mean=mean(y_train)[1])
-
-obj([0.0,0.0])
-
-ForwardDiff.gradient(obj,[0.0,0.0])
+# here to make tests
