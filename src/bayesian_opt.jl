@@ -205,7 +205,7 @@ function optimize_hyperparameters(model::AbstractSurrogate,
     # This ensures bounds in original space remain 1e-6 to 1e5 regardless of standardization
     # Define original space bounds
     length_scale_lower, length_scale_upper = 1e-3, 1e3
-    scale_lower, scale_upper = 1e-6, 1e6
+    scale_lower, scale_upper = 1e-6, 1e4
 
     # Adjust scale bounds for standardized space
     adjusted_scale_lower = scale_lower/(scale_std^2)
