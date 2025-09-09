@@ -415,8 +415,6 @@ function standardize_problem(BO::BOStruct; choice="mean_scale")
 end
 
 """
-    optimize(BO::BOStruct; standardize="mean_scale", hyper_params="all")
-
 This function implements the EGO framework:
     While some criterion is not met,
         (1) optimize the acquisition function to obtain the new best candidate,
@@ -443,8 +441,8 @@ returns:
 - `standard_params::Tuple`: Tuple containing the mean and standard deviation used for standardization
 """
 function optimize(BO::BOStruct;
-                  standardize="mean_scale",
-                  hyper_params="all")
+                  standardize::Union{String, Nothing}="mean_scale",
+                  hyper_params::Union{String, Nothing}="all")
 
     @assert hyper_params in ["all", "length_scale_only", nothing] "hyper_params must be one of: 'all', 'length_scale_only', or nothing."
 
