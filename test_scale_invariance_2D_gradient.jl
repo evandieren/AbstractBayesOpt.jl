@@ -80,7 +80,7 @@ bo_struct_orig = BOStruct(
 result_orig, acq_list_orig, std_params_orig = AbstractBayesOpt.optimize(
     bo_struct_orig, 
     standardize=nothing, 
-    #hyper_params=nothing
+    # hyper_params=nothing
 )
 
 # Test 2: Scaled function with no standardization
@@ -131,7 +131,7 @@ bo_struct_orig_std = BOStruct(
 result_orig_std, acq_list_orig_std, std_params_orig_std = AbstractBayesOpt.optimize(
     bo_struct_orig_std, 
     standardize="scale_only", 
-    #hyper_params=nothing
+    # hyper_params=nothing
 )
 
 xs_orig = result_orig.xs
@@ -187,7 +187,7 @@ plot!(p4, (n_train+1):length(xs_orig_std), gradient_norms_orig_std,
 # Combine plots
 p_combined = plot(p1, p2, p3, p4, layout=(2,2), size=(1200, 900))
 display(p_combined)
-
+savefig(p_combined, "scale_invariance_2D_gradient_comparison.png")
 
 cond(kernelmatrix(kernel, xs_orig, xs_orig) + 1e-6*I)
 cond(kernelmatrix(kernel_scaled, xs_orig_std, xs_orig_std) + (1e-6/scaling_factor^2)*I)

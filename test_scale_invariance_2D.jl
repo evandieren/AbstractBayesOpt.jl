@@ -172,6 +172,6 @@ vspan!(p3, [1, n_train], color=:blue, alpha=0.2, label="Initial training")
 # Combine plots
 p_combined = plot(p1, p2, p3, layout=(3,1), size=(800, 900))
 display(p_combined)
-
+savefig(p_combined, "scale_invariance_2D_comparison.png")
 
 # For me, this is fine.
