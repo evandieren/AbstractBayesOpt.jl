@@ -61,13 +61,28 @@ bo_struct = BOStruct(f,
 print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct,standardize="mean_scale")
+
+choice = "scale_only"
+
+result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct,standardize=choice, hyper_params=nothing)
 xs = reduce(vcat,result.xs)
 ys = reduce(vcat,result.ys_non_std)
 
+
+xs_nothing = copy(xs)
+acq_nothing = copy(acq_list)
+
+xs_scale_only = copy(xs)
+acq_scale_only = copy(acq_list .* standard_params[2][1])
+
+xs_mean_scale = copy(xs)
+acq_mean_scale = copy(acq_list.*standard_params[2][1])
+
+xs_mean_only = copy(xs)
+acq_mean_only = copy(acq_list)
+
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
-
 
 running_min = accumulate(min, f.(xs))
 
@@ -76,3 +91,19 @@ p = Plots.plot(n_train:length(running_min),running_min[n_train:end] .- min_f,yax
             label="BO",xlims=(1,length(running_min)))
 Plots.vspan!([1,n_train]; color=:blue,alpha=0.2, label="")
 Plots.display(p)
+
+
+
+
+Plots.plot(n_train:length(acq_nothing), acq_nothing[n_train:end] .+ eps(), label="standardize = nothing", xlabel="Iteration",
+        ylabel="Acquisition value", title="Acquisition value over iterations (1D BO)", yaxis=:log)
+Plots.plot!(n_train:length(acq_scale_only), acq_scale_only[n_train:end] .+ eps(), label="standardize = scale_only",ls=:dash)
+
+Plots.plot(n_train:length(acq_mean_only), acq_mean_only[n_train:end] .+ eps(), label="standardize = mean_only",ls=:dot,yaxis=:log)
+Plots.plot!(n_train:length(acq_mean_scale), acq_mean_scale[n_train:end] .+ eps(), label="standardize = mean_scale",ls=:dashdot)
+
+Plots.plot(n_train:length(xs_nothing), f.(xs_nothing)[n_train:end], label="standardize = nothing", xlabel="Iteration", ylabel="f(x)", title="Value of f at sampled points (1D BO)")
+Plots.plot!(n_train:length(xs_scale_only), f.(xs_scale_only)[n_train:end], label="standardize = scale_only",ls=:dash)
+
+Plots.plot(n_train:length(xs_mean_only), f.(xs_mean_only)[n_train:end], label="standardize = mean_only",ls=:dot)
+Plots.plot!(n_train:length(xs_mean_scale), f.(xs_mean_scale)[n_train:end], label="standardize = mean_scale",ls=:dashdot)

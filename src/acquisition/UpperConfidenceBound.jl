@@ -43,8 +43,6 @@ end
 
 
 """
-    update!(acqf::UpperConfidenceBound, ys::AbstractVector, surrogate::AbstractSurrogate)
-
 Update the Upper Confidence Bound acquisition function with new array of observations.
 
 Arguments:
@@ -55,6 +53,6 @@ Arguments:
 returns:
 - `UCB::UpperConfidenceBound`: Updated Upper Confidence Bound acquisition function
 """
-function update!(acqf::UpperConfidenceBound,ys::AbstractVector, surrogate::AbstractSurrogate)
-    acqf
+function update(acq::UpperConfidenceBound,ys::AbstractVector, surrogate::AbstractSurrogate)
+    acq
 end

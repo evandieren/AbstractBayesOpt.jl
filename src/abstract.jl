@@ -14,9 +14,9 @@ abstract type AbstractSurrogate <: AbstractGPs.AbstractGP end
 abstract type AbstractDomain end
 
 # Update functions for models, acquisition functions, and BO structure to implement 
-function update!(model::AbstractSurrogate, xs::AbstractVector, ys::AbstractVector) end
+function update(model::AbstractSurrogate, xs::AbstractVector, ys::AbstractVector) end
 
-function update!(acq::AbstractAcquisition, ys::AbstractVector, model::AbstractSurrogate) end # should this have an !? Should we do this inplace?
+function update(acq::AbstractAcquisition, ys::AbstractVector, model::AbstractSurrogate) end
 
 # Optimization functions for acquisition functions
 function optimize_acquisition! end

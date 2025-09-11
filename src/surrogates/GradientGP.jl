@@ -163,7 +163,7 @@ Arguments:
 returns:
 - `GradientGP`: A new GradientGP model updated with the provided data.
 """
-function update!(model::GradientGP, xs::AbstractVector, ys::AbstractVector)
+function update(model::GradientGP, xs::AbstractVector, ys::AbstractVector)
 
     x̃, ỹ = KernelFunctions.MOInputIsotopicByOutputs(xs, size(ys[1])[1]), vec(permutedims(reduce(hcat, ys)))
     # we could do something better for this, such as inserting the batch of new points in xs and ys which are already MOInputIsotopicByOutputs elements.
@@ -270,27 +270,21 @@ function get_mean_std(model::GradientGP,y_train::AbstractVector)
     μ, σ
 end
 
-
 """
-Rescale the output values of the training data (centering is done via standardize_BO)
+Standardize the output values of the training data
 
 Arguments:
 - `model::GradientGP`: The GP model.
-- `y_train::AbstractVector`: A vector of observed function values.
-- `y_std::AbstractVector`: Empirical standard deviation
+- `ys::AbstractVector`: A vector of observed function values.
+- `μ::AbstractVector`: Empirical mean
+- `σ::AbstractVector`: Empirical standard deviation
 
 returns:
-- `y_standardized`: A vector of standardized function values.
+- `y_std`: A vector of standardized function values.
 """
-function rescale_y(model::GradientGP,y_train::AbstractVector, y_std::AbstractVector)
-
-    if y_std[1] < 1e-12
-        y_std .= 1.0 # avoid division by zero
-        println("Warning: standard deviation of y is too small, setting to 1.0 to avoid division by zero.")
-    end
-
-    y_rescaled = [y ./ y_std[1] for y in y_train]
-    return y_rescaled
+function std_y(model::GradientGP, ys::AbstractVector, μ::AbstractVector, σ::AbstractVector)
+    y_std = [(y .- μ) ./ σ[1] for y in ys]
+    return y_std
 end
 
 get_lengthscale(model::GradientGP) = 1 ./ model.gp.kernel.base_kernel.kernel.transform.s

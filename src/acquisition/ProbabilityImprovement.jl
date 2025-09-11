@@ -53,8 +53,6 @@ end
 
 
 """
-    update!(acqf::ProbabilityImprovement, ys::AbstractVector, surrogate::AbstractSurrogate)
-
 Update the Probability of Improvement acquisition function with new array of observations.
 
 Arguments:
@@ -65,10 +63,10 @@ Arguments:
 returns:
 - `PI::ProbabilityImprovement`: Updated Probability of Improvement acquisition function
 """
-function update!(acqf::ProbabilityImprovement,ys::AbstractVector, surrogate::AbstractSurrogate)
+function update(acq::ProbabilityImprovement,ys::AbstractVector, surrogate::AbstractSurrogate)
     if isa(ys[1],Float64) # we are in 1d
-        ProbabilityImprovement(acqf.ξ, minimum(reduce(vcat,ys)))
+        ProbabilityImprovement(acq.ξ, minimum(reduce(vcat,ys)))
     else 
-        ProbabilityImprovement(acqf.ξ, minimum(hcat(ys...)[1,:]))
+        ProbabilityImprovement(acq.ξ, minimum(hcat(ys...)[1,:]))
     end
 end

@@ -58,8 +58,6 @@ end
 
 
 """
-    update!(acqf::ExpectedImprovement, ys::AbstractVector, surrogate::AbstractSurrogate)
-
 Update the Expected Improvement acquisition function with new array of observations.
 
 Arguments:
@@ -70,10 +68,10 @@ Arguments:
 returns:
 - `new_acqf::ExpectedImprovement`: Updated Expected Improvement acquisition function
 """
-function update!(acqf::ExpectedImprovement,ys::AbstractVector, surrogate::AbstractSurrogate)
+function update(acq::ExpectedImprovement,ys::AbstractVector, surrogate::AbstractSurrogate)
     if (length(ys[1])==1) # we are in 1d
-        ExpectedImprovement(acqf.ξ, minimum(reduce(vcat,ys)))
+        ExpectedImprovement(acq.ξ, minimum(reduce(vcat,ys)))
     else 
-        ExpectedImprovement(acqf.ξ, minimum(hcat(ys...)[1,:]))
+        ExpectedImprovement(acq.ξ, minimum(hcat(ys...)[1,:]))
     end
 end

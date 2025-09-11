@@ -48,7 +48,7 @@ Arguments:
 returns:
 - `StandardGP`: A new StandardGP model updated with the provided data.
 """
-function update!(model::StandardGP, xs::AbstractVector, ys::AbstractVector)
+function update(model::StandardGP, xs::AbstractVector, ys::AbstractVector)
     gpx = model.gp(xs, model.noise_var...) # This is a FiniteGP with Σy with noise_var on its diagonal.
     updated_gpx = posterior(gpx,reduce(vcat,ys))
     return StandardGP(model.gp, model.noise_var, updated_gpx)
@@ -147,26 +147,22 @@ function get_mean_std(model::StandardGP,y_train::AbstractVector)
     
     [y_mean], [y_std]
 end
+
 """
-Rescale the output values of the training data (centering is done via standardize_BO)
+Standardize the output values of the training data
 
 Arguments:
 - `model::StandardGP`: The GP model.
-- `y_train::AbstractVector`: A vector of observed function values.
-- `y_std::AbstractVector`: Empirical standard deviation
+- `ys::AbstractVector`: A vector of observed function values.
+- `μ::AbstractVector`: Empirical mean
+- `σ::AbstractVector`: Empirical standard deviation
 
 returns:
-- `y_standardized`: A vector of standardized function values.
+- `y_std`: A vector of standardized function values.
 """
-function rescale_y(model::StandardGP,y_train::AbstractVector, y_std::AbstractVector)
-
-    if y_std[1] < 1e-12
-        y_std .= 1.0 # avoid division by zero
-        println("Warning: standard deviation of y is too small, setting to 1.0 to avoid division by zero.")
-    end
-
-    y_rescaled = [y ./ y_std[1] for y in y_train]
-    return y_rescaled
+function std_y(model::StandardGP,ys::AbstractVector, μ::AbstractVector, σ::AbstractVector)
+    y_std = [(y .- μ) ./ σ[1] for y in ys]
+    return y_std
 end
 
 get_lengthscale(model::StandardGP) = 1 ./ model.gp.kernel.kernel.transform.s

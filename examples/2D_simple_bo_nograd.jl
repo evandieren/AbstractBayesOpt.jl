@@ -74,20 +74,38 @@ bo_struct = BOStruct(
                     domain,
                     copy(x_train),
                     copy(y_train),
-                    100,
+                    20,
                     0.0
                     )
 
 print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-@time result,acq_list, std_params = AbstractBayesOpt.optimize(bo_struct,standardize="mean_scale")
+
+choice = "scale_only"
+
+@time result,acq_list, std_params = AbstractBayesOpt.optimize(bo_struct,standardize=choice, hyper_params=nothing)
 xs = result.xs
 ys = result.ys_non_std 
 # ys = (reduce(vcat,result.ys).*y_std) .+ y_mean
-
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
+
+
+
+xs_nothing = copy(xs)
+acq_nothing = copy(acq_list)
+
+xs_scale_only = copy(xs)
+acq_scale_only = copy(acq_list .* std_params[2][1])
+
+xs_mean_scale = copy(xs)
+acq_mean_scale = copy(acq_list.*std_params[2][1])
+
+xs_mean_only = copy(xs)
+acq_mean_only = copy(acq_list)
+
+
 
 running_min = accumulate(min, f.(xs))
 
@@ -95,3 +113,17 @@ Plots.plot(n_train:length(running_min),norm.(running_min)[n_train:end],yaxis=:lo
             xlabel="Function evaluations",ylabel=L"|| f(x^*_n) - f^* ||",
             label="BO",xlims=(1,length(running_min)))
 Plots.vspan!([1,n_train]; color=:blue,alpha=0.2, label="")
+
+
+Plots.plot(n_train:length(acq_nothing), acq_nothing[n_train:end] .+ eps(), label="standardize = nothing", xlabel="Iteration",
+        ylabel="Acquisition value", title="Acquisition value over iterations (1D BO)", yaxis=:log)
+Plots.plot!(n_train:length(acq_scale_only), acq_scale_only[n_train:end] .+ eps(), label="standardize = scale_only",ls=:dash)
+
+Plots.plot(n_train:length(acq_mean_only), acq_mean_only[n_train:end] .+ eps(), label="standardize = mean_only",ls=:dot,yaxis=:log)
+Plots.plot!(n_train:length(acq_mean_scale), acq_mean_scale[n_train:end] .+ eps(), label="standardize = mean_scale",ls=:dashdot)
+
+Plots.plot(n_train:length(xs_nothing), f.(xs_nothing)[n_train:end], label="standardize = nothing", xlabel="Iteration", ylabel="f(x)", title="Value of f at sampled points (1D BO)")
+Plots.plot!(n_train:length(xs_scale_only), f.(xs_scale_only)[n_train:end], label="standardize = scale_only",ls=:dash)
+
+Plots.plot(n_train:length(xs_mean_only), f.(xs_mean_only)[n_train:end], label="standardize = mean_only",ls=:dot)
+Plots.plot!(n_train:length(xs_mean_scale), f.(xs_mean_scale)[n_train:end], label="standardize = mean_scale",ls=:dashdot)

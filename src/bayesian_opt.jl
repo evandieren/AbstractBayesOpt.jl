@@ -74,17 +74,6 @@ function BOStruct(func::Function,
     BOStruct(func, copy(acq), model, kernel_constructor, domain, copy(x_train), copy(y_train), copy(y_train), max_iter, 0, noise, false)
 end
 
-function print_info(BO::BOStruct)
-    println("== Printing information about the BOStruct ==")
-    println("Target function: ",BO.func)
-    println("Domain: ",BO.domain)
-    println("xs: ",BO.xs)
-    println("ys: ",BO.ys)
-    println("Surrogate: ",BO.model)
-    println("ACQ: ",BO.acq)
-    println("max_iter: ",BO.max_iter)
-    println("noise: ",BO.noise)
-end
 
 """
     update!(BO::BOStruct, x::AbstractVector, y::AbstractVector, i::Int)
@@ -104,7 +93,7 @@ Remarks:
     This function handles potential ill-conditioning issues when updating the GP, 
     by returning the previous state if an error occurs and setting a flag to stop the optimization loop.
 """
-function update!(BO::BOStruct, x::AbstractVector, y::AbstractVector, i::Int)
+function update(BO::BOStruct, x::AbstractVector, y::AbstractVector, i::Int)
 
 
     #TODO make the copy only if we fail
@@ -118,7 +107,7 @@ function update!(BO::BOStruct, x::AbstractVector, y::AbstractVector, i::Int)
     # Could create some issues if we have the same point twice.
     try
         # test for ill-conditioning
-        BO.model = update!(BO.model, BO.xs, BO.ys)
+        BO.model = update(BO.model, BO.xs, BO.ys)
     catch
         println("We reached ill-conditioning, returning NON-UPDATED GP. Killing BO loop.")
         # Issue: the gp_update in the try is updating the p.gp.gpx as it tries to create the posterior.
@@ -136,7 +125,7 @@ function update!(BO::BOStruct, x::AbstractVector, y::AbstractVector, i::Int)
     end
 
     # update the ACQ function
-    acq_updated = update!(BO.acq,BO.ys,BO.model)
+    acq_updated = update(BO.acq,BO.ys,BO.model)
 
     BO.acq = acq_updated
     BO.iter = i + 1
@@ -227,7 +216,7 @@ function optimize_hyperparameters(model::AbstractSurrogate,
         obj = p -> nlml(model,p, kernel_constructor, x_train_prepped, y_train_prepped, mean=mean)
     end
 
-    opts = Optim.Options(g_tol=1e-5,f_abstol=1e-6,x_abstol=1e-4,outer_iterations=100)
+    opts = Optim.Options(g_tol=1e-9, f_abstol=2.2e-9)
 
     random_inits = [rand.(Uniform.(lower_bounds, upper_bounds)) for _ in 1:(num_restarts - 1)]
     if length_scale_only
@@ -287,132 +276,7 @@ function optimize_hyperparameters(model::AbstractSurrogate,
     end
 end
 
-"""
-    rescale_output(ys::AbstractVector, params::Tuple)
 
-Rescale the standardized output values back to the original scale.
-
-Arguments:
-- `ys::AbstractVector`: A vector of standardized function values.
-- `params::Tuple`: A tuple containing the mean and standard deviation used for standardization.
-
-returns:
-- `ys_rescaled`: A vector of rescaled function values.
-"""
-function rescale_output(ys::AbstractVector, params::Tuple)
-    μ, σ = params
-
-    if isnothing(μ) || isnothing(σ)
-        return [y for y in ys]
-    else
-        return [(y .* σ) .+ μ for y in ys]
-    end
-end
-
-"""
-    standardize_problem(BO::BOStruct; choice="mean_scale")
-
-Standardize the output values of the BOStruct and update the GP and acquisition function accordingly.
-
-Arguments:
-- `BO::BOStruct`: The Bayesian Optimization problem to standardize.
-- `choice::String`: Standardization mode:
-    - "mean_scale": remove empirical mean and scale by empirical std.
-    - "scale_only": only scale by empirical std (no centering). If the GP has a non-zero prior mean, it is rescaled accordingly for consistency.
-    - "mean_only": only remove the empirical mean (no scaling).
-    - "none": do not standardize.
-
-returns:
-- `BO::BOStruct`: The updated BOStruct with standardized outputs and updated model/acquisition.
-- `params::Tuple`: A tuple containing the mean and standard deviation used for standardization (vectors matching the output dimension).
-"""
-function standardize_problem(BO::BOStruct; choice="mean_scale")
-    @assert choice in ["mean_scale", "scale_only", "mean_only"] "choice must be one of: 'mean_scale', 'scale_only', 'mean_only'"
-
-    ys_non_std = BO.ys_non_std
-    p = length(BO.ys[1])
-
-    # Attention: here it is the standard deviation, need to square for kernel scaling
-    μ, σ = get_mean_std(BO.model,ys_non_std)
-
-    # Helper to take care of the prior mean when scaling without centering
-    function _rescale_model(BO::BOStruct,μ::AbstractVector, σ::AbstractVector)
-        if BO.model isa GradientGP
-            m = (BO.model::GradientGP).gp.mean
-            if isa(m,CustomMean)
-
-                # Extract constant vector from our gradConstMean-based CustomMean
-                c = try
-                    m.f.c
-                catch
-                    println("Warning: Could not extract constant vector from CustomMean. Assuming zero vector.")
-                    # Fallback: assume zero vector if not retrievable
-                    zeros(length(μ))
-                end
-                
-                if !iszero(c)
-                    # Meaning we had a prior mean function before
-                    new_mean = gradConstMean(c ./ σ[1])
-
-                    if choice in ["mean_scale","mean_only"]
-                        error("Mean-scale and mean-only are not compatible with non-zero prior mean functions. Consider using scale-only standardization.")
-                    end 
-
-                else
-                    # We had a zero prior mean function before
-                    new_mean = gradConstMean(μ ./ σ[1])
-                end
-
-                # Rescale kernel amplitude by 1/σ[1]
-                old_scale = get_scale(BO.model)[1]
-                new_kernel = (old_scale/(σ[1]^2))*(BO.model.gp.kernel.base_kernel.kernel.kernel ∘ BO.model.gp.kernel.base_kernel.kernel.transform)
-                BO.model = GradientGP(gradKernel(new_kernel),BO.model.p, BO.model.noise_var, mean=new_mean)          
-            else
-                error("Currently only gradConstMean is supported for GradientGP.")
-            end
-        elseif BO.model isa StandardGP
-            m = (BO.model::StandardGP).gp.mean
-            if !isa(m,AbstractGPs.ZeroMean)
-                # Scale any mean function output by 1/σ[1]
-                if isa(m,ConstMean)
-                    new_mean = ConstMean(m.c ./ σ[1])
-                else 
-                    new_mean = CustomMean(x -> (m(x) ./ σ[1]))
-                end
-            else 
-                new_mean = ConstMean(μ[1] / σ[1]) # We will add a prior mean of μ to do like if we did the standardization, but not really standardize.
-            end
-            old_scale = get_scale(BO.model)[1]
-            new_kernel = (old_scale/(σ[1]^2))*(BO.model.gp.kernel.kernel.kernel ∘ BO.model.gp.kernel.kernel.transform)
-            BO.model = StandardGP(new_kernel, BO.model.noise_var, mean=new_mean)
-            end
-        BO
-    end
-
-    # What remains is the standard deviation
-    # Center and scale BO.ys and obtain μ and σ
-    if choice in ["scale_only","mean_scale"]
-        BO.ys = rescale_y(BO.model, ys_non_std, σ)
-    end
-
-    if choice == "scale_only"
-        μ = zeros(p)
-    elseif choice == "mean_only"
-        σ = ones(p) 
-    end
-
-    BO = _rescale_model(BO, μ, σ)
-    println("Standardization applied: μ=$μ, σ=$σ")
-    
-    BO.model = update!(BO.model, BO.xs, BO.ys)
-    BO.acq = update!(BO.acq, BO.ys, BO.model)
-
-
-    # Actually, as we encode μ inside the prior mean, we can set it to zero for after (avoids adding the mean twice when predicting)
-    μ = zeros(p)
-    
-    return BO, (μ, σ)
-end
 
 """
 This function implements the EGO framework:
@@ -434,6 +298,7 @@ Arguments:
     - If "all", re-optimize hyperparameters every 10 iterations.
     - If "length_scale_only", only optimize the lengthscale.
     - If nothing, do not re-optimize hyperparameters.
+- `num_restarts_HP::Int`: Number of random restarts for hyperparameter optimization.
 
 returns:
 - `BO::BOStruct`: The updated Bayesian Optimization problem after optimization.
@@ -442,7 +307,8 @@ returns:
 """
 function optimize(BO::BOStruct;
                   standardize::Union{String, Nothing}="mean_scale",
-                  hyper_params::Union{String, Nothing}="all")
+                  hyper_params::Union{String, Nothing}="all",
+                  num_restarts_HP::Int=5)
 
     @assert hyper_params in ["all", "length_scale_only", nothing] "hyper_params must be one of: 'all', 'length_scale_only', or nothing."
 
@@ -457,12 +323,10 @@ function optimize(BO::BOStruct;
     μ=zeros(length(BO.ys[1]))
     σ=ones(length(BO.ys[1])) # default values if we do not standardize
     if isnothing(standardize)
-        BO.model = update!(BO.model, BO.xs, BO.ys) # because we might not to that before
+        BO.model = update(BO.model, BO.xs, BO.ys) # because we might not to that before
     else 
         BO, (μ, σ) = standardize_problem(BO, choice=standardize)
     end
-
-    @assert iszero(μ)
 
     original_mean = BO.model.gp.mean
 
@@ -478,10 +342,10 @@ function optimize(BO::BOStruct;
             out = nothing
             if hyper_params == "length_scale_only"
                 @time out = optimize_hyperparameters(BO.model, BO.xs, BO.ys,BO.kernel_constructor,old_params,classic_bo, 
-                                                    length_scale_only=true,mean=original_mean, scale_std=σ[1])
+                                                    length_scale_only=true,mean=original_mean, scale_std=1.0, num_restarts=num_restarts_HP)
             elseif hyper_params == "all"
                 @time out = optimize_hyperparameters(BO.model, BO.xs, BO.ys,BO.kernel_constructor,old_params,classic_bo,
-                                                length_scale_only = false, mean=original_mean, scale_std=σ[1])
+                                                length_scale_only = false, mean=original_mean, scale_std=1.0, num_restarts=num_restarts_HP)
             else
                 out = nothing
             end
@@ -489,7 +353,7 @@ function optimize(BO::BOStruct;
             println("MLE new parameters: ℓ=$(get_lengthscale(out)), variance =$(get_scale(out))")
             if !isnothing(out)
                 BO.model = out
-                BO.model = update!(BO.model, BO.xs, BO.ys)
+                BO.model = update(BO.model, BO.xs, BO.ys)
             end
 
             println("New parameters: ℓ=$(get_lengthscale(BO.model)), variance =$(get_scale(BO.model))")
@@ -525,8 +389,8 @@ function optimize(BO::BOStruct;
         
         # The mean is taken into account in the prior mean -> μ == 0 here.
         # just rescaling with σ
-        y_cand ./= σ
-        @time BO = update!(BO, x_cand, y_cand, i)
+        y_cand = (y_cand .- μ)./σ[1]
+        @time BO = update(BO, x_cand, y_cand, i)
     end
 
     return BO, acq_list, (μ,σ)

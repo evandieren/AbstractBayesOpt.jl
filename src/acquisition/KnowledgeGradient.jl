@@ -37,8 +37,6 @@ end
 
 
 """
-    update!(acqf::KnowledgeGradient, ys::AbstractVector, surrogate::AbstractSurrogate)
-
 Update the Knowledge Gradient acquisition function with new array of observations.
 
 Arguments:
@@ -49,8 +47,8 @@ Arguments:
 returns:
 - `KG::KnowledgeGradient`: Updated Knowledge Gradient acquisition function
 """
-function update!(acqf::KnowledgeGradient,ys::AbstractVector, surrogate::AbstractSurrogate)
-    return KnowledgeGradient(domain,optimize_mean!(surrogate, acqf.domain)[2])
+function update(acq::KnowledgeGradient,ys::AbstractVector, surrogate::AbstractSurrogate)
+    return KnowledgeGradient(domain,optimize_mean!(surrogate, acq.domain)[2])
 end
 
 # function ∇KG(surrogate::AbstractSurrogate, x, xs, ys, opt_params::Dict, J=1_000)

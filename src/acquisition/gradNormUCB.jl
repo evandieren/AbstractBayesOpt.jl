@@ -46,6 +46,6 @@ Arguments:
 returns:
 - `gradUCB::GradientNormUCB`: Updated GradientNormUCB acquisition function
 """
-function update!(acqf::GradientNormUCB, ys::AbstractVector, surrogate::AbstractSurrogate)
+function update(acqf::GradientNormUCB, ys::AbstractVector, surrogate::AbstractSurrogate)
     return acqf
 end
