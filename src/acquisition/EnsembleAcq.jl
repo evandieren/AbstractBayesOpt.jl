@@ -20,7 +20,7 @@ function (EA::EnsembleAcquisition)(surrogate::AbstractSurrogate, x, x_buf=nothin
     sum(EA.weights[i] * EA.acquisitions[i](surrogate, x, x_buf) for i in eachindex(EA.weights))
 end
 
-function update(acqf::EnsembleAcquisition, ys::AbstractVector, surrogate::AbstractSurrogate)
-    new_acqs = [update(acqf.acquisitions[i], ys, surrogate) for i in eachindex(acqf.acquisitions)]
-    return EnsembleAcquisition(acqf.weights, new_acqs)
+function update(acq::EnsembleAcquisition, ys::AbstractVector, surrogate::AbstractSurrogate)
+    new_acqs = [update(acq.acquisitions[i], ys, surrogate) for i in eachindex(acq.acquisitions)]
+    return EnsembleAcquisition(acq.weights, new_acqs)
 end
