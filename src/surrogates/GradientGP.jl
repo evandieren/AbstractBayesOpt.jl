@@ -129,8 +129,6 @@ function (κ::gradKernel)((x, px)::Tuple{Any,Int}, (y, py)::Tuple{Any,Int})
 end
 
 """
-    GradientGP(kernel::gradKernel, p::Int, noise_var::Float64; mean=nothing)
-
 Constructor for the GradientGP model.
 
 Arguments:
@@ -151,8 +149,6 @@ function GradientGP(kernel::gradKernel,p::Int,noise_var::Float64; mean=nothing)
 end
 
 """
-    update!(model::GradientGP, xs::AbstractVector, ys::AbstractVector)
-
 Update the GP model with new data points (xs, ys).
 
 Arguments:
@@ -176,14 +172,11 @@ end
 
 
 """
-    nlml(model::GradientGP,params,kernel,x,y;mean=ZeroMean())
-
 Compute the negative log marginal likelihood (NLML) of the GP model given hyperparameters.
 
 Arguments:
 - `model::GradientGP`: The GP model.
 - `params::Tuple`: A tuple containing the log lengthscale and log scale parameters.
-- `kernel`: The kernel function used in the GP.
 - `x`: The input data points.
 - `y`: The observed function values and gradients.
 - `mean`: (optional) The mean function of the GP, defaults to ZeroMean()
@@ -191,13 +184,14 @@ Arguments:
 returns:
 - nlml : The negative log marginal likelihood of the model.
 """
-function nlml(model::GradientGP, params::AbstractVector{T}, kernel::Kernel, x::AbstractVector, y::AbstractVector; mean=ZeroMean()) where T
+function nlml(model::GradientGP, params::AbstractVector{T}, x::AbstractVector, y::AbstractVector; mean=ZeroMean()) where T
     log_ℓ, log_scale = params
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
 
     # Kernel with current parameters
-    k = scale * (kernel ∘ ScaleTransform(1/ℓ))
+    kernel_constructor::Kernel = get_kernel_constructor(model)
+    k = scale * (kernel_constructor ∘ ScaleTransform(1/ℓ))
     #println("creation time of gradgp")
     gp = GradientGP(gradKernel(k),model.p, model.noise_var,mean=mean)
 
@@ -210,15 +204,12 @@ function nlml(model::GradientGP, params::AbstractVector{T}, kernel::Kernel, x::A
 end
 
 """
-    nlml_ls(model::GradientGP,log_ℓ::T, log_scale::Float64, kernel::Kernel, x::AbstractVector, y::AbstractVector; mean=ZeroMean()) where T
-
 Compute the negative log marginal likelihood (NLML) of the gradient GP model for a fixed scale and varying lengthscale.
 
 Arguments:
 - `model::GradientGP`: The GP model.
 - `log_ℓ::T`: The logarithm of the lengthscale parameter.
 - `log_scale::Float64`: The logarithm of the scale parameter.
-- `kernel::Kernel`: The kernel function used in the GP.
 - `x::AbstractVector`: The input data points.
 - `y::AbstractVector`: The observed function values and gradients.
 - `mean`: (optional) The mean function of the GP, defaults to ZeroMean()
@@ -228,13 +219,15 @@ returns:
 
 Remark: This function is a helper function for the hyperparameter_optiomize function when we want to optimize only the lengthscale.
 """
-function nlml_ls(model::GradientGP,log_ℓ::T, log_scale::Float64, kernel::Kernel, x::AbstractVector, y::AbstractVector; mean::AbstractGPs.MeanFunction=ZeroMean()) where T
+function nlml_ls(model::GradientGP,log_ℓ::T, log_scale::Float64, x::AbstractVector, y::AbstractVector; mean::AbstractGPs.MeanFunction=ZeroMean()) where T
 
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
 
     # Kernel with current parameters
-    k = scale * (kernel ∘ ScaleTransform(1/ℓ))
+    kernel_constructor::Kernel = get_kernel_constructor(model)
+
+    k = scale * (kernel_constructor ∘ ScaleTransform(1/ℓ))
     
     gp = GradientGP(gradKernel(k),model.p, model.noise_var,mean=mean)
 
@@ -287,9 +280,33 @@ function std_y(model::GradientGP, ys::AbstractVector, μ::AbstractVector, σ::Ab
     return y_std
 end
 
+"""
+Update the kernel scale of the GP model.
+
+Arguments:
+- `model::GradientGP`: The GP model.
+- `σ::AbstractVector`: Empirical standard deviation
+
+returns:
+- `model::GradientGP`: The updated GP model with the new kernel scale.
+"""
+function update_model_scale(model::GradientGP, σ::AbstractVector)
+    ℓ = get_lengthscale(model)[1]
+    old_scale = get_scale(model)[1]
+    kernel_constructor = get_kernel_constructor(model)
+
+    new_scale = old_scale / (σ[1]^2)
+
+    new_kernel = new_scale * (kernel_constructor ∘ ScaleTransform(1/ℓ))
+    return GradientGP(gradKernel(new_kernel), model.p, model.noise_var / (σ[1]^2), mean = model.gp.mean)
+end
+
 get_lengthscale(model::GradientGP) = 1 ./ model.gp.kernel.base_kernel.kernel.transform.s
 
 get_scale(model::GradientGP) = model.gp.kernel.base_kernel.σ²
+
+
+get_kernel_constructor(model::GradientGP) = model.gp.kernel.base_kernel.kernel.kernel
 
 prep_input(model::GradientGP, x::AbstractVector) = KernelFunctions.MOInputIsotopicByOutputs(x, model.p)
 
@@ -313,8 +330,6 @@ posterior_grad_cov(model::GradientGP,x::AbstractVector) = cov(model.gpx(prep_inp
 
 
 """
-    unstandardized_mean_and_var(gp::GradientGP, X, params::Tuple)
-
 Compute the unstandardized mean and variance of the GP predictions at new input points.
 
 Arguments:
@@ -323,14 +338,17 @@ Arguments:
 - `params::Tuple`: A tuple containing the mean and standard deviation used for standardization.
 
 returns:
-- `m_unstd`: The unstandardized mean predictions at the input points.
-- `v_unstd`: The unstandardized variance predictions at the input points.
+- `m_unstd`: The unstandardized mean predictions at the input points. (matrix of size (num_points, p) where p is the number of outputs)
+- `v_unstd`: The unstandardized variance predictions at the input points. (matrix of size (num_points, p) where p is the number of outputs)
 """
 function unstandardized_mean_and_var(gp::GradientGP, X, params::Tuple)
-    μ, σ = params[1][1], params[2][1]
+    μ, σ = params[1], params[2][1]
     m, v = mean_and_var(gp.gpx(X))
     # Un-standardize mean and variance
-    m_unstd = (m .* σ) .+ μ
+    m = reshape(m, :, gp.p)
+    m_unstd = (m .* σ) .+ μ'
+
+    v = reshape(v, :, gp.p)
     v_unstd = v .* (σ.^2)
     return m_unstd, v_unstd
 end

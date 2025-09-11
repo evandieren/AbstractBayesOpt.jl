@@ -14,7 +14,6 @@ mutable struct BOStruct{F, M<:AbstractSurrogate, A<:AbstractAcquisition}
     func::F
     acq::A 
     model::M
-    kernel_constructor::KernelFunctions.Kernel
     domain::AbstractDomain
     
     # Recording history of points and values
@@ -33,7 +32,6 @@ end
     BOStruct(func::Function,
               acq::AbstractAcquisition,
               model::AbstractSurrogate,
-              kernel_constructor::KernelFunctions.Kernel,
               domain::AbstractDomain, 
               x_train::AbstractVector, 
               y_train::AbstractVector, 
@@ -46,7 +44,6 @@ Arguments:
 - `func::Function`: The target function to be optimized.
 - `acq::AbstractAcquisition`: The acquisition function guiding the optimization.
 - `model::AbstractSurrogate`: The surrogate model (e.g., Gaussian Process).
-- `kernel_constructor::KernelFunctions.Kernel`: The kernel function used in the GP.
 - `domain::AbstractDomain`: The domain over which to optimize.
 - `x_train::AbstractVector`: Initial input training points.
 - `y_train::AbstractVector`: Corresponding output training values.
@@ -59,7 +56,6 @@ returns:
 function BOStruct(func::Function,
                   acq::AbstractAcquisition,
                   model::AbstractSurrogate,
-                  kernel_constructor::KernelFunctions.Kernel,
                   domain::AbstractDomain, 
                   x_train::AbstractVector, 
                   y_train::AbstractVector, 
@@ -68,16 +64,11 @@ function BOStruct(func::Function,
     """
     Initialize the Bayesian Optimization problem.
     """
-    
-    #TODO get rid of kernel_constructor if we can get it from model
-    
-    BOStruct(func, copy(acq), model, kernel_constructor, domain, copy(x_train), copy(y_train), copy(y_train), max_iter, 0, noise, false)
+    BOStruct(func, copy(acq), model, domain, copy(x_train), copy(y_train), copy(y_train), max_iter, 0, noise, false)
 end
 
 
 """
-    update!(BO::BOStruct, x::AbstractVector, y::AbstractVector, i::Int)
-
 Update the Bayesian Optimization structure with a new data point (x, y).
 
 Arguments:
@@ -145,7 +136,6 @@ Arguments:
 - `model::AbstractSurrogate`: Surrogate model.
 - `x_train::AbstractVector`: A vector of input training points.
 - `y_train::AbstractVector`: A vector of corresponding output training values.
-- `kernel_constructor::Kernel`: The kernel function used in the GP.
 - `old_params::Vector{Float64}`: A vector containing the current log lengthscale
     and log scale parameters.
 - `classic_bo::Bool`: Indicates if using classic Bayesian Optimization (true) or gradient-enhanced (false).
@@ -161,7 +151,6 @@ returns:
 function optimize_hyperparameters(model::AbstractSurrogate,
                                   x_train::AbstractVector,
                                   y_train::AbstractVector,
-                                  kernel_constructor::Kernel,
                                   old_params::Vector{Float64},
                                   classic_bo::Bool;
                                   scale_std::Float64=1.0,
@@ -181,10 +170,10 @@ function optimize_hyperparameters(model::AbstractSurrogate,
     original_scale = exp(old_params[2])
 
     # Adjust scale bounds by 1/σ² to account for standardization
-    # This ensures bounds in original space remain 1e-6 to 1e5 regardless of standardization
+    # This ensures bounds in original space remain 1e-3 to 1e4 regardless of standardization
     # Define original space bounds
     length_scale_lower, length_scale_upper = 1e-3, 1e3
-    scale_lower, scale_upper = 1e-3, 1e4
+    scale_lower, scale_upper = 1e-3, 1e6
 
     # Adjust scale bounds for standardized space
     adjusted_scale_lower = scale_lower/(scale_std^2)
@@ -210,10 +199,10 @@ function optimize_hyperparameters(model::AbstractSurrogate,
     obj = nothing
     if length_scale_only
         # Only optimize lengthscale, keep scale fixed at original log value (second parameter)
-        obj = p -> nlml_ls(model, p[1], old_params[2], kernel_constructor, x_train_prepped, y_train_prepped, mean=mean)
+        obj = p -> nlml_ls(model, p[1], old_params[2], x_train_prepped, y_train_prepped, mean=mean)
     else
         # Optimize both lengthscale and scale (vector p)
-        obj = p -> nlml(model,p, kernel_constructor, x_train_prepped, y_train_prepped, mean=mean)
+        obj = p -> nlml(model,p, x_train_prepped, y_train_prepped, mean=mean)
     end
 
     opts = Optim.Options(g_tol=1e-9, f_abstol=2.2e-9)
@@ -266,6 +255,8 @@ function optimize_hyperparameters(model::AbstractSurrogate,
     else
         ℓ, scale = exp.(best_result)
     end
+    
+    kernel_constructor = get_kernel_constructor(model)
 
     k_opt = scale * (kernel_constructor ∘ ScaleTransform(1/ℓ))
 
@@ -341,11 +332,11 @@ function optimize(BO::BOStruct;
             println("Hyperparameter time taken:")
             out = nothing
             if hyper_params == "length_scale_only"
-                @time out = optimize_hyperparameters(BO.model, BO.xs, BO.ys,BO.kernel_constructor,old_params,classic_bo, 
-                                                    length_scale_only=true,mean=original_mean, scale_std=1.0, num_restarts=num_restarts_HP)
+                @time out = optimize_hyperparameters(BO.model, BO.xs, BO.ys,old_params,classic_bo, 
+                                                    length_scale_only=true,mean=original_mean, scale_std=σ[1], num_restarts=num_restarts_HP)
             elseif hyper_params == "all"
-                @time out = optimize_hyperparameters(BO.model, BO.xs, BO.ys,BO.kernel_constructor,old_params,classic_bo,
-                                                length_scale_only = false, mean=original_mean, scale_std=1.0, num_restarts=num_restarts_HP)
+                @time out = optimize_hyperparameters(BO.model, BO.xs, BO.ys,old_params,classic_bo,
+                                                length_scale_only = false, mean=original_mean, scale_std=σ[1], num_restarts=num_restarts_HP)
             else
                 out = nothing
             end

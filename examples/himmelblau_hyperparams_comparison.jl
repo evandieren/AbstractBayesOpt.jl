@@ -94,7 +94,6 @@ function run_himmelblau_comparison(n_iterations=40)
             f_val_grad,
             acq_func,
             model,
-            kernel_constructor,
             domain,
             copy(x_train),
             copy(y_train),

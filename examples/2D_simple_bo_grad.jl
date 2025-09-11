@@ -76,7 +76,7 @@ bo_struct = BOStruct(
 print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct, standardize="mean_scale")
+result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct)
 xs = result.xs
 ys = result.ys_non_std
 
@@ -96,8 +96,6 @@ Plots.display(p)
 
 x_train_prepped = prep_input(result.model,x_train)
 post_mean, post_var = unstandardized_mean_and_var(result.model,x_train_prepped, standard_params)
-post_mean = reshape(post_mean, :, d+1)
-post_var = reshape(post_var, :, d+1)
 println("Posterior at training points:")
 for i in 1:length(x_train)
     println("x: ", x_train[i], " f: ", post_mean[i,1], " ± ", sqrt(post_var[i,1]), " | ∇f: ", post_mean[i,2:end], " ± ", sqrt.(post_var[i,2:end]))

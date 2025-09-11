@@ -64,8 +64,8 @@ bo_struct = BOStruct(
 print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
-choice = "mean_scale"
-result, acqf_list, standard_params = AbstractBayesOpt.optimize(bo_struct, standardize=choice, hyper_params= nothing)
+choice = "mean_only" 
+result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct, standardize=choice)
 xs = reduce(vcat,result.xs)
 ys = result.ys_non_std 
 ys = hcat(ys...)[1,:]
@@ -142,3 +142,7 @@ Plots.plot!(n_train:length(xs_scale_only), f.(xs_scale_only)[n_train:end], label
 
 Plots.plot(n_train:length(xs_mean_only), f.(xs_mean_only)[n_train:end], label="standardize = mean_only",ls=:dot)
 Plots.plot!(n_train:length(xs_mean_scale), f.(xs_mean_scale)[n_train:end], label="standardize = mean_scale",ls=:dashdot)
+
+
+# Identical without hyper parameter tuning 
+# When I add hyper parameter tuning, the results are barely identical, one or two points are not the same.

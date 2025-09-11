@@ -82,16 +82,14 @@ print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
 
-choice = "scale_only"
+choice = "mean_only" # nothing, "scale_only", "mean_only", "mean_scale"
 
-@time result,acq_list, std_params = AbstractBayesOpt.optimize(bo_struct,standardize=choice, hyper_params=nothing)
+@time result,acq_list, std_params = AbstractBayesOpt.optimize(bo_struct,standardize=choice)
 xs = result.xs
 ys = result.ys_non_std 
 # ys = (reduce(vcat,result.ys).*y_std) .+ y_mean
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
-
-
 
 xs_nothing = copy(xs)
 acq_nothing = copy(acq_list)
