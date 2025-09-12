@@ -26,7 +26,7 @@ using Random
             # Update with some data
             xs = [[0.0], [0.5], [1.0]]
             ys = [[2.0], [1.0], [0.5]]
-            updated_gp = update!(gp, xs, ys)
+            updated_gp = update(gp, xs, ys)
             
             # Create EI acquisition function
             ξ = 0.01
@@ -49,7 +49,7 @@ using Random
             gp = StandardGP(kernel, noise_var)
             xs = [[0.0], [0.5], [1.0]]
             ys = [[2.0], [1.0], [0.5]]
-            updated_gp = update!(gp, xs, ys)
+            updated_gp = update(gp, xs, ys)
             
             ξ = 0.01
             best_y = 1.0
@@ -57,13 +57,13 @@ using Random
             
             # Test with 1D outputs
             ys_1d = [[2.0], [1.5], [0.8]]
-            updated_ei = update!(ei, ys_1d, updated_gp)
+            updated_ei = update(ei, ys_1d, updated_gp)
             @test updated_ei.ξ == ξ
             @test updated_ei.best_y == 0.8  # minimum of new data
             
             # Test with multi-dimensional outputs
             ys_multi = [[2.0, 0.1], [1.5, 0.2], [0.8, 0.3]]
-            updated_ei_multi = update!(ei, ys_multi, updated_gp)
+            updated_ei_multi = update(ei, ys_multi, updated_gp)
             @test updated_ei_multi.ξ == ξ
             @test updated_ei_multi.best_y == 0.8  # minimum of function values
         end
@@ -86,7 +86,7 @@ using Random
             # Update with some data
             xs = [[0.0], [0.5], [1.0]]
             ys = [[2.0], [1.0], [0.5]]
-            updated_gp = update!(gp, xs, ys)
+            updated_gp = update(gp, xs, ys)
             
             # Create UCB acquisition function
             β = 2.0
@@ -107,14 +107,14 @@ using Random
             gp = StandardGP(kernel, noise_var)
             xs = [[0.0], [0.5], [1.0]]
             ys = [[2.0], [1.0], [0.5]]
-            updated_gp = update!(gp, xs, ys)
+            updated_gp = update(gp, xs, ys)
             
             β = 2.0
             ucb = UpperConfidenceBound(β)
             
             # Update should return the same object
             ys = [[1.0], [2.0]]
-            updated_ucb = update!(ucb, ys, updated_gp)
+            updated_ucb = update(ucb, ys, updated_gp)
             @test updated_ucb === ucb
         end
     end
@@ -138,7 +138,7 @@ using Random
             # Update with some data
             xs = [[0.0], [0.5], [1.0]]
             ys = [[2.0], [1.0], [0.5]]
-            updated_gp = update!(gp, xs, ys)
+            updated_gp = update(gp, xs, ys)
             
             # Create PI acquisition function
             ξ = 0.01
@@ -173,7 +173,7 @@ using Random
             # Update with some data
             xs = [[0.0, 0.0], [0.5, 0.5], [1.0, 1.0]]
             ys = [[2.0, 0.1, 0.1], [1.0, 0.0, 0.0], [0.5, -0.1, -0.1]]
-            updated_gp = update!(gp, xs, ys)
+            updated_gp = update(gp, xs, ys)
             
             # Create GradientNormUCB acquisition function
             β = 2.0
@@ -196,14 +196,14 @@ using Random
             gp = GradientGP(grad_kernel, p, noise_var)
             xs = [[0.0, 0.0], [0.5, 0.5], [1.0, 1.0]]
             ys = [[2.0, 0.1, 0.1], [1.0, 0.0, 0.0], [0.5, -0.1, -0.1]]
-            updated_gp = update!(gp, xs, ys)
+            updated_gp = update(gp, xs, ys)
             
             β = 2.0
             grad_ucb = GradientNormUCB(β)
             
             # Update should return the same object
             ys = [[1.0, 0.1, 0.1], [2.0, 0.2, 0.2]]
-            updated_grad_ucb = update!(grad_ucb, ys, updated_gp)
+            updated_grad_ucb = update(grad_ucb, ys, updated_gp)
             @test updated_grad_ucb === grad_ucb
         end
     end
@@ -237,7 +237,7 @@ using Random
             # Update with some data
             xs = [[0.0], [0.5], [1.0]]
             ys = [[2.0], [1.0], [0.5]]
-            updated_gp = update!(gp, xs, ys)
+            updated_gp = update(gp, xs, ys)
             
             # Create ensemble
             ei = ExpectedImprovement(0.01, 0.5)
@@ -267,7 +267,7 @@ using Random
             gp = StandardGP(kernel, noise_var)
             xs = [[0.0], [0.5], [1.0]]
             ys = [[2.0], [1.0], [0.5]]
-            updated_gp = update!(gp, xs, ys)
+            updated_gp = update(gp, xs, ys)
             
             ei = ExpectedImprovement(0.01, 1.0)
             ucb = UpperConfidenceBound(2.0)
@@ -277,7 +277,7 @@ using Random
             
             # Test update
             ys = [[2.0], [1.5], [0.8]]
-            updated_ensemble = update!(ensemble, ys, updated_gp)
+            updated_ensemble = update(ensemble, ys, updated_gp)
             
             @test updated_ensemble.weights == ensemble.weights
             @test length(updated_ensemble.acquisitions) == 2

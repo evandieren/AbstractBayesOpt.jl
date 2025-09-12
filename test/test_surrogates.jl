@@ -27,7 +27,7 @@ using Random
             ys = [[0.0], [0.25], [1.0]]
             
             # Update GP
-            updated_gp = update!(gp, xs, ys)
+            updated_gp = update(gp, xs, ys)
             
             @test updated_gp.noise_var == noise_var
             @test updated_gp.gpx !== nothing
@@ -56,7 +56,7 @@ using Random
             # Test with updated GP
             xs = [[0.0], [0.5], [1.0]]
             ys = [[0.0], [0.25], [1.0]]
-            updated_gp = update!(gp, xs, ys)
+            updated_gp = update(gp, xs, ys)
             
             # Test lengthscale and scale extraction - skip for now due to kernel structure
             # lengthscale = get_lengthscale(updated_gp)
@@ -76,7 +76,7 @@ using Random
             # Test standardization using the functions from bayesian_opt.jl
             y_train = [[1.0], [2.0], [3.0], [4.0], [5.0]]
             μ, σ = get_mean_std(gp, y_train)
-            y_std = rescale_y(gp, y_train, σ)
+            y_std = std_y(gp, y_train, μ, σ)
             
             @test length(y_std) == length(y_train)
             @test μ[1] ≈ 3.0  # mean of [1,2,3,4,5]
@@ -95,7 +95,7 @@ using Random
             
             xs = [[0.0], [1.0]]
             ys = [[0.0], [1.0]]
-            updated_gp = update!(gp, xs, ys)
+            updated_gp = update(gp, xs, ys)
             
             copied_gp = copy(updated_gp)
             @test copied_gp.noise_var == updated_gp.noise_var
@@ -104,7 +104,7 @@ using Random
         end
         
         @testset "StandardGP NLML" begin
-            kernel = SqExponentialKernel()
+            kernel = 1 * (SqExponentialKernel() ∘ ScaleTransform(1.0)) 
             noise_var = 0.1
             gp = StandardGP(kernel, noise_var)
             
@@ -114,7 +114,7 @@ using Random
             y = [0.0, 0.25, 1.0]
             
             # Pass the kernel constructor, not instance
-            nlml_val = nlml(gp, params, SqExponentialKernel(), x, y)
+            nlml_val = nlml(gp, params, x, y)
             @test isa(nlml_val, Real)
             @test isfinite(nlml_val)
         end
@@ -158,7 +158,7 @@ using Random
             ys = [[1.0, 0.1, 0.1], [0.5, 0.0, 0.0], [0.0, -0.1, -0.1]]
             
             # Update GP
-            updated_gp = update!(gp, xs, ys)
+            updated_gp = update(gp, xs, ys)
             
             @test updated_gp.noise_var == noise_var
             @test updated_gp.p == p
@@ -196,7 +196,7 @@ using Random
             # Test with updated GP
             xs = [[0.0, 0.0], [1.0, 1.0]]
             ys = [[1.0, 0.1, 0.1], [0.0, -0.1, -0.1]]
-            updated_gp = update!(gp, xs, ys)
+            updated_gp = update(gp, xs, ys)
             
             # Test lengthscale and scale extraction - skip for now due to kernel structure
             # lengthscale = get_lengthscale(updated_gp)
@@ -218,7 +218,7 @@ using Random
             # Test standardization using the functions from bayesian_opt.jl
             y_train = [[1.0, 0.1, 0.1], [2.0, 0.2, 0.2], [3.0, 0.3, 0.3]]
             μ, σ = get_mean_std(gp, y_train)
-            y_std = rescale_y(gp, y_train, σ)
+            y_std = std_y(gp, y_train, μ, σ)
             
             @test length(y_std) == length(y_train)
             @test length(μ) == p
@@ -229,6 +229,18 @@ using Random
             @test σ[1] > 0
             @test σ[2] == σ[1]  # gradients use same scaling as function
             @test σ[3] == σ[1]
+
+            # Check that rescaled data matches expected properties
+            y_flat_std = reduce(vcat, y_std)
+            y_flat_orig = reduce(vcat, y_train)
+
+            # Check that the standardized values match with the original standardization formula
+            for (y_orig, y_s) in zip(y_train, y_std)
+                @test y_s[1] ≈ (y_orig[1] - μ[1]) / σ[1] atol=1e-8
+                @test y_s[2] ≈ (y_orig[2] - μ[2]) / σ[2] atol=1e-8
+                @test y_s[3] ≈ (y_orig[3] - μ[3]) / σ[3] atol=1e-8
+            end
+
         end
         
         @testset "GradientGP Copy" begin
@@ -240,7 +252,7 @@ using Random
             
             xs = [[0.0, 0.0], [1.0, 1.0]]
             ys = [[1.0, 0.1, 0.1], [0.0, -0.1, -0.1]]
-            updated_gp = update!(gp, xs, ys)
+            updated_gp = update(gp, xs, ys)
             
             copied_gp = copy(updated_gp)
             @test copied_gp.noise_var == updated_gp.noise_var

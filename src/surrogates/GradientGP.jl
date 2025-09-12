@@ -298,6 +298,14 @@ function update_model_scale(model::GradientGP, σ::AbstractVector)
     new_scale = old_scale / (σ[1]^2)
 
     new_kernel = new_scale * (kernel_constructor ∘ ScaleTransform(1/ℓ))
+
+
+    if isa(model.gp.mean, gradConstMean)
+        old_c = model.gp.mean.c
+        new_c = old_c ./ σ[1] 
+        return GradientGP(gradKernel(new_kernel), model.p, model.noise_var / (σ[1]^2), mean = gradConstMean(new_c))
+    end
+
     return GradientGP(gradKernel(new_kernel), model.p, model.noise_var / (σ[1]^2), mean = model.gp.mean)
 end
 

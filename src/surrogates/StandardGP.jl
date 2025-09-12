@@ -180,6 +180,15 @@ function update_model_scale(model::StandardGP, σ::AbstractVector)
     new_scale = old_scale / (σ[1]^2)
 
     new_kernel = new_scale * (kernel_constructor ∘ ScaleTransform(1/ℓ))
+
+
+    # If the GP mean is not a ZeroMean, we need to rescale it too for consistency
+    if !(model.gp.mean isa ZeroMean)
+        new_mean_val = model.gp.mean.c / σ[1] # works for ConstMean
+        model = StandardGP(new_kernel, model.noise_var / (σ[1]^2), mean = ConstMean(new_mean_val))
+        return model
+    end
+
     return StandardGP(new_kernel, model.noise_var / (σ[1]^2), mean = model.gp.mean)
 end
 
