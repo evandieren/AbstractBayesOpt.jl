@@ -10,6 +10,11 @@
 *.pdf
 
 *.png
+*.gif
+*.svg
+*.jpg
+*.jpeg
+
 
 /dev/
 /docs/build/
