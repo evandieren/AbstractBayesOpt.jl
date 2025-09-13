@@ -96,6 +96,6 @@ Plots.display(p)
 x_train_prepped = prep_input(result.model,x_train)
 post_mean, post_var = unstandardized_mean_and_var(result.model,x_train_prepped, standard_params)
 println("Posterior at training points:")
-for i in 1:length(x_train)
-    println("x: ", x_train[i], " f: ", post_mean[i,1], " ± ", sqrt(post_var[i,1]), " | ∇f: ", post_mean[i,2:end], " ± ", sqrt.(post_var[i,2:end]))
+for i in eachindex(x_train)
+    println("x: ", x_train[i], " f: ", post_mean[i,1], " ± ", sqrt(post_var[i,1] .+ 5e-10), " | ∇f: ", post_mean[i,2:end], " ± ", sqrt.(post_var[i,2:end] .+ 5e-10))
 end 

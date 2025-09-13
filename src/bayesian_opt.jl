@@ -156,7 +156,8 @@ function optimize_hyperparameters(model::AbstractSurrogate,
                                   scale_std::Float64=1.0,
                                   length_scale_only::Bool=false,
                                   mean::AbstractGPs.MeanFunction=ZeroMean(),
-                                  num_restarts::Int=1)
+                                  num_restarts::Int=1,
+                                  domain::Union{Nothing,AbstractDomain}=nothing)
 
     # old_params is always a 2-element vector: [log(lengthscale), log(scale)]
     if length(old_params) != 2
@@ -171,8 +172,24 @@ function optimize_hyperparameters(model::AbstractSurrogate,
 
     # Adjust scale bounds by 1/σ² to account for standardization
     # This ensures bounds in original space remain 1e-3 to 1e4 regardless of standardization
-    # Define original space bounds
+    # Define original space bounds for lengthscale
     length_scale_lower, length_scale_upper = 1e-3, 1e3
+
+    if !isnothing(domain)
+
+        # If we have a continuous domain and training data, compute data-informed bounds
+        ℓL_vec, ℓU_vec = lengthscale_bounds(x_train, domain)
+        # Current models use isotropic kernels (single ℓ). Collapse per-dim bounds conservatively.
+        
+        # Lower bound should not be larger than any per-dim lower bound → take minimum.
+        # Upper bound should not be smaller than any per-dim upper bound → take maximum.
+        length_scale_lower = max(min(ℓL_vec...), 1e-6)
+        length_scale_upper = max(ℓU_vec...)
+        # Ensure sensible ordering
+        @assert length_scale_upper > length_scale_lower
+
+    end
+
     scale_lower, scale_upper = 1e-3, 1e6
 
     # Adjust scale bounds for standardized space
@@ -333,10 +350,10 @@ function optimize(BO::BOStruct;
             out = nothing
             if hyper_params == "length_scale_only"
                 @time out = optimize_hyperparameters(BO.model, BO.xs, BO.ys,old_params,classic_bo, 
-                                                    length_scale_only=true,mean=original_mean, scale_std=σ[1], num_restarts=num_restarts_HP)
+                                                    length_scale_only=true,mean=original_mean, scale_std=σ[1], num_restarts=num_restarts_HP, domain=BO.domain)
             elseif hyper_params == "all"
                 @time out = optimize_hyperparameters(BO.model, BO.xs, BO.ys,old_params,classic_bo,
-                                                length_scale_only = false, mean=original_mean, scale_std=σ[1], num_restarts=num_restarts_HP)
+                                                length_scale_only = false, mean=original_mean, scale_std=σ[1], num_restarts=num_restarts_HP, domain=BO.domain)
             else
                 out = nothing
             end

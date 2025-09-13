@@ -80,6 +80,75 @@ end
 
 
 """
+Compute sensible per-dimension lower and upper bounds for GP kernel lengthscales using
+nearest-neighbor fill distances and domain extents.
+
+Arguments:
+- `x_train`: n×d matrix of training points (rows = points, columns = dimensions)
+- `domain_lower`: vector of length d, lower bound of domain per dimension
+- `domain_upper`: vector of length d, upper bound of domain per dimension
+- `min_frac`: fraction of fill distance for minimum lengthscale (default 0.05)
+- `max_frac`: fraction of domain size for maximum lengthscale (default 2.0)
+
+Returns:
+- `(ℓ_lower, ℓ_upper)` vectors of length d suitable for setting log-space bounds.
+
+"""
+function lengthscale_bounds(x_train::AbstractMatrix, domain_lower::AbstractVector, domain_upper::AbstractVector;
+                            min_frac::Float64=0.1, max_frac::Float64=1.0)
+
+    n, d = size(x_train)
+    ℓ_lower = zeros(d)
+    ℓ_upper = zeros(d)
+
+    for i in 1:d
+        xi = view(x_train, :, i)
+        domain_size = domain_upper[i] - domain_lower[i]
+
+        # approximate fill distance along this dimension: max nearest-neighbor distance
+        if n < 2
+            h_i = domain_size
+        else
+            max_min_dist = 0.0
+            for j in 1:n
+                min_d = Inf
+                xj = xi[j]
+                for k in 1:n
+                    if k == j; continue; end
+                    dk = abs(xj - xi[k])
+                    if dk < min_d
+                        min_d = dk
+                    end
+                end
+                if min_d > max_min_dist
+                    max_min_dist = min_d
+                end
+            end
+            h_i = max_min_dist
+        end
+
+        ℓ_lower[i] = max(min_frac * h_i, 1e-12)
+        ℓ_upper[i] = max_frac * domain_size
+    end
+
+    return ℓ_lower, ℓ_upper
+end
+
+"""
+    lengthscale_bounds(x_train::AbstractVector{<:AbstractVector}, domain::ContinuousDomain;
+                       min_frac::Float64=0.05, max_frac::Float64=2.0)
+
+Convenience overload accepting a vector-of-vectors of points and a `ContinuousDomain`.
+Returns the same as the matrix method.
+"""
+function lengthscale_bounds(x_train::AbstractVector{<:AbstractVector}, domain::ContinuousDomain;
+                            min_frac::Float64=0.1, max_frac::Float64=1.0)
+    X = permutedims(reduce(hcat, x_train)) # n × d
+    return lengthscale_bounds(X, domain.lower, domain.upper; min_frac=min_frac, max_frac=max_frac)
+end
+
+
+"""
     rescale_output(ys::AbstractVector, params::Tuple)
 
 Rescale the standardized output values back to the original scale.

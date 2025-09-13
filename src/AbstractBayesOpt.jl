@@ -23,11 +23,11 @@ export ContinuousDomain
 # Surrogate models
 include("surrogates/surrogates_utils.jl")
 include("surrogates/StandardGP.jl")
-export StandardGP, prep_input, posterior_mean, posterior_var, nlml, nlml_ls, get_mean_std, unstandardized_mean_and_var, get_lengthscale, get_scale, get_kernel_constructor, rescale_model
+export StandardGP, prep_input, posterior_mean, posterior_var, nlml, nlml_ls, get_mean_std, std_y, unstandardized_mean_and_var, get_lengthscale, get_scale, get_kernel_constructor, rescale_model
 
 include("surrogates/GradientGP.jl")
 export GradientGP, ApproxMatern52Kernel, gradConstMean, gradKernel, prep_input, posterior_mean, posterior_var, posterior_grad_mean, posterior_grad_cov, posterior_grad_var
-export nlml, get_mean_std, unstandardized_mean_and_var, get_lengthscale, get_scale, get_kernel_constructor, rescale_model
+export nlml, get_mean_std, std_y, unstandardized_mean_and_var, get_lengthscale, get_scale, get_kernel_constructor, rescale_model
 
 # Acquisition functions
 include("acquisition/acq_utils.jl")
@@ -54,7 +54,7 @@ export optimize, update, BOStruct, stop_criteria, optimize_hyperparameters
 
 # Utility functions
 include("BO_utils.jl")
-export print_info, rescale_output, standardize_problem
+export print_info, rescale_output, standardize_problem, lengthscale_bounds
 
 # include("plotting.jl")
 # export plot_state
