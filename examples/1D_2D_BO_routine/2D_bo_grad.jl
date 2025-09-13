@@ -65,7 +65,6 @@ bo_struct = BOStruct(
                     f_val_grad, # because we probe both the function value and its gradients.
                     acqf,
                     model,
-                    kernel_constructor,
                     domain,
                     copy(x_train),
                     copy(y_train),

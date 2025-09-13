@@ -50,7 +50,7 @@ function optimize_acquisition!(acqf::AbstractAcquisition,
                                 domain.upper,
                                 initial_x,
                                 box_optimizer,
-                                Optim.Options(g_tol = 1e-8, f_abstol = 2.2e-9))#, x_abstol = 1e-4))
+                                Optim.Options(g_tol = 1e-5, f_abstol = 2.2e-9, x_abstol = 1e-4))
         # Check if the current run is better (lower negative acqf)
         current_acq = -Optim.minimum(result)
         if current_acq > best_acq

@@ -246,28 +246,6 @@ end
 # Generate all visualizations
 println("\nGenerating visualizations...")
 
-# 2D Heatmaps
-heatmap_standard = create_2d_heatmap(
-    nlml_standard, log_lengthscale_range, log_scale_range, 
-    "Standard GP log(NLML) Landscape", opt_standard
-)
-
-heatmap_gradient = create_2d_heatmap(
-    nlml_gradient, log_lengthscale_range, log_scale_range, 
-    "Gradient GP log(NLML) Landscape", opt_gradient
-)
-
-# 3D Surface plots
-surface_standard = create_3d_surface(
-    nlml_standard, log_lengthscale_range, log_scale_range,
-    "Standard GP log(NLML) Surface"
-)
-
-surface_gradient = create_3d_surface(
-    nlml_gradient, log_lengthscale_range, log_scale_range,
-    "Gradient GP log(NLML) Surface"
-)
-
 # Contour plots
 contour_standard = create_contour_plot(
     nlml_standard, log_lengthscale_range, log_scale_range,
@@ -279,30 +257,12 @@ contour_gradient = create_contour_plot(
     "Gradient GP log(NLML) Contours", opt_gradient
 )
 
-# Combined visualizations
-# combined_heatmaps = plot(heatmap_standard, heatmap_gradient, 
-#                         layout=(1,2), size=(1200, 500),
-#                         plot_title="NLML Landscape Comparison: Standard vs Gradient GP")
 
 combined_contours = plot(contour_standard, contour_gradient,
                         layout=(1,2), size=(1200, 500), 
                         plot_title="NLML Contour Comparison: Standard vs Gradient GP")
 
-# combined_surfaces = plot(surface_standard, surface_gradient,
-#                         layout=(1,2), size=(1400, 600),
-#                         plot_title="NLML Surface Comparison: Standard vs Gradient GP")
 
-# Display all plots
-
-
-# println("Individual plots...")
-# savefig(heatmap_standard, "nlml_heatmap_standard.png")
-# savefig(heatmap_gradient, "nlml_heatmap_gradient.png")
-# savefig(contour_standard, "nlml_contour_standard.png")
-# savefig(contour_gradient, "nlml_contour_gradient.png")
-
-# Save plots
+display(combined_contours)
 println("\nSaving visualizations...")
-# savefig(combined_heatmaps, "nlml_heatmaps_comparison.png")
-savefig(combined_contours, "nlml_contours_comparison.png") 
-# savefig(combined_surfaces, "nlml_surfaces_comparison.png")
+# savefig(combined_contours, "nlml_contours_comparison.png") 

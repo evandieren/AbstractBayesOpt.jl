@@ -208,9 +208,6 @@ function plot_convergence_comparison(results)
         end
     end
     
-    # Add reference lines
-    hline!(p, [1e-8], linestyle=:dot, color=:gray, alpha=0.5, label="1e-8 tolerance")
-    
     # Add initial training data region
     vspan!(p, [1, n_train]; color=:gray, alpha=0.2, label="Initial data")
     

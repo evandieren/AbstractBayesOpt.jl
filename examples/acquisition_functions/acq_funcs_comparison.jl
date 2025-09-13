@@ -84,7 +84,6 @@ function run_comparison(n_iterations=30)
             f_val_grad,
             acq_func,
             model,
-            kernel_constructor,
             domain,
             copy(x_train),
             copy(y_train),

@@ -205,7 +205,7 @@ function optimize_hyperparameters(model::AbstractSurrogate,
         obj = p -> nlml(model,p, x_train_prepped, y_train_prepped, mean=mean)
     end
 
-    opts = Optim.Options(g_tol=1e-9, f_abstol=2.2e-9)
+    opts = Optim.Options(g_tol=1e-6, f_abstol=2.2e-9)
 
     random_inits = [rand.(Uniform.(lower_bounds, upper_bounds)) for _ in 1:(num_restarts - 1)]
     if length_scale_only
@@ -231,7 +231,7 @@ function optimize_hyperparameters(model::AbstractSurrogate,
                 end
             end
         catch e 
-            @warn "Optimization failed at restart $i with error: $e"
+            @warn "Optimization failed at restart $i with error: $e, and parameters $(exp.(init_guesses[i]))"
             continue
         end
     end
