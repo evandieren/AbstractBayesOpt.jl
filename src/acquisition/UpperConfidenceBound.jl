@@ -38,6 +38,9 @@ function (UCB::UpperConfidenceBound)(surrogate::AbstractSurrogate, x, x_buf=noth
 
     μ = posterior_mean(surrogate, x_buf)
     σ² = posterior_var(surrogate, x_buf)
+
+    σ²_safe = max.(σ², 0.0)  # Ensure non-negative variance
+
     return -μ + UCB.β*sqrt.(σ²)
 end
 

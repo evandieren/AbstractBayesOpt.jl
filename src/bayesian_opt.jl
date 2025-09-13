@@ -316,7 +316,7 @@ returns:
 function optimize(BO::BOStruct;
                   standardize::Union{String, Nothing}="mean_scale",
                   hyper_params::Union{String, Nothing}="all",
-                  num_restarts_HP::Int=5)
+                  num_restarts_HP::Int=1)
 
     @assert hyper_params in ["all", "length_scale_only", nothing] "hyper_params must be one of: 'all', 'length_scale_only', or nothing."
 

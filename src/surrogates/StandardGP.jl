@@ -227,6 +227,6 @@ function unstandardized_mean_and_var(model::StandardGP, X, params::Tuple)
     m, v = mean_and_var(model.gpx(X))
     # Un-standardize mean and variance
     m_unstd = (m .* σ) .+ μ
-    v_unstd = v .* (σ.^2)
+    v_unstd = v .* (σ^2)
     return m_unstd, v_unstd
 end

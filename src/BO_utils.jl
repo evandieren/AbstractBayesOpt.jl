@@ -67,7 +67,7 @@ function standardize_problem(BO::BOStruct; choice="mean_scale")
 
     # Need to update original kernel scale if scale_only or mean_scale
     if choice in ["scale_only", "mean_scale"]
-        BO.model = rescale_model(BO.model, σ) # Update the kernel scale / σ²
+        BO.model = rescale_model(BO.model, σ) # Update the kernel scale / σ² and mean by σ
     end 
 
     # Need to standardize the outputs too:
