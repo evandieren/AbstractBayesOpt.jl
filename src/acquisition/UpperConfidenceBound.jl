@@ -41,7 +41,7 @@ function (UCB::UpperConfidenceBound)(surrogate::AbstractSurrogate, x, x_buf=noth
 
     σ²_safe = max.(σ², 0.0)  # Ensure non-negative variance
 
-    return -μ + UCB.β*sqrt.(σ²)
+    return -μ + UCB.β*sqrt.(σ²_safe)
 end
 
 
