@@ -7,7 +7,7 @@ Things to do **before Oct 1st** are in **bold**
 ## Features
 
 ### BO Loop
-- **Get rid of the kernel_constructor in the call, it is a bit ugly and defeats the abstract purpose. Include this potentially in the `model`**
+- ~~**Get rid of the kernel_constructor in the call, it is a bit ugly and defeats the abstract purpose. Include this potentially in the `model`**~~
 - Ensure we copy, and do not modify by reference the inputs. This is not the case for the model, which is a shame. 
     The BOStruct will have the updated model which is not ideal if we wish to run it several times.
 
@@ -17,6 +17,7 @@ Things to do **before Oct 1st** are in **bold**
 
 ### Optimization routines
 - ~~Work out AD rule to not rely on ReverseDiff for the MLE optimization for GradientGPs.~~ -> Fixed
+- We still have issues if the user decides to use Matern52, but the other ones are fine.
 - Allow for custom choice of optimizer for the acq function maximisation, and/or hyper-parameter tuning if needed
 
 ### Acquisition functions

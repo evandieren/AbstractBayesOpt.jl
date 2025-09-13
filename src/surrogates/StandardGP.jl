@@ -82,7 +82,6 @@ function nlml(model::StandardGP, params::AbstractVector{T}, x::AbstractVector, y
     # Evaluate GP at training points with noise, creates a FiniteGP
     #println("finite gpx time")
     gpx = gp.gp(x,model.noise_var)
-
     #println("logpdf")
     -AbstractGPs.logpdf(gpx, y)
 end

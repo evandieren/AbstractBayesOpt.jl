@@ -19,4 +19,4 @@ function update(model::AbstractSurrogate, xs::AbstractVector, ys::AbstractVector
 function update(acq::AbstractAcquisition, ys::AbstractVector, model::AbstractSurrogate) end
 
 # Optimization functions for acquisition functions
-function optimize_acquisition! end
+function optimize_acquisition end

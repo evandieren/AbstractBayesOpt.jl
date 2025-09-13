@@ -34,7 +34,7 @@ y_train = map(x -> [x], y_train)
 
 #prior_mean = ConstMean(mean(reduce(vcat,y_train))) # set prior mean to empirical mean of data
 
-kernel_constructor = SqExponentialKernel()
+kernel_constructor = ApproxMatern52Kernel()
 kernel = 1 *(kernel_constructor ∘ ScaleTransform(1)) # needed because I need to do MLE
 model = StandardGP(kernel, σ²)#, mean=prior_mean)
 
@@ -61,7 +61,7 @@ print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
 
-choice = "mean_scale"
+choice = "mean_only"
 
 result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct,standardize=choice) 
 xs = reduce(vcat,result.xs)

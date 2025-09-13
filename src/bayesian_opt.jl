@@ -358,7 +358,7 @@ function optimize(BO::BOStruct;
         end
 
         println("Time acq update:")
-        @time x_cand = optimize_acquisition!(BO.acq,BO.model,BO.domain)
+        @time x_cand = optimize_acquisition(BO.acq,BO.model,BO.domain)
         
 
         println("New point acquired: $(x_cand) with acq func $(BO.acq(BO.model, x_cand))")

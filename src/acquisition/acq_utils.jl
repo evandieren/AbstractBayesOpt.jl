@@ -7,7 +7,7 @@ using Random
 inner_optimizer = LBFGS(;linesearch = Optim.LineSearches.HagerZhang(linesearchmax=20))
 box_optimizer = Fminbox(inner_optimizer)
 
-function optimize_acquisition!(acqf::AbstractAcquisition,
+function optimize_acquisition(acqf::AbstractAcquisition,
                                surrogate::AbstractSurrogate,
                                domain::ContinuousDomain;
                                n_grid = 10000,
@@ -75,28 +75,28 @@ end
 
 # end
 
-function optimize_mean!(surrogate::AbstractSurrogate, domain::ContinuousDomain; n_restarts = 30)
-    # This will minimize the posterior mean of the surrogate. Similar to optimize_acquisition!
-    best_μ = Inf
-    best_x = nothing
-    for i in 1:n_restarts
-        # Generate a random starting point within the bounds
-        initial_x = [rand()*(u - l) + l for (l, u) in domain.bounds]
-        result = Optim.optimize(x -> posterior_mean(surrogate, x),
-                                domain.lower,
-                                domain.upper,
-                                initial_x,
-                                box_optimizer,
-                                Optim.Options(g_tol = 1e-5, f_abstol = 2.2e-9)
-                                ; autodiff = :forward)
-        current_μ = Optim.minimum(result)
-        if current_μ < best_μ
-            best_μ = current_μ
-            best_x = Optim.minimizer(result)
-        end
-    end
-    return best_x, best_μ
-end
+# function optimize_mean!(surrogate::AbstractSurrogate, domain::ContinuousDomain; n_restarts = 30)
+#     # This will minimize the posterior mean of the surrogate. Similar to optimize_acquisition!
+#     best_μ = Inf
+#     best_x = nothing
+#     for i in 1:n_restarts
+#         # Generate a random starting point within the bounds
+#         initial_x = [rand()*(u - l) + l for (l, u) in domain.bounds]
+#         result = Optim.optimize(x -> posterior_mean(surrogate, x),
+#                                 domain.lower,
+#                                 domain.upper,
+#                                 initial_x,
+#                                 box_optimizer,
+#                                 Optim.Options(g_tol = 1e-5, f_abstol = 2.2e-9)
+#                                 ; autodiff = :forward)
+#         current_μ = Optim.minimum(result)
+#         if current_μ < best_μ
+#             best_μ = current_μ
+#             best_x = Optim.minimizer(result)
+#         end
+#     end
+#     return best_x, best_μ
+# end
 
 # Here we will have a look when we will do the gradient approximate function.
 # #TODO Maybe switch to the Optim one later on
