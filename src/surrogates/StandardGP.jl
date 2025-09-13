@@ -172,7 +172,7 @@ Arguments:
 returns:
 - `model::StandardGP`: The updated GP model with the new kernel scale.
 """
-function update_model_scale(model::StandardGP, σ::AbstractVector)
+function rescale_model(model::StandardGP, σ::AbstractVector)
     ℓ::Float64 = get_lengthscale(model)[1]
     old_scale = get_scale(model)[1]
     kernel_constructor = get_kernel_constructor(model)

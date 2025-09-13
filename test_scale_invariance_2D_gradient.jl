@@ -45,14 +45,6 @@ function_values = [y[1] for y in y_train_original]
 scaling_factor = std(function_values)
 @info "Scaling factor (σ̄): $scaling_factor"
 
-# Scaled function
-himmelblau_scaled_val_grad(x) = begin
-    val_grad = himmelblau_val_grad(x)
-    return [val_grad[1] / scaling_factor; val_grad[2:end] ./ scaling_factor]
-end
-
-# Prepare training data for both cases
-y_train_scaled = himmelblau_scaled_val_grad.(x_train)
 
 # Kernel and model setup
 kernel_constructor = ApproxMatern52Kernel()
@@ -80,37 +72,10 @@ bo_struct_orig = BOStruct(
 result_orig, acq_list_orig, std_params_orig = AbstractBayesOpt.optimize(
     bo_struct_orig, 
     standardize=nothing, 
-    # hyper_params=nothing
+    hyper_params=nothing
 )
 
-# Test 2: Scaled function with no standardization
-@info "Running BO on scaled function (no standardization)..."
-Random.seed!(42)
-
-kernel_scaled = 1/(scaling_factor^2) * (kernel_constructor ∘ ScaleTransform(1))
-grad_kernel_scaled = gradKernel(kernel_scaled)
-
-model_scaled = GradientGP(grad_kernel_scaled, problem_dim + 1, σ²/(scaling_factor^2))
-acqf_scaled = ExpectedImprovement(0.0, minimum([y[1] for y in y_train_scaled]))
-
-bo_struct_scaled = BOStruct(
-    himmelblau_scaled_val_grad,
-    acqf_scaled,
-    model_scaled,
-    domain,
-    copy(x_train),
-    copy(y_train_scaled),
-    n_iterations,
-    0.0
-)
-
-result_scaled, acq_list_scaled, std_params_scaled = AbstractBayesOpt.optimize(
-    bo_struct_scaled, 
-    standardize=nothing, 
-    # hyper_params=nothing
-)
-
-# Test 3: Original function with scale_only standardization
+# Test 2: Original function with scale_only standardization
 @info "Running BO on original function (scale_only standardization)..."
 Random.seed!(42)
 
@@ -131,65 +96,38 @@ bo_struct_orig_std = BOStruct(
 result_orig_std, acq_list_orig_std, std_params_orig_std = AbstractBayesOpt.optimize(
     bo_struct_orig_std, 
     standardize="scale_only", 
-    # hyper_params=nothing
+    hyper_params=nothing
 )
 
 xs_orig = result_orig.xs
-xs_scaled = result_scaled.xs
 xs_orig_std = result_orig_std.xs
 
 
 # Plot 1: Function evaluations over iterations
-p1 = plot(title="Function Values at Sampled Points (should match)", xlabel="Sample point index", ylabel="f(x)")
+p1 = plot(title="Function Values at Sampled Points (should match)", xlabel="Sample point index",
+            ylabel="f(x)", yaxis=:log, legend=:bottomleft)
 plot!(p1, (n_train+1):length(xs_orig), himmelblau.(xs_orig)[(n_train+1):end], 
-      label="Original (no std)", marker=:circle, linewidth=2,yaxis=:log)
-# plot!(p1, (n_train+1):length(xs_scaled), himmelblau.(xs_scaled)[(n_train+1):end], 
-#       label="Scaled function", marker=:square, linewidth=2, linestyle=:dash)
+      label="Original (no std)", marker=:circle, linewidth=2)
 plot!(p1, (n_train+1):length(xs_orig_std), himmelblau.(xs_orig_std)[(n_train+1):end], 
       label="Original (scale_only std)", marker=:diamond, linewidth=2, linestyle=:dot)
 
 # Plot 2: Acquisition values over iterations
 p2 = plot(title="Acquisition Values (should match)", xlabel="Iteration", ylabel="Acquisition Value", yaxis=:log)
-plot!(p2, (n_train+1):length(acq_list_orig), acq_list_orig[(n_train+1):end] .+ eps(), 
-      label="Original (no std)", marker=:circle, linewidth=2,legend=:bottomleft)
-# plot!(p2, (n_train+1):length(acq_list_scaled), acq_list_scaled[(n_train+1):end] .* scaling_factor .+ eps(), 
-#       label="Scaled function (rescaled)", marker=:square, linewidth=2, linestyle=:dash)
-plot!(p2, (n_train+1):length(acq_list_orig_std), acq_list_orig_std[(n_train+1):end] .* scaling_factor .+ eps(), 
+plot!(p2, (n_train+1):(length(acq_list_orig)+n_train), acq_list_orig .+ eps(), 
+      label="Original (no std)", marker=:circle, linewidth=2)
+plot!(p2, (n_train+1):(length(acq_list_orig_std)+n_train), acq_list_orig_std .* scaling_factor .+ eps(), 
       label="Original (scale_only std) (rescaled)", marker=:diamond, linewidth=2, linestyle=:dot)
 
 # Plot 3: Running minimum
 running_min_orig = accumulate(min, himmelblau.(xs_orig))
-running_min_scaled = accumulate(min, himmelblau.(xs_scaled))
 running_min_orig_std = accumulate(min, himmelblau.(xs_orig_std))
 
 p3 = plot(title="Running Minimum", xlabel="Function Evaluations", ylabel="Best f(x) Found", yaxis=:log)
-plot!(p3, 1:length(running_min_orig), running_min_orig, 
+plot!(p3, (n_train+1):length(running_min_orig), running_min_orig[n_train+1:end], 
       label="Original (no std)", linewidth=2)
-# plot!(p3, 1:length(running_min_scaled), running_min_scaled, 
-#       label="Scaled function", linewidth=2, linestyle=:dash)
-plot!(p3, 1:length(running_min_orig_std), running_min_orig_std, 
+plot!(p3, (n_train+1):length(running_min_orig_std), running_min_orig_std[n_train+1:end], 
       label="Original (scale_only std)", linewidth=2, linestyle=:dot)
-vspan!(p3, [1, n_train], color=:blue, alpha=0.2, label="Initial training")
-
-# Plot 4: Gradient norms comparison (unique to GradientGP)
-gradient_norms_orig = [norm(himmelblau_val_grad(x)[2:end]) for x in xs_orig[(n_train+1):end]]
-gradient_norms_scaled = [norm(himmelblau_val_grad(x)[2:end]) for x in xs_scaled[(n_train+1):end]]
-gradient_norms_orig_std = [norm(himmelblau_val_grad(x)[2:end]) for x in xs_orig_std[(n_train+1):end]]
-
-p4 = plot(title="Gradient Norms at Sampled Points", xlabel="Sample point index", ylabel="||∇f(x)||")
-plot!(p4, (n_train+1):length(xs_orig), gradient_norms_orig, 
-      label="Original (no std)", marker=:circle, linewidth=2,yaxis=:log)
-# plot!(p4, (n_train+1):length(xs_scaled), gradient_norms_scaled, 
-#       label="Scaled function", marker=:square, linewidth=2, linestyle=:dash)
-plot!(p4, (n_train+1):length(xs_orig_std), gradient_norms_orig_std, 
-      label="Original (scale_only std)", marker=:diamond, linewidth=2, linestyle=:dot)
 
 # Combine plots
-p_combined = plot(p1, p2, p3, p4, layout=(2,2), size=(1200, 900))
+p_combined = plot(p1, p2, p3, layout=(3,1), size=(800, 900))
 display(p_combined)
-savefig(p_combined, "scale_invariance_2D_gradient_comparison.png")
-
-cond(kernelmatrix(kernel, xs_orig, xs_orig) + 1e-6*I)
-cond(kernelmatrix(kernel_scaled, xs_orig_std, xs_orig_std) + (1e-6/scaling_factor^2)*I)
-
-# Some issues at the 15th, seems like we do not find the same point

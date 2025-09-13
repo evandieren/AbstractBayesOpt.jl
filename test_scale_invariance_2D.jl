@@ -74,7 +74,7 @@ bo_struct_orig = BOStruct(
 result_orig, acq_list_orig, std_params_orig = AbstractBayesOpt.optimize(
     bo_struct_orig, 
     standardize=nothing, 
-    # hyper_params=nothing
+    hyper_params=nothing
 )
 
 # Test 2: Scaled function with no standardization
@@ -100,7 +100,7 @@ bo_struct_scaled = BOStruct(
 result_scaled, acq_list_scaled, std_params_scaled = AbstractBayesOpt.optimize(
     bo_struct_scaled, 
     standardize=nothing, 
-    # hyper_params=nothing
+    hyper_params=nothing
 )
 
 # Test 3: Original function with scale_only standardization
@@ -124,7 +124,7 @@ bo_struct_orig_std = BOStruct(
 result_orig_std, acq_list_orig_std, std_params_orig_std = AbstractBayesOpt.optimize(
     bo_struct_orig_std, 
     standardize="scale_only", 
-    # hyper_params=nothing
+    hyper_params=nothing
 )
 
 # Analysis and comparison
@@ -138,7 +138,8 @@ xs_orig_std = result_orig_std.xs
 
 
 # Plot 1: Function evaluations over iterations
-p1 = plot(title="Function Values at Sampled Points (should match)", xlabel="Sample point index", ylabel="f(x)")
+p1 = plot(title="Function Values at Sampled Points (should match)", xlabel="Sample point index",
+            ylabel="f(x)", yaxis=:log, legend=:bottomleft)
 plot!(p1, (n_train+1):length(xs_orig), himmelblau.(xs_orig)[(n_train+1):end], 
       label="Original (no std)", marker=:circle, linewidth=2)
 plot!(p1, (n_train+1):length(xs_scaled), himmelblau.(xs_scaled)[(n_train+1):end], 
@@ -148,11 +149,11 @@ plot!(p1, (n_train+1):length(xs_orig_std), himmelblau.(xs_orig_std)[(n_train+1):
 
 # Plot 2: Acquisition values over iterations
 p2 = plot(title="Acquisition Values (should match)", xlabel="Iteration", ylabel="Acquisition Value", yaxis=:log)
-plot!(p2, (n_train+1):length(acq_list_orig), acq_list_orig[(n_train+1):end] .+ eps(), 
+plot!(p2, (n_train+1):(length(acq_list_orig)+n_train), acq_list_orig .+ eps(), 
       label="Original (no std)", marker=:circle, linewidth=2)
-plot!(p2, (n_train+1):length(acq_list_scaled), acq_list_scaled[(n_train+1):end] .* scaling_factor .+ eps(), 
+plot!(p2, (n_train+1):(length(acq_list_scaled)+n_train), acq_list_scaled .* scaling_factor .+ eps(), 
       label="Scaled function (rescaled)", marker=:square, linewidth=2, linestyle=:dash)
-plot!(p2, (n_train+1):length(acq_list_orig_std), acq_list_orig_std[(n_train+1):end] .* scaling_factor .+ eps(), 
+plot!(p2, (n_train+1):(length(acq_list_orig_std)+n_train), acq_list_orig_std .* scaling_factor .+ eps(), 
       label="Original (scale_only std) (rescaled)", marker=:diamond, linewidth=2, linestyle=:dot)
 
 # Plot 3: Running minimum
@@ -161,17 +162,18 @@ running_min_scaled = accumulate(min, himmelblau.(xs_scaled))
 running_min_orig_std = accumulate(min, himmelblau.(xs_orig_std))
 
 p3 = plot(title="Running Minimum", xlabel="Function Evaluations", ylabel="Best f(x) Found", yaxis=:log)
-plot!(p3, 1:length(running_min_orig), running_min_orig, 
+plot!(p3, (n_train+1):length(running_min_orig), running_min_orig[n_train+1:end], 
       label="Original (no std)", linewidth=2)
-plot!(p3, 1:length(running_min_scaled), running_min_scaled, 
+plot!(p3, (n_train+1):length(running_min_scaled), running_min_scaled[n_train+1:end], 
       label="Scaled function", linewidth=2, linestyle=:dash)
-plot!(p3, 1:length(running_min_orig_std), running_min_orig_std, 
+plot!(p3, (n_train+1):length(running_min_orig_std), running_min_orig_std[n_train+1:end], 
       label="Original (scale_only std)", linewidth=2, linestyle=:dot)
-vspan!(p3, [1, n_train], color=:blue, alpha=0.2, label="Initial training")
 
 # Combine plots
 p_combined = plot(p1, p2, p3, layout=(3,1), size=(800, 900))
 display(p_combined)
-savefig(p_combined, "scale_invariance_2D_comparison.png")
 
 # For me, this is fine.
+
+
+running_min_scaled - running_min_orig_std

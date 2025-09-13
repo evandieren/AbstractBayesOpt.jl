@@ -25,13 +25,24 @@ function optimize_acquisition!(acqf::AbstractAcquisition,
         x_buf = [zeros(length(domain.bounds))] 
     end
 
-    # Random search
     d = length(domain.bounds)
+    # grid_points = [collect(col) for col in eachcol(
+    #                QuasiMonteCarlo.sample(n_grid, domain.lower, domain.upper, SobolSample())
+    #            )]
+    
+    # Random.seed!(42)  # Fixed seed for reproducibility
     grid_points = [domain.lower .+ rand(d) .* (domain.upper .- domain.lower) for _ in 1:n_grid]
+
+    # println("Grid points generated: ", grid_points[1:5])
+    
     evaluated = [(x, acqf(surrogate, x,x_buf)) for x in grid_points]
+
+
     sorted_points = sort(evaluated, by = x -> -x[2])  # higher EI is better
     top_points = first.(sorted_points[1:min(n_local, length(sorted_points))])
     
+
+
     # Loop over a number of random starting points
     for initial_x in top_points
         result = Optim.optimize(x -> -acqf(surrogate, x, x_buf),
@@ -39,7 +50,7 @@ function optimize_acquisition!(acqf::AbstractAcquisition,
                                 domain.upper,
                                 initial_x,
                                 box_optimizer,
-                                Optim.Options(g_tol = 1e-5, f_abstol = 2.2e-9, x_abstol = 1e-4))
+                                Optim.Options(g_tol = 1e-8, f_abstol = 2.2e-9))#, x_abstol = 1e-4))
         # Check if the current run is better (lower negative acqf)
         current_acq = -Optim.minimum(result)
         if current_acq > best_acq

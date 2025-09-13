@@ -375,11 +375,9 @@ function optimize(BO::BOStruct;
         
         # here we have μ and σ according to the standardization choice
         # The vectors are given as (pseudo-code):
-        # if scale_only, σ ≠ 1
+        # if scale_only, μ = 0, σ ≠ 1
         # if mean_scale, μ ≠ 0 and σ ≠ 1
         
-        # The mean is taken into account in the prior mean -> μ == 0 here.
-        # just rescaling with σ
         y_cand = (y_cand .- μ)./σ[1]
         @time BO = update(BO, x_cand, y_cand, i)
     end

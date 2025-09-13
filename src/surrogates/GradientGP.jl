@@ -290,7 +290,7 @@ Arguments:
 returns:
 - `model::GradientGP`: The updated GP model with the new kernel scale.
 """
-function update_model_scale(model::GradientGP, σ::AbstractVector)
+function rescale_model(model::GradientGP, σ::AbstractVector)
     ℓ = get_lengthscale(model)[1]
     old_scale = get_scale(model)[1]
     kernel_constructor = get_kernel_constructor(model)

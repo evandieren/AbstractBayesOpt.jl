@@ -54,7 +54,40 @@ function (EI::ExpectedImprovement)(surrogate::AbstractSurrogate, x, x_buf=nothin
     z = Δ/σ
 
     return Δ * cdf(Normal(0, 1), z) + σ * pdf(Normal(0, 1), z)
+    # return safe_EI(EI.ξ, EI.best_y, μ, σ²)
 end
+
+
+function safe_EI(ξ::Float64, best_y::Float64, μ::Float64, σ2::Float64)
+    # Relative floor for variance (absolute and relative safeguards)
+    abs_floor = 1e-16
+    rel_floor = 1e-12 * max(1.0, μ^2, best_y^2)
+    σ2 = max(σ2, max(abs_floor, rel_floor))
+    σ = sqrt(σ2)
+
+    Δ = (best_y - ξ) - μ   # minimize: improvement is positive if μ < best_y - ξ
+    if Δ <= 0.0
+        # If Δ <= 0, EI = σ * φ(z) where z is negative or zero. But if σ is tiny, return 0.
+        if σ < 1e-12
+            return 0.0
+        end
+    end
+
+    z = Δ / σ
+
+    # stable tail handling
+    if z > 8.0
+        # cdf ~ 1, pdf ~ 0
+        return max(Δ, 0.0)
+    elseif z < -8.0
+        # cdf ~ 0, EI ~ σ * pdf(z)
+        return σ * pdf(Normal(0,1), z)
+    else
+        # safe direct formula
+        return Δ * cdf(Normal(0,1), z) + σ * pdf(Normal(0,1), z)
+    end
+end
+
 
 
 """

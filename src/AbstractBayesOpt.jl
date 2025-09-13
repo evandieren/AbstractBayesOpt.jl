@@ -3,6 +3,7 @@ module AbstractBayesOpt
 using AbstractGPs, KernelFunctions
 using ForwardDiff
 using Optim
+# using QuasiMonteCarlo
 using Statistics
 using SpecialFunctions
 using Plots
@@ -22,11 +23,11 @@ export ContinuousDomain
 # Surrogate models
 include("surrogates/surrogates_utils.jl")
 include("surrogates/StandardGP.jl")
-export StandardGP, prep_input, posterior_mean, posterior_var, nlml,nlml_ls, get_mean_std, std_y,unstandardized_mean_and_var, get_lengthscale, get_scale
+export StandardGP, prep_input, posterior_mean, posterior_var, nlml, nlml_ls, get_mean_std, std_y, unstandardized_mean_and_var, get_lengthscale, get_scale, rescale_model
 
 include("surrogates/GradientGP.jl")
 export GradientGP, ApproxMatern52Kernel, gradConstMean, gradKernel, prep_input, posterior_mean, posterior_var, posterior_grad_mean, posterior_grad_cov,posterior_grad_var
-export nlml, std_y, get_mean_std, unstandardized_mean_and_var, get_lengthscale, get_scale
+export nlml, std_y, get_mean_std, unstandardized_mean_and_var, get_lengthscale, get_scale, rescale_model
 
 # Acquisition functions
 include("acquisition/acq_utils.jl")
@@ -49,12 +50,11 @@ export EnsembleAcquisition
 
 # Core Bayesian Optimization framework
 include("bayesian_opt.jl")
-export optimize, update, BOStruct, stop_criteria, optimize_hyperparameters, standardize_problem
+export optimize, update, BOStruct, stop_criteria, optimize_hyperparameters 
 
 # Utility functions
 include("BO_utils.jl")
-export print_info, rescale_output
-
+export print_info, rescale_output, standardize_problem
 
 # include("plotting.jl")
 # export plot_state
