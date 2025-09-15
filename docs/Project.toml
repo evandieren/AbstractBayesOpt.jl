@@ -1,4 +1,7 @@
 [deps]
 AbstractBayesOpt = "735adf16-6ca3-4095-a89a-9a0ece110843"
+AbstractGPs = "99985d1d-32ba-4be9-9821-2ec096f28918"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"

@@ -132,7 +132,7 @@ end
 Constructor for the GradientGP model.
 
 Arguments:
-- `kernel::gradKernel`: The gradient kernel function to be used in the GP.
+- `kernel::Kernel`: The base kernel function to be used in the GP.
 - `p::Int`: The number of outputs (1 for function value + d for gradients).
 - `noise_var::Float64`: The noise variance of the observations.
 - `mean`: (optional) The mean function of the GP, defaults to gradMean with 0 constant
@@ -140,10 +140,28 @@ Arguments:
 returns:
 - `GradientGP`: An instance of the GradientGP model.
 """
-function GradientGP(kernel::gradKernel,p::Int,noise_var::Float64; mean=nothing)
+function GradientGP(kernel::Kernel,p::Int,noise_var::Float64; mean=nothing)
     if isnothing(mean)
         mean = gradConstMean(zeros(p))
     end
+
+    inner, scale, lengthscale = extract_scale_and_lengthscale(kernel)
+
+    # Decide defaults
+    if lengthscale === nothing
+        inner = with_lengthscale(inner, 1.0)
+    else
+        inner = with_lengthscale(inner, lengthscale)
+    end
+
+    if scale == 1.0 && !isa(kernel, AbstractGPs.ScaledKernel)
+        kernel = ScaledKernel(inner, 1.0)
+    else
+        kernel = ScaledKernel(inner, scale)
+    end
+
+    kernel = gradKernel(kernel)
+
     gp = AbstractGPs.GP(mean,kernel) # Creates GP(0,k) for the prior
     GradientGP(gp,noise_var,p,nothing)
 end
@@ -297,16 +315,16 @@ function rescale_model(model::GradientGP, σ::AbstractVector)
 
     new_scale = old_scale / (σ[1]^2)
 
-    new_kernel = new_scale * (kernel_constructor ∘ ScaleTransform(1/ℓ))
+    new_kernel = new_scale *  with_lengthscale(kernel_constructor, ℓ)
 
 
     if isa(model.gp.mean, gradConstMean)
         old_c = model.gp.mean.c
         new_c = old_c ./ σ[1] 
-        return GradientGP(gradKernel(new_kernel), model.p, model.noise_var / (σ[1]^2), mean = gradConstMean(new_c))
+        return GradientGP(new_kernel, model.p, model.noise_var / (σ[1]^2), mean = gradConstMean(new_c))
     end
 
-    return GradientGP(gradKernel(new_kernel), model.p, model.noise_var / (σ[1]^2), mean = model.gp.mean)
+    return GradientGP(new_kernel, model.p, model.noise_var / (σ[1]^2), mean = model.gp.mean)
 end
 
 get_lengthscale(model::GradientGP) = 1 ./ model.gp.kernel.base_kernel.kernel.transform.s

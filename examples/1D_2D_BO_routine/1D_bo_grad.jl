@@ -41,8 +41,7 @@ y_train = [val_grad[i] for i = eachindex(val_grad)]
 kernel_constructor = ApproxMatern52Kernel()
 
 kernel = 1 *(kernel_constructor ∘ ScaleTransform(1))
-grad_kernel = gradKernel(kernel)
-model = GradientGP(grad_kernel,d+1,σ²)
+model = GradientGP(kernel,d+1,σ²)
 
 # Init of the acquisition function
 ξ = 0.0
@@ -70,18 +69,6 @@ ys = result.ys_non_std
 ys = hcat(ys...)[1,:]
 println("Optimal point: ",xs[argmin(ys)])
 println("Optimal value: ",minimum(ys))
-
-# xs_nothing = copy(xs)
-# acq_nothing = copy(acq_list)
-
-# xs_scale_only = copy(xs)
-# acq_scale_only = copy(acq_list .* standard_params[2][1])
-
-# xs_mean_scale = copy(xs)
-# acq_mean_scale = copy(acq_list .* standard_params[2][1])
-
-# xs_mean_only = copy(xs)
-# acq_mean_only = copy(acq_list)
 
 # plot(max.(acqf_list,1e-13),yaxis=:log)
 running_min = accumulate(min, f.(xs))

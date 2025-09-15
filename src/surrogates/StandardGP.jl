@@ -95,7 +95,7 @@ function nlml(model::StandardGP, params::AbstractVector{T}, x::AbstractVector, y
     kernel_constructor = get_kernel_constructor(model)
 
     # Kernel with current parameters
-    k = scale * (kernel_constructor ∘ ScaleTransform(1/ℓ))
+    k = scale * with_lengthscale(kernel_constructor, ℓ)
     #println("creation time of standardgp")
     gp = StandardGP(k, model.noise_var,mean=mean) # Use fixed noise here, or optimize σ² too
 

@@ -64,7 +64,7 @@ function BOStruct(func::Function,
     """
     Initialize the Bayesian Optimization problem.
     """
-    BOStruct(func, copy(acq), model, domain, copy(x_train), copy(y_train), copy(y_train), max_iter, 0, noise, false)
+    BOStruct(func, copy(acq), copy(model), domain, copy(x_train), copy(y_train), copy(y_train), max_iter, 0, noise, false)
 end
 
 
@@ -275,12 +275,12 @@ function optimize_hyperparameters(model::AbstractSurrogate,
     
     kernel_constructor = get_kernel_constructor(model)
 
-    k_opt = scale * (kernel_constructor ∘ ScaleTransform(1/ℓ))
+    k_opt = scale * with_lengthscale(kernel_constructor, ℓ)
 
     if classic_bo
         return StandardGP(k_opt, model.noise_var, mean=mean)
     else
-        return GradientGP(gradKernel(k_opt),model.p, model.noise_var, mean=mean)
+        return GradientGP(k_opt, model.p, model.noise_var, mean=mean)
     end
 end
 
