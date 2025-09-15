@@ -31,8 +31,28 @@ function StandardGP(kernel::Kernel, noise_var::Float64; mean=nothing)
     if isnothing(mean)
         mean = ZeroMean()
     end
+
+
+    # Extract inner kernel, scale, and lengthscale
+    inner, scale, lengthscale = extract_scale_and_lengthscale(kernel)
+
+    println("scale: $scale, lengthscale: $lengthscale")
+
+    # Decide defaults
+    if lengthscale === nothing
+        inner = with_lengthscale(inner, 1.0)
+    else
+        inner = with_lengthscale(inner, lengthscale)
+    end
+
+    if scale == 1.0 && !isa(kernel, AbstractGPs.ScaledKernel)
+        kernel = ScaledKernel(inner, 1.0)
+    else
+        kernel = ScaledKernel(inner, scale)
+    end
+
     gp = AbstractGPs.GP(mean,kernel) # Creates GP(0,k) for the prior
-    StandardGP(gp, noise_var, nothing)
+    return StandardGP(gp, noise_var, nothing)
 end
 
 """
@@ -173,12 +193,12 @@ returns:
 """
 function rescale_model(model::StandardGP, σ::AbstractVector)
     ℓ::Float64 = get_lengthscale(model)[1]
-    old_scale = get_scale(model)[1]
+    old_scale::Float64 = get_scale(model)[1]
     kernel_constructor = get_kernel_constructor(model)
 
     new_scale = old_scale / (σ[1]^2)
 
-    new_kernel = new_scale * (kernel_constructor ∘ ScaleTransform(1/ℓ))
+    new_kernel = new_scale * (with_lengthscale(kernel_constructor, ℓ))
 
 
     # If the GP mean is not a ZeroMean, we need to rescale it too for consistency
