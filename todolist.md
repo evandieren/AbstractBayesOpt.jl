@@ -1,7 +1,6 @@
 # TODO list for the AbstractBayesOpt.jl package
 This is the todo list for the AbstractBayesOpt.jl package
 
-
 Things to do **before Oct 1st** are in **bold**
 
 ## Features
@@ -19,6 +18,7 @@ Things to do **before Oct 1st** are in **bold**
 - ~~Work out AD rule to not rely on ReverseDiff for the MLE optimization for GradientGPs.~~ -> Fixed
 - We still have issues if the user decides to use Matern52, but the other ones are fine.
 - Allow for custom choice of optimizer for the acq function maximisation, and/or hyper-parameter tuning if needed
+- Have a look at DifferentiationInterface.jl where we use the AD, to allow users to decide which AD backend they wish to use.
 
 ### Acquisition functions
 - Implement the KG. 
@@ -30,10 +30,11 @@ Things to do **before Oct 1st** are in **bold**
 
 ## Performance-related 
 - Continue the profiling of the optimize function.
+- **Acq function maximisation takes a lot of allocations, with ~20% of GC time, would be interesting to look at**
 - **Identified issues: posterior_mean and posterior_var suffer from GC**
 
 ## Tests
-- **Do the tests, both mathematical and software related.**
+- **Do the tests, both mathematical and software related.** (in progress)
 
 ## Package-julia related tasks
 - **Understand and define what needs to be exported or not in AbstractBayesOpt.jl**
