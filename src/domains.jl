@@ -14,6 +14,6 @@ struct ContinuousDomain <: AbstractDomain
         length(lower) == length(upper) || throw(ArgumentError("Bounds mismatch"))
         all(lower .<= upper) || throw(ArgumentError("Invalid bounds"))
         # Creates the structure
-        new(lower, upper, collect(zip(lower, upper)))
+        return new(lower, upper, collect(zip(lower, upper)))
     end
 end

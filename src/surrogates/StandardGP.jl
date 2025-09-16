@@ -104,7 +104,7 @@ function nlml(
     #println("finite gpx time")
     gpx = gp.gp(x, model.noise_var)
     #println("logpdf")
-    -AbstractGPs.logpdf(gpx, y)
+    return -AbstractGPs.logpdf(gpx, y)
 end
 
 """
@@ -146,7 +146,7 @@ function nlml_ls(
     gpx = gp.gp(x, model.noise_var)
 
     #println("logpdf")
-    -AbstractGPs.logpdf(gpx, y)
+    return -AbstractGPs.logpdf(gpx, y)
 end
 
 """
@@ -166,7 +166,7 @@ function get_mean_std(model::StandardGP, y_train::AbstractVector)
     y_mean::Float64 = mean(y_flat)
     y_std::Float64 = std(y_flat)
 
-    [y_mean], [y_std]
+    return [y_mean], [y_std]
 end
 
 """

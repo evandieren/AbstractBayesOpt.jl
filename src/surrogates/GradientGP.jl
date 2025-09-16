@@ -176,7 +176,7 @@ function GradientGP(kernel::Kernel, p::Int, noise_var::Float64; mean=nothing)
     kernel = gradKernel(kernel)
 
     gp = AbstractGPs.GP(mean, kernel) # Creates GP(0,k) for the prior
-    GradientGP(gp, noise_var, p, nothing)
+    return GradientGP(gp, noise_var, p, nothing)
 end
 
 """
@@ -237,7 +237,7 @@ function nlml(
 
     #println("logpdf")
     #@time fastnlml_grad(gpx,y)
-    -AbstractGPs.logpdf(gpx, y)  # Negative log marginal likelihood
+    return -AbstractGPs.logpdf(gpx, y)  # Negative log marginal likelihood
 end
 
 """
@@ -279,7 +279,7 @@ function nlml_ls(
     gpx = gp.gp(x, model.noise_var)
 
     #println("logpdf")
-    -AbstractGPs.logpdf(gpx, y)
+    return -AbstractGPs.logpdf(gpx, y)
 end
 
 """
@@ -301,7 +301,7 @@ function get_mean_std(model::GradientGP, y_train::AbstractVector)
     σ = vec(std(y_mat; dims=2))
     σ[2:end] .= σ[1]  # Use same scaling for gradients
 
-    μ, σ
+    return μ, σ
 end
 
 """

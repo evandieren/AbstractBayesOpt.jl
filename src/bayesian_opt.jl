@@ -28,15 +28,6 @@ mutable struct BOStruct{F,M<:AbstractSurrogate,A<:AbstractAcquisition}
 end
 
 """
-    BOStruct(func::Function,
-              acq::AbstractAcquisition,
-              model::AbstractSurrogate,
-              domain::AbstractDomain, 
-              x_train::AbstractVector, 
-              y_train::AbstractVector, 
-              max_iter::Int, 
-              noise::Float64)
-
 Initialize the Bayesian Optimization problem.
 
 Arguments:
