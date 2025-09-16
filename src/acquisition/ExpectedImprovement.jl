@@ -18,10 +18,7 @@ struct ExpectedImprovement <: AbstractAcquisition
     best_y::Float64
 end
 
-
 Base.copy(EI::ExpectedImprovement) = ExpectedImprovement(EI.ξ, EI.best_y)
-
-
 
 function (EI::ExpectedImprovement)(surrogate::AbstractSurrogate, x, x_buf=nothing)
 
@@ -57,7 +54,6 @@ function (EI::ExpectedImprovement)(surrogate::AbstractSurrogate, x, x_buf=nothin
     # return safe_EI(EI.ξ, EI.best_y, μ, σ²)
 end
 
-
 function safe_EI(ξ::Float64, best_y::Float64, μ::Float64, σ2::Float64)
     # Relative floor for variance (absolute and relative safeguards)
     abs_floor = 1e-16
@@ -81,14 +77,12 @@ function safe_EI(ξ::Float64, best_y::Float64, μ::Float64, σ2::Float64)
         return max(Δ, 0.0)
     elseif z < -8.0
         # cdf ~ 0, EI ~ σ * pdf(z)
-        return σ * pdf(Normal(0,1), z)
+        return σ * pdf(Normal(0, 1), z)
     else
         # safe direct formula
-        return Δ * cdf(Normal(0,1), z) + σ * pdf(Normal(0,1), z)
+        return Δ * cdf(Normal(0, 1), z) + σ * pdf(Normal(0, 1), z)
     end
 end
-
-
 
 """
 Update the Expected Improvement acquisition function with new array of observations.
@@ -101,10 +95,10 @@ Arguments:
 returns:
 - `new_acqf::ExpectedImprovement`: Updated Expected Improvement acquisition function
 """
-function update(acq::ExpectedImprovement,ys::AbstractVector, surrogate::AbstractSurrogate)
+function update(acq::ExpectedImprovement, ys::AbstractVector, surrogate::AbstractSurrogate)
     if (length(ys[1])==1) # we are in 1d
-        ExpectedImprovement(acq.ξ, minimum(reduce(vcat,ys)))
-    else 
-        ExpectedImprovement(acq.ξ, minimum(hcat(ys...)[1,:]))
+        ExpectedImprovement(acq.ξ, minimum(reduce(vcat, ys)))
+    else
+        ExpectedImprovement(acq.ξ, minimum(hcat(ys...)[1, :]))
     end
 end

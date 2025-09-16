@@ -12,7 +12,7 @@ using LaTeXStrings
 using LinearAlgebra
 using AbstractBayesOpt
 
-import Random
+using Random: Random
 Random.seed!(555)
 
 # Objective Function 
@@ -35,13 +35,13 @@ end
 rosenbrock(x::AbstractVector) = (1 - x[1])^2 + 100 * (x[2] - x[1]^2)^2
 
 # Himmelblau
-himmelblau(x::AbstractVector) = (x[1]^2 + x[2] -11)^2 + (x[1]+x[2]^2-7)^2
+himmelblau(x::AbstractVector) = (x[1]^2 + x[2] - 11)^2 + (x[1]+x[2]^2-7)^2
 
 f(x) = himmelblau(x)
 
 problem_dim = 2
-lower = [-6,-6.0]
-upper = [6.0,6.0]
+lower = [-6, -6.0]
+upper = [6.0, 6.0]
 domain = ContinuousDomain(lower, upper)
 σ² = 1e-12
 
@@ -54,7 +54,7 @@ y_train = f.(x_train) #+ sqrt(σ²).* randn(n_train)
 
 y_train = map(x -> [x], y_train)
 
-model = StandardGP(kernel,σ²) # Instantiates the StandardGP (gives it the prior).
+model = StandardGP(kernel, σ²) # Instantiates the StandardGP (gives it the prior).
 
 # Conditioning: no need if true
 # We are conditionning the GP, returning GP|X,y where y can be noisy (but supposed fixed)
@@ -65,16 +65,7 @@ model = StandardGP(kernel,σ²) # Instantiates the StandardGP (gives it the prio
 acqf = ExpectedImprovement(ξ, minimum(y_train)[1])
 
 # This maximises the function
-bo_struct = BOStruct(
-                    f,
-                    acqf,
-                    model,
-                    domain,
-                    copy(x_train),
-                    copy(y_train),
-                    50,
-                    0.0
-                    )
+bo_struct = BOStruct(f, acqf, model, domain, copy(x_train), copy(y_train), 50, 0.0)
 
 print_info(bo_struct)
 
@@ -82,12 +73,14 @@ print_info(bo_struct)
 
 choice = "mean_scale"
 
-@time result,acq_list, std_params = AbstractBayesOpt.optimize(bo_struct,standardize=choice)
+@time result, acq_list, std_params = AbstractBayesOpt.optimize(
+    bo_struct, standardize=choice
+)
 xs = result.xs
-ys = result.ys_non_std 
+ys = result.ys_non_std
 # ys = (reduce(vcat,result.ys).*y_std) .+ y_mean
-println("Optimal point: ",xs[argmin(ys)])
-println("Optimal value: ",minimum(ys))
+println("Optimal point: ", xs[argmin(ys)])
+println("Optimal value: ", minimum(ys))
 
 # xs_nothing = copy(xs)
 # acq_nothing = copy(acq_list)
@@ -101,15 +94,19 @@ println("Optimal value: ",minimum(ys))
 # xs_mean_only = copy(xs)
 # acq_mean_only = copy(acq_list)
 
-
-
 running_min = accumulate(min, f.(xs))
 
-Plots.plot(n_train:length(running_min),norm.(running_min)[n_train:end],yaxis=:log, title="Error w.r.t true minimum (2D BO)",
-            xlabel="Function evaluations",ylabel=L"|| f(x^*_n) - f^* ||",
-            label="BO",xlims=(1,length(running_min)))
-Plots.vspan!([1,n_train]; color=:blue,alpha=0.2, label="")
-
+Plots.plot(
+    n_train:length(running_min),
+    norm.(running_min)[n_train:end];
+    yaxis=:log,
+    title="Error w.r.t true minimum (2D BO)",
+    xlabel="Function evaluations",
+    ylabel=L"|| f(x^*_n) - f^* ||",
+    label="BO",
+    xlims=(1, length(running_min)),
+)
+Plots.vspan!([1, n_train]; color=:blue, alpha=0.2, label="")
 
 # Plots.plot(n_train:length(acq_nothing), acq_nothing[n_train:end] .+ eps(), label="standardize = nothing", xlabel="Iteration",
 #         ylabel="Acquisition value", title="Acquisition value over iterations (1D BO)", yaxis=:log)

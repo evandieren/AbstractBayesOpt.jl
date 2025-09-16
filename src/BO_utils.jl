@@ -1,7 +1,5 @@
 ## Utility functions for Bayesian Optimization
 
-
-
 ## BOStruct and related functions
 """
     Prints information about the BOStruct
@@ -14,20 +12,18 @@ returns:
 """
 function print_info(BO::BOStruct)
     println("== Printing information about the BOStruct ==")
-    println("Target function: ",BO.func)
-    println("Domain: ",BO.domain)
-    println("xs: ",BO.xs)
-    println("ys: ",BO.ys)
-    println("Surrogate: ",BO.model)
-    println("ACQ: ",BO.acq)
-    println("max_iter: ",BO.max_iter)
-    println("noise: ",BO.noise)
+    println("Target function: ", BO.func)
+    println("Domain: ", BO.domain)
+    println("xs: ", BO.xs)
+    println("ys: ", BO.ys)
+    println("Surrogate: ", BO.model)
+    println("ACQ: ", BO.acq)
+    println("max_iter: ", BO.max_iter)
+    println("noise: ", BO.noise)
     println("=============================================")
 end
 
-
 ## Standardization functions
-
 
 """
     standardize_problem(BO::BOStruct; choice="mean_scale")
@@ -52,7 +48,7 @@ function standardize_problem(BO::BOStruct; choice="mean_scale")
     p = length(BO.ys[1])
 
     # Attention: here it is the standard deviation, need to square for kernel scaling
-    μ::Vector{Float64}, σ::Vector{Float64} = get_mean_std(BO.model,ys_non_std)
+    μ::Vector{Float64}, σ::Vector{Float64} = get_mean_std(BO.model, ys_non_std)
 
     # Taking into account the choice of the user
     if choice == "scale_only"
@@ -64,20 +60,18 @@ function standardize_problem(BO::BOStruct; choice="mean_scale")
     println("Standardization choice: $choice")
     println("Standardization parameters: μ=$μ, σ=$σ")
 
-
     # Need to update original kernel scale if scale_only or mean_scale
     if choice in ["scale_only", "mean_scale"]
         BO.model = rescale_model(BO.model, σ) # Update the kernel scale / σ² and mean by σ
-    end 
+    end
 
     # Need to standardize the outputs too:
-    BO.ys = std_y(BO.model, ys_non_std,μ, σ)
+    BO.ys = std_y(BO.model, ys_non_std, μ, σ)
     BO.model = update(BO.model, BO.xs, BO.ys)
     BO.acq = update(BO.acq, BO.ys, BO.model)
-    
+
     return BO, (μ, σ)
 end
-
 
 """
 Compute sensible per-dimension lower and upper bounds for GP kernel lengthscales using
@@ -94,9 +88,13 @@ Returns:
 - `(ℓ_lower, ℓ_upper)` vectors of length d suitable for setting log-space bounds.
 
 """
-function lengthscale_bounds(x_train::AbstractMatrix, domain_lower::AbstractVector, domain_upper::AbstractVector;
-                            min_frac::Float64=0.1, max_frac::Float64=1.0)
-
+function lengthscale_bounds(
+    x_train::AbstractMatrix,
+    domain_lower::AbstractVector,
+    domain_upper::AbstractVector;
+    min_frac::Float64=0.1,
+    max_frac::Float64=1.0,
+)
     n, d = size(x_train)
     ℓ_lower = zeros(d)
     ℓ_upper = zeros(d)
@@ -114,7 +112,10 @@ function lengthscale_bounds(x_train::AbstractMatrix, domain_lower::AbstractVecto
                 min_d = Inf
                 xj = xi[j]
                 for k in 1:n
-                    if k == j; continue; end
+                    if k == j
+                        ;
+                        continue;
+                    end
                     dk = abs(xj - xi[k])
                     if dk < min_d
                         min_d = dk
@@ -141,12 +142,17 @@ end
 Convenience overload accepting a vector-of-vectors of points and a `ContinuousDomain`.
 Returns the same as the matrix method.
 """
-function lengthscale_bounds(x_train::AbstractVector{<:AbstractVector}, domain::ContinuousDomain;
-                            min_frac::Float64=0.1, max_frac::Float64=1.0)
+function lengthscale_bounds(
+    x_train::AbstractVector{<:AbstractVector},
+    domain::ContinuousDomain;
+    min_frac::Float64=0.1,
+    max_frac::Float64=1.0,
+)
     X = permutedims(reduce(hcat, x_train)) # n × d
-    return lengthscale_bounds(X, domain.lower, domain.upper; min_frac=min_frac, max_frac=max_frac)
+    return lengthscale_bounds(
+        X, domain.lower, domain.upper; min_frac=min_frac, max_frac=max_frac
+    )
 end
-
 
 """
     rescale_output(ys::AbstractVector, params::Tuple)

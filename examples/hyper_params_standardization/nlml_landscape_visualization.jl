@@ -21,7 +21,7 @@ using AbstractBayesOpt
 using LinearAlgebra
 using LaTeXStrings
 using QuasiMonteCarlo
-import Random
+using Random: Random
 using Statistics
 
 # Set random seed for reproducibility
@@ -41,7 +41,10 @@ domain = ContinuousDomain(lower, upper)
 
 # Generate training data using Sobol sampling for better coverage
 n_train = 120
-x_train = [collect(col) for col in eachcol(QuasiMonteCarlo.sample(n_train, lower, upper, SobolSample()))]
+x_train = [
+    collect(col) for
+    col in eachcol(QuasiMonteCarlo.sample(n_train, lower, upper, SobolSample()))
+]
 
 println("Training points:")
 for (i, x) in enumerate(x_train)
@@ -83,62 +86,80 @@ println("  Gradient GP: x=$(length(x_gradient)), y=$(length(y_gradient))")
 
 # Define parameter ranges for NLML landscape
 
-log_lengthscale_range = range(log(1e-3), log(1e3), length=100)
-log_scale_range = range(log(1e-3), log(1e6), length=100)
+log_lengthscale_range = range(log(1e-3), log(1e3); length=100)
+log_scale_range = range(log(1e-3), log(1e6); length=100)
 
 println("\nParameter ranges:")
-println("  Lengthscale: $(round(exp(log_lengthscale_range[1]), digits=3)) to $(round(exp(log_lengthscale_range[end]), digits=3))")
-println("  Scale: $(round(exp(log_scale_range[1]), digits=3)) to $(round(exp(log_scale_range[end]), digits=3))")
+println(
+    "  Lengthscale: $(round(exp(log_lengthscale_range[1]), digits=3)) to $(round(exp(log_lengthscale_range[end]), digits=3))",
+)
+println(
+    "  Scale: $(round(exp(log_scale_range[1]), digits=3)) to $(round(exp(log_scale_range[end]), digits=3))",
+)
 
 # Compute NLML landscapes
-function compute_nlml_landscape(model, x_data, y_data, log_ls_range, log_scale_range, model_name)
+function compute_nlml_landscape(
+    model, x_data, y_data, log_ls_range, log_scale_range, model_name
+)
     println("\nComputing NLML landscape for $model_name...")
-    
+
     nlml_values = zeros(length(log_ls_range), length(log_scale_range))
-    
+
     total_combinations = length(log_ls_range) * length(log_scale_range)
     completed = 0
-    
+
     for (i, log_ls) in enumerate(log_ls_range)
         for (j, log_scale) in enumerate(log_scale_range)
             try
                 params = [log_ls, log_scale]
                 nlml_val = nlml(model, params, x_data, y_data)
                 nlml_values[i, j] = nlml_val
-                
+
                 # Handle infinite or very large values
                 if !isfinite(nlml_val) || nlml_val > 1e9
-                    println("Warning: NLML value out of bounds at (log_ls=$(round(log_ls, digits=2)), log_scale=$(round(log_scale, digits=2))): $nlml_val")
+                    println(
+                        "Warning: NLML value out of bounds at (log_ls=$(round(log_ls, digits=2)), log_scale=$(round(log_scale, digits=2))): $nlml_val",
+                    )
                     nlml_values[i, j] = 1e9
                 end
             catch e
                 # If computation fails, assign a large value
                 nlml_values[i, j] = 1e9
             end
-            
+
             completed += 1
             if completed % 500 == 0
-                progress = round(100 * completed / total_combinations, digits=1)
+                progress = round(100 * completed / total_combinations; digits=1)
                 println("  Progress: $progress% ($completed/$total_combinations)")
             end
         end
     end
-    
+
     println("  Completed NLML landscape computation for $model_name")
-    println("  NLML range: $(round(minimum(nlml_values), digits=2)) to $(round(maximum(nlml_values), digits=2))")
-    
+    println(
+        "  NLML range: $(round(minimum(nlml_values), digits=2)) to $(round(maximum(nlml_values), digits=2))",
+    )
+
     return nlml_values
 end
 
 # Compute landscapes for both models
 nlml_standard = compute_nlml_landscape(
-    standard_model, x_standard, y_standard, 
-    log_lengthscale_range, log_scale_range, "Standard GP"
+    standard_model,
+    x_standard,
+    y_standard,
+    log_lengthscale_range,
+    log_scale_range,
+    "Standard GP",
 )
 
 nlml_gradient = compute_nlml_landscape(
-    gradient_model, x_gradient, y_gradient, 
-    log_lengthscale_range, log_scale_range, "Gradient GP"
+    gradient_model,
+    x_gradient,
+    y_gradient,
+    log_lengthscale_range,
+    log_scale_range,
+    "Gradient GP",
 )
 
 # Find optimal parameters for both models
@@ -148,13 +169,13 @@ function find_optimal_params(nlml_values, log_ls_range, log_scale_range)
     opt_log_ls = log_ls_range[i]
     opt_log_scale = log_scale_range[j]
     opt_nlml = nlml_values[i, j]
-    
+
     return (
-        log_lengthscale = opt_log_ls,
-        log_scale = opt_log_scale,
-        lengthscale = exp(opt_log_ls),
-        scale = exp(opt_log_scale),
-        nlml = opt_nlml
+        log_lengthscale=opt_log_ls,
+        log_scale=opt_log_scale,
+        lengthscale=exp(opt_log_ls),
+        scale=exp(opt_log_scale),
+        nlml=opt_nlml,
     )
 end
 
@@ -163,66 +184,90 @@ opt_gradient = find_optimal_params(nlml_gradient, log_lengthscale_range, log_sca
 
 println("\nOptimal parameters found:")
 println("Standard GP:")
-println("  Lengthscale: $(round(opt_standard.lengthscale, digits=3)) (log: $(round(opt_standard.log_lengthscale, digits=3)))")
-println("  Scale: $(round(opt_standard.scale, digits=3)) (log: $(round(opt_standard.log_scale, digits=3)))")
+println(
+    "  Lengthscale: $(round(opt_standard.lengthscale, digits=3)) (log: $(round(opt_standard.log_lengthscale, digits=3)))",
+)
+println(
+    "  Scale: $(round(opt_standard.scale, digits=3)) (log: $(round(opt_standard.log_scale, digits=3)))",
+)
 println("  NLML: $(round(opt_standard.nlml, digits=3))")
 
 println("\nGradient GP:")
-println("  Lengthscale: $(round(opt_gradient.lengthscale, digits=3)) (log: $(round(opt_gradient.log_lengthscale, digits=3)))")
-println("  Scale: $(round(opt_gradient.scale, digits=3)) (log: $(round(opt_gradient.log_scale, digits=3)))")
+println(
+    "  Lengthscale: $(round(opt_gradient.lengthscale, digits=3)) (log: $(round(opt_gradient.log_lengthscale, digits=3)))",
+)
+println(
+    "  Scale: $(round(opt_gradient.scale, digits=3)) (log: $(round(opt_gradient.log_scale, digits=3)))",
+)
 println("  NLML: $(round(opt_gradient.nlml, digits=3))")
 
 # Create visualization functions
-function create_2d_heatmap(nlml_values, log_ls_range, log_scale_range, title_str, optimal_params=nothing)
+function create_2d_heatmap(
+    nlml_values, log_ls_range, log_scale_range, title_str, optimal_params=nothing
+)
     # Clip extreme values for better visualization
     # clipped_nlml = clamp.(nlml_values, minimum(nlml_values), minimum(nlml_values) + 50)
-    
+
     p = heatmap(
-        log_scale_range, log_ls_range, log.(nlml_values),
+        log_scale_range,
+        log_ls_range,
+        log.(nlml_values);
         title=title_str,
         xlabel="log Scale Parameter",
         ylabel="log Lengthscale Parameter",
         color=:viridis,
         aspect_ratio=:equal,
-        size=(600, 500)
+        size=(600, 500),
     )
-    
+
     # Add optimal point if provided
     if optimal_params !== nothing
-        scatter!(p, [log.(optimal_params.scale)], [log.(optimal_params.lengthscale)],
-                color=:red, markersize=8, markershape=:star, 
-                label="Optimal (NLML=$(round(optimal_params.nlml, digits=1)))")
+        scatter!(
+            p,
+            [log.(optimal_params.scale)],
+            [log.(optimal_params.lengthscale)];
+            color=:red,
+            markersize=8,
+            markershape=:star,
+            label="Optimal (NLML=$(round(optimal_params.nlml, digits=1)))",
+        )
     end
-    
+
     return p
 end
 
 function create_3d_surface(nlml_values, log_ls_range, log_scale_range, title_str)
     # Clip extreme values for better visualization
     # clipped_nlml = clamp.(nlml_values, minimum(nlml_values), minimum(nlml_values) + 30)
-    
+
     p = surface(
-        log_scale_range, log_ls_range, log.(nlml_values),
+        log_scale_range,
+        log_ls_range,
+        log.(nlml_values);
         title=title_str,
         xlabel="log Scale Parameter",
-        ylabel="log Lengthscale Parameter", 
+        ylabel="log Lengthscale Parameter",
         zlabel="NLML",
         color=:viridis,
         camera=(45, 60),
-        size=(700, 600)
+        size=(700, 600),
     )
-    
+
     return p
 end
 
-function create_contour_plot(nlml_values, log_ls_range, log_scale_range, title_str, optimal_params=nothing)
+function create_contour_plot(
+    nlml_values, log_ls_range, log_scale_range, title_str, optimal_params=nothing
+)
     # Create contour levels
     # min_nlml = minimum(nlml_values)
     # max_nlml = min_nlml + 20  # Show contours within reasonable range
     # levels = range(min_nlml, max_nlml, length=15)
-    
+
     p = contourf(
-        log_scale_range, log_ls_range, log.(nlml_values),
+        log_scale_range,
+        log_ls_range,
+        log.(nlml_values);
         title=title_str,
         xlabel="log Scale Parameter",
         ylabel="log Lengthscale Parameter",
@@ -230,16 +275,22 @@ function create_contour_plot(nlml_values, log_ls_range, log_scale_range, title_s
         fill=true,
         levels=50,
         aspect_ratio=:equal,
-        size=(600, 500)
+        size=(600, 500),
     )
-    
+
     # Add optimal point if provided
     if optimal_params !== nothing
-        scatter!(p, [log.(optimal_params.scale)], [log.(optimal_params.lengthscale)],
-                color=:red, markersize=8, markershape=:star, 
-                label="Optimal")
+        scatter!(
+            p,
+            [log.(optimal_params.scale)],
+            [log.(optimal_params.lengthscale)];
+            color=:red,
+            markersize=8,
+            markershape=:star,
+            label="Optimal",
+        )
     end
-    
+
     return p
 end
 
@@ -248,20 +299,28 @@ println("\nGenerating visualizations...")
 
 # Contour plots
 contour_standard = create_contour_plot(
-    nlml_standard, log_lengthscale_range, log_scale_range,
-    "Standard GP log(NLML) Contours", opt_standard
+    nlml_standard,
+    log_lengthscale_range,
+    log_scale_range,
+    "Standard GP log(NLML) Contours",
+    opt_standard,
 )
 
 contour_gradient = create_contour_plot(
-    nlml_gradient, log_lengthscale_range, log_scale_range,
-    "Gradient GP log(NLML) Contours", opt_gradient
+    nlml_gradient,
+    log_lengthscale_range,
+    log_scale_range,
+    "Gradient GP log(NLML) Contours",
+    opt_gradient,
 )
 
-
-combined_contours = plot(contour_standard, contour_gradient,
-                        layout=(1,2), size=(1200, 500), 
-                        plot_title="NLML Contour Comparison: Standard vs Gradient GP")
-
+combined_contours = plot(
+    contour_standard,
+    contour_gradient;
+    layout=(1, 2),
+    size=(1200, 500),
+    plot_title="NLML Contour Comparison: Standard vs Gradient GP",
+)
 
 display(combined_contours)
 println("\nSaving visualizations...")

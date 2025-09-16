@@ -18,7 +18,6 @@ struct ProbabilityImprovement <: AbstractAcquisition
     best_y::Float64
 end
 
-
 Base.copy(PI::ProbabilityImprovement) = ProbabilityImprovement(PI.ξ, PI.best_y)
 
 function (PI::ProbabilityImprovement)(surrogate::AbstractSurrogate, x, x_buf=nothing)
@@ -37,20 +36,19 @@ function (PI::ProbabilityImprovement)(surrogate::AbstractSurrogate, x, x_buf=not
         else
             x_buf[1] .= x  # copy into 1×d matrix
         end
-    end 
+    end
 
     μ = posterior_mean(surrogate, x_buf)
     σ² = posterior_var(surrogate, x_buf)
-    Δ = (PI.best_y -PI.ξ) - μ # we are substracting ξ because we are minimising.
-    
-    max(σ²,0) == 0 && return max(Δ,0.0)
+    Δ = (PI.best_y - PI.ξ) - μ # we are substracting ξ because we are minimising.
+
+    max(σ², 0) == 0 && return max(Δ, 0.0)
 
     σ = sqrt(σ²)
 
     z = (PI.best_y .- μ) ./ σ
-    return normcdf(Δ/σ,1)
+    return normcdf(Δ/σ, 1)
 end
-
 
 """
 Update the Probability of Improvement acquisition function with new array of observations.
@@ -63,10 +61,12 @@ Arguments:
 returns:
 - `PI::ProbabilityImprovement`: Updated Probability of Improvement acquisition function
 """
-function update(acq::ProbabilityImprovement,ys::AbstractVector, surrogate::AbstractSurrogate)
-    if isa(ys[1],Float64) # we are in 1d
-        ProbabilityImprovement(acq.ξ, minimum(reduce(vcat,ys)))
-    else 
-        ProbabilityImprovement(acq.ξ, minimum(hcat(ys...)[1,:]))
+function update(
+    acq::ProbabilityImprovement, ys::AbstractVector, surrogate::AbstractSurrogate
+)
+    if isa(ys[1], Float64) # we are in 1d
+        ProbabilityImprovement(acq.ξ, minimum(reduce(vcat, ys)))
+    else
+        ProbabilityImprovement(acq.ξ, minimum(hcat(ys...)[1, :]))
     end
 end
