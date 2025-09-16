@@ -19,7 +19,7 @@ Random.seed!(42)  # setting the seed for reproducibility of this notebook
 
 # ## Define the objective function
 # We will optimise a simple 1D function: f(x) = (x[1]-2)^2 + sin(3*x[1])
-f(x) = (x[1]-2)^2 + sin(3*x[1])
+f(x) = sum(x.-2)^2 + sin(3*sum(x))
 
 min_f = -0.8494048256167165
 
@@ -64,7 +64,7 @@ print_info(bo_struct)
 
 
 @info "Starting Bayesian Optimization..."
-result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct)
+result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct,standardize=nothing)
 
 # ## Results
 # The optimization result is stored in `result`. We can print the best found input and its corresponding function value.

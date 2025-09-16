@@ -38,9 +38,7 @@ val_grad = f_val_grad.(x_train)
 # Create flattened output
 y_train = [val_grad[i] for i = eachindex(val_grad)]
 
-kernel_constructor = ApproxMatern52Kernel()
-
-kernel = 1 *(kernel_constructor ∘ ScaleTransform(1))
+kernel = ApproxMatern52Kernel()
 model = GradientGP(kernel,d+1,σ²)
 
 # Init of the acquisition function
