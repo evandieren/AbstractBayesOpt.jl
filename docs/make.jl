@@ -11,7 +11,10 @@ makedocs(sitename="AbstractBayesOpt.jl",
         "Tutorials" => [
             "StandardGP - 1D BO" => "tutorials/StandardGP_1D.md",
         ],
-    ],)
+    ],
+    format=Documenter.HTML(
+        prettyurls=get(ENV, "CI", nothing) == "true"
+    ))
 deploydocs(
     repo = "github.com:evandieren/AbstractBayesOpt.jl.git",
     devbranch = "main"
