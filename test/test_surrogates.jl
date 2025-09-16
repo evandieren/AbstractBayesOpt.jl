@@ -147,10 +147,9 @@ using Random
         
         @testset "GradientGP Update" begin
             kernel_base = SqExponentialKernel()
-            grad_kernel = gradKernel(kernel_base)
             p = 3  # function + 2 gradients
             noise_var = 0.1
-            gp = GradientGP(grad_kernel, p, noise_var)
+            gp = GradientGP(kernel_base, p, noise_var)
             
             # Create training data with gradients
             xs = [[0.0, 0.0], [0.5, 0.5], [1.0, 1.0]]
@@ -183,10 +182,9 @@ using Random
         
         @testset "GradientGP Utility Functions" begin
             kernel_base = SqExponentialKernel()
-            grad_kernel = gradKernel(kernel_base)
             p = 3
             noise_var = 0.1
-            gp = GradientGP(grad_kernel, p, noise_var)
+            gp = GradientGP(kernel_base, p, noise_var)
             
             # Test prep_input
             x = [[0.5, 1.0]]
@@ -210,11 +208,10 @@ using Random
         
         @testset "GradientGP Standardization" begin
             kernel_base = SqExponentialKernel()
-            grad_kernel = gradKernel(kernel_base)
             p = 3
             noise_var = 0.1
-            gp = GradientGP(grad_kernel, p, noise_var)
-            
+            gp = GradientGP(kernel_base, p, noise_var)
+
             # Test standardization using the functions from bayesian_opt.jl
             y_train = [[1.0, 0.1, 0.1], [2.0, 0.2, 0.2], [3.0, 0.3, 0.3]]
             μ, σ = get_mean_std(gp, y_train)
@@ -245,10 +242,9 @@ using Random
         
         @testset "GradientGP Copy" begin
             kernel_base = SqExponentialKernel()
-            grad_kernel = gradKernel(kernel_base)
             p = 3
             noise_var = 0.1
-            gp = GradientGP(grad_kernel, p, noise_var)
+            gp = GradientGP(kernel_base, p, noise_var)
             
             xs = [[0.0, 0.0], [1.0, 1.0]]
             ys = [[1.0, 0.1, 0.1], [0.0, -0.1, -0.1]]
@@ -264,7 +260,6 @@ using Random
         @testset "gradKernel Functionality" begin
             kernel_base = SqExponentialKernel()
             grad_kernel = gradKernel(kernel_base)
-            
             x = [0.5, 0.5]
             y = [0.6, 0.6]
             

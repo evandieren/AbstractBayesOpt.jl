@@ -36,7 +36,6 @@ function StandardGP(kernel::Kernel, noise_var::Float64; mean=nothing)
     # Extract inner kernel, scale, and lengthscale
     inner, scale, lengthscale = extract_scale_and_lengthscale(kernel)
 
-    println("scale: $scale, lengthscale: $lengthscale")
 
     # Decide defaults
     if lengthscale === nothing

@@ -147,10 +147,10 @@ using Random
             
             # Test evaluation - skip for now due to implementation bugs
             test_x = [0.25]
-            # pi_val = pi(updated_gp, test_x)
-            # @test isa(pi_val, Real)
-            # @test isfinite(pi_val)
-            # @test 0.0 <= pi_val <= 1.0  # PI should be a probability
+            pi_val = pi(updated_gp, test_x)
+            @test isa(pi_val, Real)
+            @test isfinite(pi_val)
+            @test 0.0 <= pi_val <= 1.0  # PI should be a probability
         end
     end
     
@@ -165,10 +165,9 @@ using Random
         @testset "GradientNormUCB Evaluation" begin
             # Create a gradient GP surrogate
             kernel_base = SqExponentialKernel()
-            grad_kernel = gradKernel(kernel_base)
             p = 3  # function + 2 gradients
             noise_var = 0.1
-            gp = GradientGP(grad_kernel, p, noise_var)
+            gp = GradientGP(kernel_base, p, noise_var)
             
             # Update with some data
             xs = [[0.0, 0.0], [0.5, 0.5], [1.0, 1.0]]
@@ -190,10 +189,9 @@ using Random
         @testset "GradientNormUCB Update" begin
             # Create a gradient GP surrogate for testing
             kernel_base = SqExponentialKernel()
-            grad_kernel = gradKernel(kernel_base)
             p = 3
             noise_var = 0.1
-            gp = GradientGP(grad_kernel, p, noise_var)
+            gp = GradientGP(kernel_base, p, noise_var)
             xs = [[0.0, 0.0], [0.5, 0.5], [1.0, 1.0]]
             ys = [[2.0, 0.1, 0.1], [1.0, 0.0, 0.0], [0.5, -0.1, -0.1]]
             updated_gp = update(gp, xs, ys)

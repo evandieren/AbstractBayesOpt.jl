@@ -366,14 +366,14 @@ using Random
                 
                 @testset "GradientGP mean_only equivalence" begin
                     # Setup 1: gradConstMean([0,0,0]) + mean_only
-                    grad_kernel = gradKernel(1*(SqExponentialKernel() ∘ ScaleTransform(1)))
-                    model1_grad = GradientGP(grad_kernel, dim+1, 1e-12)
+                    kernel = SqExponentialKernel()
+                    model1_grad = GradientGP(kernel, dim+1, 1e-12)
                     bo1_grad = BOStruct(f_val_grad, ExpectedImprovement(0.01, minimum(hcat(y_test_gradient...)[1, :])), 
                                         model1_grad, ContinuousDomain([-5.0, -5.0], [5.0, 5.0]), 
                                         x_test, y_test_gradient, 10, 0.0)
                     
                     # Setup 2: gradConstMean([empirical_mean, 0, 0]) + no standardization
-                    model2_grad = GradientGP(grad_kernel, dim+1, 1e-12, mean=gradConstMean(prior_mean_vector))
+                    model2_grad = GradientGP(kernel, dim+1, 1e-12, mean=gradConstMean(prior_mean_vector))
                     bo2_grad = BOStruct(f_val_grad, ExpectedImprovement(0.01, minimum(hcat(y_test_gradient...)[1, :])), 
                                         model2_grad, ContinuousDomain([-5.0, -5.0], [5.0, 5.0]), 
                                         x_test, y_test_gradient, 10, 0.0)
@@ -623,9 +623,8 @@ using Random
             y_train = [f_val_grad(x) for x in x_train]
             
             # Create gradient GP
-            kernel = 1.0 * (SqExponentialKernel() ∘ ScaleTransform(1.0))
-            grad_kernel = gradKernel(kernel)
-            gp = GradientGP(grad_kernel, 3, 1e-12)  # 3 = f + 2 gradients
+            kernel = SqExponentialKernel()
+            gp = GradientGP(kernel, 3, 1e-12)  # 3 = f + 2 gradients
             updated_gp = update(gp, x_train, y_train)
             
             # Test 1: Function value predictions should be consistent
@@ -678,7 +677,7 @@ using Random
             empirical_std = std(y_values)
             
             # Create BO problem
-            kernel = 1.0 * (SqExponentialKernel() ∘ ScaleTransform(1.0))
+            kernel = SqExponentialKernel()
             gp = StandardGP(kernel, 0.01)
             ei = ExpectedImprovement(0.01, minimum(y_values))
             domain = ContinuousDomain([-2.0], [2.0])
@@ -714,7 +713,7 @@ using Random
                 x_train = [[0.0], [1e-10], [2e-10]]  # Very close points
                 y_train = [[1.0], [1.001], [1.002]]
                 
-                kernel = 1.0 * (SqExponentialKernel() ∘ ScaleTransform(1.0))
+                kernel = SqExponentialKernel()
                 gp = StandardGP(kernel, 1e-12)  # Very low noise
                 
                 # This should not crash due to numerical issues
@@ -734,7 +733,7 @@ using Random
                 y_train = [[1.0], [0.0], [1.0]]
                 
                 # Very large lengthscale (smooth function)
-                large_ls_kernel = 1.0 * (SqExponentialKernel() ∘ ScaleTransform(1e-6))
+                large_ls_kernel = SqExponentialKernel()
                 gp_large = StandardGP(large_ls_kernel, 0.01)
                 updated_large = update(gp_large, x_train, y_train)
                 

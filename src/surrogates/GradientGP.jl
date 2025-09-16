@@ -209,9 +209,9 @@ function nlml(model::GradientGP, params::AbstractVector{T}, x::AbstractVector, y
 
     # Kernel with current parameters
     kernel_constructor::Kernel = get_kernel_constructor(model)
-    k = scale * (kernel_constructor ∘ ScaleTransform(1/ℓ))
+    k = scale *  with_lengthscale(kernel_constructor, ℓ)
     #println("creation time of gradgp")
-    gp = GradientGP(gradKernel(k),model.p, model.noise_var,mean=mean)
+    gp = GradientGP(k,model.p, model.noise_var,mean=mean)
 
     #println("finite gpx time")
     gpx = gp.gp(x,model.noise_var)
@@ -245,9 +245,9 @@ function nlml_ls(model::GradientGP,log_ℓ::T, log_scale::Float64, x::AbstractVe
     # Kernel with current parameters
     kernel_constructor::Kernel = get_kernel_constructor(model)
 
-    k = scale * (kernel_constructor ∘ ScaleTransform(1/ℓ))
+    k = scale * with_lengthscale(kernel_constructor, ℓ)
     
-    gp = GradientGP(gradKernel(k),model.p, model.noise_var,mean=mean)
+    gp = GradientGP(k,model.p, model.noise_var,mean=mean)
 
     # Evaluate GP at training points with noise, creates a FiniteGP
     #println("finite gpx time")
