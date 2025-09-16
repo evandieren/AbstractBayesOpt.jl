@@ -187,7 +187,7 @@ function optimize_hyperparameters(
         length_scale_lower = max(min(ℓL_vec...), 1e-6)
         length_scale_upper = max(ℓU_vec...)
         # Ensure sensible ordering
-        @assert length_scale_upper > length_scale_lower
+        @assert length_scale_lower < length_scale_upper
     end
 
     scale_lower, scale_upper = 1e-3, 1e6
@@ -243,7 +243,7 @@ function optimize_hyperparameters(
     end
 
     inner_optimizer = LBFGS(; linesearch=Optim.LineSearches.HagerZhang(; linesearchmax=20))
-
+    # println(obj([0.0,0.0]))
     for i in 1:num_restarts
         try
             result = Optim.optimize(

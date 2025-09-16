@@ -100,6 +100,10 @@ function nlml(
     #println("creation time of standardgp")
     gp = StandardGP(k, model.noise_var; mean=mean) # Use fixed noise here, or optimize σ² too
 
+
+    K = AbstractGPs.kernelmatrix(k, x) + model.noise_var*I
+    println("Eigenvalues of K: ", eigvals(K))
+
     # Evaluate GP at training points with noise, creates a FiniteGP
     #println("finite gpx time")
     gpx = gp.gp(x, model.noise_var)
