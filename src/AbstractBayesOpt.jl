@@ -1,9 +1,9 @@
 module AbstractBayesOpt
 
-using AbstractGPs, KernelFunctions
+using AbstractGPs
+using KernelFunctions
 using ForwardDiff
 using Optim
-# using QuasiMonteCarlo
 using Statistics
 using SpecialFunctions
 using Distributions
@@ -22,15 +22,43 @@ export ContinuousDomain
 # Surrogate models
 include("surrogates/surrogates_utils.jl")
 include("surrogates/StandardGP.jl")
-export StandardGP, prep_input, posterior_mean, posterior_var, nlml, nlml_ls, get_mean_std, std_y, unstandardized_mean_and_var, get_lengthscale, get_scale, get_kernel_constructor, rescale_model
+export StandardGP,
+    prep_input,
+    posterior_mean,
+    posterior_var,
+    nlml,
+    nlml_ls,
+    get_mean_std,
+    std_y,
+    unstandardized_mean_and_var,
+    get_lengthscale,
+    get_scale,
+    get_kernel_constructor,
+    rescale_model
 
 include("surrogates/GradientGP.jl")
-export GradientGP, ApproxMatern52Kernel, gradConstMean, gradKernel, prep_input, posterior_mean, posterior_var, posterior_grad_mean, posterior_grad_cov, posterior_grad_var
-export nlml, get_mean_std, std_y, unstandardized_mean_and_var, get_lengthscale, get_scale, get_kernel_constructor, rescale_model
+export GradientGP,
+    ApproxMatern52Kernel,
+    gradConstMean,
+    gradKernel,
+    prep_input,
+    posterior_mean,
+    posterior_var,
+    posterior_grad_mean,
+    posterior_grad_cov,
+    posterior_grad_var,
+    nlml,
+    get_mean_std,
+    std_y,
+    unstandardized_mean_and_var,
+    get_lengthscale,
+    get_scale,
+    get_kernel_constructor,
+    rescale_model
 
 # Acquisition functions
 include("acquisition/acq_utils.jl")
-export normcdf, normpdf,optimize_acquisition
+export normcdf, normpdf, optimize_acquisition
 include("acquisition/ExpectedImprovement.jl")
 export ExpectedImprovement
 include("acquisition/UpperConfidenceBound.jl")

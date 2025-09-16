@@ -81,29 +81,29 @@
 #                 limits = (minimum(grid_values),maximum(grid_values)),
 #                 colormap=:coolwarm)
 
-        # # Posterior mean
-        # GLMakie.surface!(ax2,x_grid, y_grid,fill(0f0, size(grid_mean));
-        #                 color=grid_mean, shading = NoShading,
-        #                 colorrange = (minimum(grid_values),maximum(grid_values)),
-        #                 colormap = :coolwarm)
-        # GLMakie.scatter!(ax2, x1_train, x2_train,color="white", marker=:cross)
-        # GLMakie.scatter!(ax2, x1_candidates, x2_candidates,color= 1:length(x1_candidates),colormap=:viridis)
-        # # GLMakie.scatter!(ax2, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],marker=:star5,markersize=15,color="green")
-        # Colorbar(fig[1, 2][1, 2],
-        #         limits = (minimum(grid_values),maximum(grid_values)),
-        #         colormap=:coolwarm)
+# # Posterior mean
+# GLMakie.surface!(ax2,x_grid, y_grid,fill(0f0, size(grid_mean));
+#                 color=grid_mean, shading = NoShading,
+#                 colorrange = (minimum(grid_values),maximum(grid_values)),
+#                 colormap = :coolwarm)
+# GLMakie.scatter!(ax2, x1_train, x2_train,color="white", marker=:cross)
+# GLMakie.scatter!(ax2, x1_candidates, x2_candidates,color= 1:length(x1_candidates),colormap=:viridis)
+# # GLMakie.scatter!(ax2, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],marker=:star5,markersize=15,color="green")
+# Colorbar(fig[1, 2][1, 2],
+#         limits = (minimum(grid_values),maximum(grid_values)),
+#         colormap=:coolwarm)
 
-        # # Posterior variance
-        # GLMakie.surface!(ax3,x_grid, y_grid,fill(0f0, size(grid_std));
-        #                 color=grid_std, shading = NoShading,
-        #                 colormap = :coolwarm)
-        # GLMakie.scatter!(ax3, x1_train, x2_train,color="white", marker=:cross)
-        # GLMakie.scatter!(ax3, x1_candidates, x2_candidates,color= 1:length(x1_candidates),colormap=:viridis)
-        # # GLMakie.scatter!(ax3, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],marker=:star5,markersize=15,color="green")
-        # Colorbar(fig[2, 1][1, 2],limits = (minimum(grid_std),maximum(grid_std)),
-        #             colormap=:coolwarm)
+# # Posterior variance
+# GLMakie.surface!(ax3,x_grid, y_grid,fill(0f0, size(grid_std));
+#                 color=grid_std, shading = NoShading,
+#                 colormap = :coolwarm)
+# GLMakie.scatter!(ax3, x1_train, x2_train,color="white", marker=:cross)
+# GLMakie.scatter!(ax3, x1_candidates, x2_candidates,color= 1:length(x1_candidates),colormap=:viridis)
+# # GLMakie.scatter!(ax3, [xs[argmin(ys)][1]], [xs[argmin(ys)][2]],marker=:star5,markersize=15,color="green")
+# Colorbar(fig[2, 1][1, 2],limits = (minimum(grid_std),maximum(grid_std)),
+#             colormap=:coolwarm)
 
-        # Acquisition function
+# Acquisition function
 #         GLMakie.surface!(ax2,x_grid, y_grid,fill(0f0, size(grid_acqf)); 
 #                         color=grid_acqf, shading = NoShading,
 #                         colormap = :coolwarm)

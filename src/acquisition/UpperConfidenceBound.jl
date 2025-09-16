@@ -13,7 +13,7 @@ References:
 [Srinivas et al., 2012](https://ieeexplore.ieee.org/document/6138914)
 """
 struct UpperConfidenceBound <: AbstractAcquisition
-     β::Float64  # exploration-exploitation balance parameter
+    β::Float64  # exploration-exploitation balance parameter
 end
 
 Base.copy(UCB::UpperConfidenceBound) = UpperConfidenceBound(UCB.β)
@@ -44,7 +44,6 @@ function (UCB::UpperConfidenceBound)(surrogate::AbstractSurrogate, x, x_buf=noth
     return -μ + UCB.β*sqrt.(σ²_safe)
 end
 
-
 """
 Update the Upper Confidence Bound acquisition function with new array of observations.
 
@@ -56,6 +55,6 @@ Arguments:
 returns:
 - `UCB::UpperConfidenceBound`: Updated Upper Confidence Bound acquisition function
 """
-function update(acq::UpperConfidenceBound,ys::AbstractVector, surrogate::AbstractSurrogate)
+function update(acq::UpperConfidenceBound, ys::AbstractVector, surrogate::AbstractSurrogate)
     acq
 end

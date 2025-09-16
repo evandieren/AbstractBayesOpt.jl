@@ -24,7 +24,7 @@ using AbstractBayesOpt
 using LinearAlgebra
 using LaTeXStrings
 using QuasiMonteCarlo
-import Random
+using Random: Random
 using Optim
 using Statistics
 
@@ -50,11 +50,14 @@ domain = ContinuousDomain(lower, upper)
 
 # Generate initial training data using Sobol sampling for better coverage
 n_train = 8
-x_train = [collect(col) for col in eachcol(QuasiMonteCarlo.sample(n_train, lower, upper, SobolSample()))]
+x_train = [
+    collect(col) for
+    col in eachcol(QuasiMonteCarlo.sample(n_train, lower, upper, SobolSample()))
+]
 
 # Evaluate function and gradients at training points
 val_grad = f_val_grad.(x_train)
-y_train = [val_grad[i] for i = eachindex(val_grad)]
+y_train = [val_grad[i] for i in eachindex(val_grad)]
 
 # Setup kernel and base model
 kernel_constructor = ApproxMatern52Kernel()
@@ -76,20 +79,19 @@ test_configs = [
     ("HP:none + MeanScale", nothing, "mean_scale"),
     ("HP:none + ScaleOnly", nothing, "scale_only"),
     ("HP:none + MeanOnly", nothing, "mean_only"),
-    ("HP:none + NoStd", nothing, nothing)
+    ("HP:none + NoStd", nothing, nothing),
 ]
 
 # Run optimization comparison
 function run_himmelblau_comparison(n_iterations=40)
     results = Dict()
-    
+
     for (config_name, hyper_params, standardize_mode) in test_configs
-        
         model = deepcopy(base_model)
-        
-        best_y = minimum(hcat(y_train...)[1,:])
+
+        best_y = minimum(hcat(y_train...)[1, :])
         acq_func = ExpectedImprovement(0.0, best_y)
-        
+
         problem = BOStruct(
             f_val_grad,
             acq_func,
@@ -98,28 +100,26 @@ function run_himmelblau_comparison(n_iterations=40)
             copy(x_train),
             copy(y_train),
             n_iterations,
-            0.0
+            0.0,
         )
-        
+
         start_time = time()
-        
+
         # Run optimization with specified configuration
         try
             result, _, standard_params = AbstractBayesOpt.optimize(
-                problem, 
-                hyper_params=hyper_params,
-                standardize=standardize_mode
+                problem; hyper_params=hyper_params, standardize=standardize_mode
             )
-            
+
             # Record end time
             end_time = time()
             elapsed_time = end_time - start_time
-            
+
             # Extract results
             xs = result.xs
             ys_non_std = result.ys_non_std
-            ys_values = hcat(ys_non_std...)[1,:]
-            
+            ys_values = hcat(ys_non_std...)[1, :]
+
             # Find optimal solution
             n_actual = length(ys_values)
             if n_actual > 0
@@ -130,43 +130,43 @@ function run_himmelblau_comparison(n_iterations=40)
                 optimal_point = x_train[1]
                 optimal_value = himmelblau(x_train[1])
             end
-            
+
             # Compute running minimum for convergence analysis
             all_evals = himmelblau.(xs)
             running_min = accumulate(min, all_evals)
-            
+
             # Compute errors from global minimum
             errors = max.(running_min .- global_min, 1e-16)
-            
+
             # Store results
             results[config_name] = (
-                xs = xs,
-                ys_values = ys_values,
-                running_min = running_min,
-                errors = errors,
-                optimal_point = optimal_point,
-                optimal_value = optimal_value,
-                error_from_global = abs(optimal_value - global_min),
-                elapsed_time = elapsed_time,
-                hyper_params = hyper_params,
-                standardize = standardize_mode,
-                standard_params = standard_params,
-                n_evaluations = length(xs)
+                xs=xs,
+                ys_values=ys_values,
+                running_min=running_min,
+                errors=errors,
+                optimal_point=optimal_point,
+                optimal_value=optimal_value,
+                error_from_global=abs(optimal_value - global_min),
+                elapsed_time=elapsed_time,
+                hyper_params=hyper_params,
+                standardize=standardize_mode,
+                standard_params=standard_params,
+                n_evaluations=length(xs),
             )
-            
+
         catch e
             println("ERROR in configuration $config_name: $e")
             # Store minimal error result
             results[config_name] = (
-                error_from_global = Inf,
-                elapsed_time = Inf,
-                hyper_params = hyper_params,
-                standardize = standardize_mode,
-                n_evaluations = 0
+                error_from_global=Inf,
+                elapsed_time=Inf,
+                hyper_params=hyper_params,
+                standardize=standardize_mode,
+                n_evaluations=0,
             )
         end
     end
-    
+
     return results
 end
 
@@ -176,44 +176,80 @@ results = run_himmelblau_comparison(40)
 
 # Analysis and visualization functions
 function plot_convergence_comparison(results)
-    p = plot(title="Himmelblau Optimization: Hyperparameter & Standardization Comparison",
-            xlabel="Number of iterations",
-            ylabel="Error from global minimum",
-            yaxis=:log,
-            legend=:topright,
-            linewidth=2,
-            size=(1200, 800))
-    
+    p = plot(;
+        title="Himmelblau Optimization: Hyperparameter & Standardization Comparison",
+        xlabel="Number of iterations",
+        ylabel="Error from global minimum",
+        yaxis=:log,
+        legend=:topright,
+        linewidth=2,
+        size=(1200, 800),
+    )
+
     # Define colors and line styles for different configurations
-    colors = [:blue, :lightblue, :cyan, :gray,
-              :red, :pink, :orange, :brown,
-              :green, :lightgreen, :yellow, :purple]
-    styles = [:solid, :dash, :dot, :dashdot,
-              :solid, :dash, :dot, :dashdot,
-              :solid, :dash, :dot, :dashdot]
-    
-    config_names = [
-        "HP:all + MeanScale", "HP:all + ScaleOnly", "HP:all + MeanOnly", "HP:all + NoStd",
-        "HP:length + MeanScale", "HP:length + ScaleOnly", "HP:length + MeanOnly", "HP:length + NoStd",
-        "HP:none + MeanScale", "HP:none + ScaleOnly", "HP:none + MeanOnly", "HP:none + NoStd"
+    colors = [
+        :blue,
+        :lightblue,
+        :cyan,
+        :gray,
+        :red,
+        :pink,
+        :orange,
+        :brown,
+        :green,
+        :lightgreen,
+        :yellow,
+        :purple,
     ]
-    
+    styles = [
+        :solid,
+        :dash,
+        :dot,
+        :dashdot,
+        :solid,
+        :dash,
+        :dot,
+        :dashdot,
+        :solid,
+        :dash,
+        :dot,
+        :dashdot,
+    ]
+
+    config_names = [
+        "HP:all + MeanScale",
+        "HP:all + ScaleOnly",
+        "HP:all + MeanOnly",
+        "HP:all + NoStd",
+        "HP:length + MeanScale",
+        "HP:length + ScaleOnly",
+        "HP:length + MeanOnly",
+        "HP:length + NoStd",
+        "HP:none + MeanScale",
+        "HP:none + ScaleOnly",
+        "HP:none + MeanOnly",
+        "HP:none + NoStd",
+    ]
+
     for (i, config_name) in enumerate(config_names)
         if haskey(results, config_name) && haskey(results[config_name], :errors)
             result = results[config_name]
-            plot!(p, 1:length(result.errors), result.errors,
-                  label=config_name,
-                  color=colors[i],
-                  linestyle=styles[i])
+            plot!(
+                p,
+                1:length(result.errors),
+                result.errors;
+                label=config_name,
+                color=colors[i],
+                linestyle=styles[i],
+            )
         end
     end
-    
+
     # Add initial training data region
     vspan!(p, [1, n_train]; color=:gray, alpha=0.2, label="Initial data")
-    
+
     return p
 end
 
 # Create visualizations and analysis
 conv_plot = plot_convergence_comparison(results)
-

@@ -15,8 +15,7 @@ struct GradientGP <: AbstractSurrogate
     # gpx is the posterior GP after conditioning on data, nothing if not conditioned yet  
 end
 
-
-Base.copy(s::GradientGP) = GradientGP(s.gp, s.noise_var ,s.p, copy(s.gpx))
+Base.copy(s::GradientGP) = GradientGP(s.gp, s.noise_var, s.p, copy(s.gpx))
 
 # Need to approximate around d ≈ 0 because of differentiation issues.
 # We will use the squared euclidean distance because this is fine to differentiate when d ≈ 0.
@@ -47,9 +46,13 @@ function KernelFunctions.kappa(k::ApproxMatern52Kernel, d²::Real)
     end
 end
 function Base.show(io::IO, k::ApproxMatern52Kernel)
-    return print(io, "Matern 5/2 Kernel, quadratic approximation around d=0 (metric = ", k.metric, ")")
+    return print(
+        io,
+        "Matern 5/2 Kernel, quadratic approximation around d=0 (metric = ",
+        k.metric,
+        ")",
+    )
 end
-
 
 """
     gradConstMean(c::AbstractVector)
@@ -69,10 +72,9 @@ struct gradConstMean
     end
 
     function gradConstMean(c::AbstractVector)
-        return CustomMean(x -> f_mean(c,x))
+        return CustomMean(x -> f_mean(c, x))
     end
 end
-
 
 function Base.show(io::IO, m::gradConstMean)
     return print(io, "gradConstMean(c=$(m.c))")
@@ -89,7 +91,7 @@ Arguments:
 returns:
 - `gradKernel`: An instance of the custom gradient kernel function.
 """
-mutable struct gradKernel{K} <: MOKernel 
+mutable struct gradKernel{K} <: MOKernel
     base_kernel::K
 end
 
@@ -107,9 +109,8 @@ function (κ::gradKernel)((x, px)::Tuple{Any,Int}, (y, py)::Tuple{Any,Int})
     """
     (px > length(x) + 1 || py > length(y) + 1 || px < 1 || py < 1) &&
         error("`px` and `py` must be within the range of the number of outputs")
-    
+
     onehot(n, i) = 1:n .== i # collect(1:n) .== i
-    
 
     val = px == 1 && py == 1 # we are looking at f(x), f(y)
 
@@ -117,14 +118,26 @@ function (κ::gradKernel)((x, px)::Tuple{Any,Int}, (y, py)::Tuple{Any,Int})
     ∇_val_2 = (px == 1 && py != 1) # we are looking at f(x)-∇f(y)
 
     if val # we are just computing the usual matrix K
-        κ.base_kernel(x,y)
+        κ.base_kernel(x, y)
     elseif ∇_val_1
-        return ForwardDiff.derivative(h -> κ.base_kernel(x .+ h .* (1:length(x) .== (px-1)), y), 0.)
+        return ForwardDiff.derivative(
+            h -> κ.base_kernel(x .+ h .* (1:length(x) .== (px-1)), y), 0.0
+        )
     elseif ∇_val_2 # we are looking at f(x)-∇f(y)
-        return ForwardDiff.derivative(h -> κ.base_kernel(x, y .+ h .* (1:length(y) .== (py-1))), 0.)
+        return ForwardDiff.derivative(
+            h -> κ.base_kernel(x, y .+ h .* (1:length(y) .== (py-1))), 0.0
+        )
     else # we are looking at ∇f(x)-∇f(y), this avoids computing the entire hessian each time.
-        return ForwardDiff.derivative(h1 -> ForwardDiff.derivative(h2 -> κ.base_kernel(x .+ h1 .* (1:length(x) .== (px-1)), 
-                                      y .+ h2 .* (1:length(y) .== (py-1))), 0.), 0.)
+        return ForwardDiff.derivative(
+            h1 -> ForwardDiff.derivative(
+                h2 -> κ.base_kernel(
+                    x .+ h1 .* (1:length(x) .== (px-1)),
+                    y .+ h2 .* (1:length(y) .== (py-1)),
+                ),
+                0.0,
+            ),
+            0.0,
+        )
     end
 end
 
@@ -140,7 +153,7 @@ Arguments:
 returns:
 - `GradientGP`: An instance of the GradientGP model.
 """
-function GradientGP(kernel::Kernel,p::Int,noise_var::Float64; mean=nothing)
+function GradientGP(kernel::Kernel, p::Int, noise_var::Float64; mean=nothing)
     if isnothing(mean)
         mean = gradConstMean(zeros(p))
     end
@@ -162,8 +175,8 @@ function GradientGP(kernel::Kernel,p::Int,noise_var::Float64; mean=nothing)
 
     kernel = gradKernel(kernel)
 
-    gp = AbstractGPs.GP(mean,kernel) # Creates GP(0,k) for the prior
-    GradientGP(gp,noise_var,p,nothing)
+    gp = AbstractGPs.GP(mean, kernel) # Creates GP(0,k) for the prior
+    return GradientGP(gp, noise_var, p, nothing)
 end
 
 """
@@ -178,16 +191,16 @@ returns:
 - `GradientGP`: A new GradientGP model updated with the provided data.
 """
 function update(model::GradientGP, xs::AbstractVector, ys::AbstractVector)
-
-    x̃, ỹ = KernelFunctions.MOInputIsotopicByOutputs(xs, size(ys[1])[1]), vec(permutedims(reduce(hcat, ys)))
-    # we could do something better for this, such as inserting the batch of new points in xs and ys which are already MOInputIsotopicByOutputs elements.
+    x̃, ỹ = KernelFunctions.MOInputIsotopicByOutputs(xs, size(ys[1])[1]),
+    vec(permutedims(reduce(hcat, ys)))
+    # we could do something better for this, such as inserting the batch of new 
+    # points in xs and ys which are already MOInputIsotopicByOutputs elements.
 
     gpx = model.gp(x̃, model.noise_var...)
-    updated_gpx = posterior(gpx,ỹ)
+    updated_gpx = posterior(gpx, ỹ)
 
     return GradientGP(model.gp, model.noise_var, model.p, updated_gpx)
 end
-
 
 """
 Compute the negative log marginal likelihood (NLML) of the GP model given hyperparameters.
@@ -202,23 +215,29 @@ Arguments:
 returns:
 - nlml : The negative log marginal likelihood of the model.
 """
-function nlml(model::GradientGP, params::AbstractVector{T}, x::AbstractVector, y::AbstractVector; mean=ZeroMean()) where T
+function nlml(
+    model::GradientGP,
+    params::AbstractVector{T},
+    x::AbstractVector,
+    y::AbstractVector;
+    mean=ZeroMean(),
+) where {T}
     log_ℓ, log_scale = params
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
 
     # Kernel with current parameters
     kernel_constructor::Kernel = get_kernel_constructor(model)
-    k = scale *  with_lengthscale(kernel_constructor, ℓ)
+    k = scale * with_lengthscale(kernel_constructor, ℓ)
     #println("creation time of gradgp")
-    gp = GradientGP(k,model.p, model.noise_var,mean=mean)
+    gp = GradientGP(k, model.p, model.noise_var; mean=mean)
 
     #println("finite gpx time")
-    gpx = gp.gp(x,model.noise_var)
+    gpx = gp.gp(x, model.noise_var)
 
     #println("logpdf")
     #@time fastnlml_grad(gpx,y)
-    -AbstractGPs.logpdf(gpx, y)  # Negative log marginal likelihood
+    return -AbstractGPs.logpdf(gpx, y)  # Negative log marginal likelihood
 end
 
 """
@@ -237,8 +256,14 @@ returns:
 
 Remark: This function is a helper function for the hyperparameter_optiomize function when we want to optimize only the lengthscale.
 """
-function nlml_ls(model::GradientGP,log_ℓ::T, log_scale::Float64, x::AbstractVector, y::AbstractVector; mean::AbstractGPs.MeanFunction=ZeroMean()) where T
-
+function nlml_ls(
+    model::GradientGP,
+    log_ℓ::T,
+    log_scale::Float64,
+    x::AbstractVector,
+    y::AbstractVector;
+    mean::AbstractGPs.MeanFunction=ZeroMean(),
+) where {T}
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
 
@@ -246,15 +271,15 @@ function nlml_ls(model::GradientGP,log_ℓ::T, log_scale::Float64, x::AbstractVe
     kernel_constructor::Kernel = get_kernel_constructor(model)
 
     k = scale * with_lengthscale(kernel_constructor, ℓ)
-    
-    gp = GradientGP(k,model.p, model.noise_var,mean=mean)
+
+    gp = GradientGP(k, model.p, model.noise_var; mean=mean)
 
     # Evaluate GP at training points with noise, creates a FiniteGP
     #println("finite gpx time")
-    gpx = gp.gp(x,model.noise_var)
+    gpx = gp.gp(x, model.noise_var)
 
     #println("logpdf")
-    -AbstractGPs.logpdf(gpx, y)
+    return -AbstractGPs.logpdf(gpx, y)
 end
 
 """
@@ -268,17 +293,15 @@ returns:
 - `y_mean`: Empirical mean
 - `y_std`: Empirical standard deviation
 """
-function get_mean_std(model::GradientGP,y_train::AbstractVector)
-
+function get_mean_std(model::GradientGP, y_train::AbstractVector)
     y_mat = reduce(hcat, y_train)
 
     μ = vec(mean(y_mat; dims=2))
     μ[2:end] .= 0.0  # Only standardize function values, not gradients
     σ = vec(std(y_mat; dims=2))
     σ[2:end] .= σ[1]  # Use same scaling for gradients
-    
-    
-    μ, σ
+
+    return μ, σ
 end
 
 """
@@ -315,45 +338,52 @@ function rescale_model(model::GradientGP, σ::AbstractVector)
 
     new_scale = old_scale / (σ[1]^2)
 
-    new_kernel = new_scale *  with_lengthscale(kernel_constructor, ℓ)
-
+    new_kernel = new_scale * with_lengthscale(kernel_constructor, ℓ)
 
     if isa(model.gp.mean, gradConstMean)
         old_c = model.gp.mean.c
-        new_c = old_c ./ σ[1] 
-        return GradientGP(new_kernel, model.p, model.noise_var / (σ[1]^2), mean = gradConstMean(new_c))
+        new_c = old_c ./ σ[1]
+        return GradientGP(
+            new_kernel, model.p, model.noise_var / (σ[1]^2); mean=gradConstMean(new_c)
+        )
     end
 
-    return GradientGP(new_kernel, model.p, model.noise_var / (σ[1]^2), mean = model.gp.mean)
+    return GradientGP(new_kernel, model.p, model.noise_var / (σ[1]^2); mean=model.gp.mean)
 end
 
 get_lengthscale(model::GradientGP) = 1 ./ model.gp.kernel.base_kernel.kernel.transform.s
 
 get_scale(model::GradientGP) = model.gp.kernel.base_kernel.σ²
 
-
 get_kernel_constructor(model::GradientGP) = model.gp.kernel.base_kernel.kernel.kernel
 
-prep_input(model::GradientGP, x::AbstractVector) = KernelFunctions.MOInputIsotopicByOutputs(x, model.p)
-
+function prep_input(model::GradientGP, x::AbstractVector)
+    KernelFunctions.MOInputIsotopicByOutputs(x, model.p)
+end
 
 # These functions is used when we need to query one point)
-posterior_mean(model::GradientGP,x::AbstractVector) = mean(model.gpx([(x,1)]))[1] # we do the function value only for now
-posterior_var(model::GradientGP,x::AbstractVector) = var(model.gpx([(x,1)]))[1] # we do the function value only for now
-
+posterior_mean(model::GradientGP, x::AbstractVector) = mean(model.gpx([(x, 1)]))[1] # we do the function value only for now
+posterior_var(model::GradientGP, x::AbstractVector) = var(model.gpx([(x, 1)]))[1] # we do the function value only for now
 
 # These functions are used in a buffer way within the optimisation of the acquisition function
-posterior_mean(model::GradientGP,x_buf::Vector{Tuple{Vector{Float64}, Int}}) = mean(model.gpx(x_buf))[1]
-posterior_var(model::GradientGP,x_buf::Vector{Tuple{Vector{Float64}, Int}}) = var(model.gpx(x_buf))[1]
+function posterior_mean(model::GradientGP, x_buf::Vector{Tuple{Vector{Float64},Int}})
+    mean(model.gpx(x_buf))[1]
+end
+function posterior_var(model::GradientGP, x_buf::Vector{Tuple{Vector{Float64},Int}})
+    var(model.gpx(x_buf))[1]
+end
 
+function posterior_grad_mean(model::GradientGP, x::AbstractVector)
+    mean(model.gpx(prep_input(model, [x])))
+end # the whole vector
 
-posterior_grad_mean(model::GradientGP,x::AbstractVector) = mean(model.gpx(prep_input(model, [x]))) # the whole vector
+function posterior_grad_var(model::GradientGP, x::AbstractVector)
+    var(model.gpx(prep_input(model, [x])))
+end
 
-
-posterior_grad_var(model::GradientGP,x::AbstractVector) = var(model.gpx(prep_input(model, [x])))
-
-posterior_grad_cov(model::GradientGP,x::AbstractVector) = cov(model.gpx(prep_input(model, [x]))) # the matrix itself
-
+function posterior_grad_cov(model::GradientGP, x::AbstractVector)
+    cov(model.gpx(prep_input(model, [x])))
+end # the matrix itself
 
 """
 Compute the unstandardized mean and variance of the GP predictions at new input points.
@@ -375,6 +405,6 @@ function unstandardized_mean_and_var(gp::GradientGP, X, params::Tuple)
     m_unstd = (m .* σ) .+ μ'
 
     v = reshape(v, :, gp.p)
-    v_unstd = v .* (σ.^2)
+    v_unstd = v .* (σ .^ 2)
     return m_unstd, v_unstd
 end

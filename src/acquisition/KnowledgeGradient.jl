@@ -22,19 +22,20 @@ function (KG::KnowledgeGradient)(surrogate::AbstractSurrogate, x, J=1_000)
     Δ = zeros(J)
     μ = posterior_mean(surrogate, x)
     σ² = posterior_var(surrogate, x)
-    
-    y = μ .+ sqrt(σ²).*randn(J)
-    for j = 1:J
-        new_model = update!(surrogate,[surrogate.gpx.data.x; x],[surrogate.gpx.data.δ ;y[j]])
-        
-        μ_new =  optimize_mean!(new_model, KG.domain,n_restarts = 3)[2]
-        
+
+    y = μ .+ sqrt(σ²) .* randn(J)
+    for j in 1:J
+        new_model = update!(
+            surrogate, [surrogate.gpx.data.x; x], [surrogate.gpx.data.δ; y[j]]
+        )
+
+        μ_new = optimize_mean!(new_model, KG.domain; n_restarts=3)[2]
+
         Δ[j] = KG.best_μ[1] - μ_new[1]
     end
     println("KG at $(x):", mean(Δ))
     return mean(Δ)
 end
-
 
 """
 Update the Knowledge Gradient acquisition function with new array of observations.
@@ -47,15 +48,15 @@ Arguments:
 returns:
 - `KG::KnowledgeGradient`: Updated Knowledge Gradient acquisition function
 """
-function update(acq::KnowledgeGradient,ys::AbstractVector, surrogate::AbstractSurrogate)
-    return KnowledgeGradient(domain,optimize_mean!(surrogate, acq.domain)[2])
+function update(acq::KnowledgeGradient, ys::AbstractVector, surrogate::AbstractSurrogate)
+    return KnowledgeGradient(domain, optimize_mean!(surrogate, acq.domain)[2])
 end
 
 # function ∇KG(surrogate::AbstractSurrogate, x, xs, ys, opt_params::Dict, J=1_000)
 #     domain, box_optimizer, options, n_restarts = opt_params["domain"], opt_params["box_optimizer"], opt_params["options"], opt_params["n_restarts"]
 #     μ = posterior_mean(surrogate, x)
 #     σ² = posterior_var(surrogate, x)
-    
+
 #     y = μ + σ².*randn(J)
 #     xs_n = [copy(xs);x]
 #     ys_j = copy(ys)
@@ -83,7 +84,7 @@ end
 #         function grad_μ_x(x_star,x)
 #             x_prepped = prep_input(model, xs_n)
 #             kernel_mat = KernelFunctions.kernelmatrix(surrogate.gp.kernel, x_prepped)
-        
+
 #         end
 #     end
 
