@@ -20,5 +20,6 @@
 /docs/build/
 /docs/src/generated/
 /docs/site/
+/docs/Manifest.toml
 
 .vscode/settings.json
