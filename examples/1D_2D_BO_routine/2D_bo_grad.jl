@@ -12,8 +12,6 @@ using ForwardDiff
 using LaTeXStrings
 using AbstractBayesOpt
 
-using BenchmarkTools
-
 import Random
 Random.seed!(123456)
 
@@ -49,11 +47,8 @@ y_train = [val_grad[i] for i = eachindex(val_grad)]
 
 
 
-kernel_constructor = ApproxMatern52Kernel()
-kernel = 1 * (kernel_constructor ∘ ScaleTransform(1))
-grad_kernel = gradKernel(kernel)
-
-model = GradientGP(grad_kernel,d+1,σ²)
+kernel = ApproxMatern52Kernel()
+model = GradientGP(kernel,d+1,σ²)
 
 # Init of the acquisition function
 ξ = 0.0

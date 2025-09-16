@@ -100,7 +100,7 @@ function update(BO::BOStruct, x::AbstractVector, y::AbstractVector, i::Int)
         # test for ill-conditioning
         BO.model = update(BO.model, BO.xs, BO.ys)
     catch
-        println("We reached ill-conditioning, returning NON-UPDATED GP. Killing BO loop.")
+        @info "We reached ill-conditioning, returning NON-UPDATED GP. Killing BO loop."
         # Issue: the gp_update in the try is updating the p.gp.gpx as it tries to create the posterior.
         # if it fails, it keeps the added x and y and overwrites the old structure, which I want to keep if it fails...
         # so now its a bit bruteforce but I try to recreate the previous GP structure. Maybe copying it every time would help.
@@ -202,8 +202,8 @@ function optimize_hyperparameters(model::AbstractSurrogate,
     length_scale_only ? upper_bounds = log.([length_scale_upper]) : 
                         upper_bounds = log.([length_scale_upper, adjusted_scale_upper])
 
-    println("lower bounds (ℓ, scale): $(exp.(lower_bounds))")
-    println("upper bounds (ℓ,scale): $(exp.(upper_bounds))")
+    @debug "lower bounds (ℓ, scale)" exp.(lower_bounds)
+    @debug "upper bounds (ℓ,scale)" exp.(upper_bounds)
     
     x_train_prepped = prep_input(model, x_train)
     y_train_prepped = nothing
@@ -237,7 +237,7 @@ function optimize_hyperparameters(model::AbstractSurrogate,
         try
             result = Optim.optimize(obj,lower_bounds, upper_bounds, init_guesses[i], Fminbox(inner_optimizer),opts, autodiff = :forward)
 
-            println("Optimization result: ", result)
+            @debug "Optimization result: " result
             if Optim.converged(result)
                 current_nlml = Optim.minimum(result)
 
@@ -254,14 +254,14 @@ function optimize_hyperparameters(model::AbstractSurrogate,
     end
 
     if best_result === nothing
-        println("All restarts failed to converge.")
+        @info "All restarts failed to converge."
         return model
     else
-        println("Best LML after $(num_restarts) restarts: ", -best_nlml)
+        @debug "Best LML after $(num_restarts) restarts: " -best_nlml
         if length_scale_only
-            println("Optimized lengthscale (log): $(best_result[1]), kept scale (log): $(old_params[2])")
+            @debug "Optimized lengthscale (log): $(best_result[1]), kept scale (log): $(old_params[2])"
         else
-            println("Optimized parameters (log): lengthscale=$(best_result[1]), scale=$(best_result[2])")
+            @debug "Optimized parameters (log): lengthscale=$(best_result[1]), scale=$(best_result[2])"
         end
     end
 
@@ -343,51 +343,50 @@ function optimize(BO::BOStruct;
     while !stop_criteria(BO) & !BO.flag
 
         if !isnothing(hyper_params)&&(i%10==0) 
-            println("Re-optimizing GP hyperparameters at iteration $i...")
-            println("Former parameters: ℓ=$(get_lengthscale(BO.model)), variance =$(get_scale(BO.model))")
+            @info "Optimizing GP hyperparameters at iteration $i..."
+            @debug "Former parameters: ℓ=$(get_lengthscale(BO.model)), variance =$(get_scale(BO.model))"
             old_params = log.([get_lengthscale(BO.model)[1],get_scale(BO.model)[1]])
-            println("Hyperparameter time taken:")
             out = nothing
             if hyper_params == "length_scale_only"
-                @time out = optimize_hyperparameters(BO.model, BO.xs, BO.ys,old_params,classic_bo, 
+                out = optimize_hyperparameters(BO.model, BO.xs, BO.ys,old_params,classic_bo, 
                                                     length_scale_only=true,mean=original_mean, scale_std=σ[1], num_restarts=num_restarts_HP, domain=BO.domain)
             elseif hyper_params == "all"
-                @time out = optimize_hyperparameters(BO.model, BO.xs, BO.ys,old_params,classic_bo,
+                out = optimize_hyperparameters(BO.model, BO.xs, BO.ys,old_params,classic_bo,
                                                 length_scale_only = false, mean=original_mean, scale_std=σ[1], num_restarts=num_restarts_HP, domain=BO.domain)
             else
                 out = nothing
             end
 
-            println("MLE new parameters: ℓ=$(get_lengthscale(out)), variance =$(get_scale(out))")
+            @debug "MLE new parameters: ℓ=$(get_lengthscale(out)), variance =$(get_scale(out))"
             if !isnothing(out)
                 BO.model = out
                 BO.model = update(BO.model, BO.xs, BO.ys)
             end
 
-            println("New parameters: ℓ=$(get_lengthscale(BO.model)), variance =$(get_scale(BO.model))")
+            @info "New parameters: ℓ=$(get_lengthscale(BO.model)), variance =$(get_scale(BO.model))"
         end
 
         
         if classic_bo
-            println("Iteration #",i+1,", current min val: ",minimum(BO.ys_non_std))
+            @info "Iteration #$(i+1), current min val: $(minimum(BO.ys_non_std)[1])"
         else
-            println("Iteration #",i+1,", current min val: ",minimum(hcat(BO.ys_non_std...)[1,:]))
+            @info "Iteration #$(i+1), current min val: $(minimum(hcat(BO.ys_non_std...)[1,:])[1])"
         end
 
-        println("Time acq update:")
-        @time x_cand = optimize_acquisition(BO.acq,BO.model,BO.domain)
+        x_cand = optimize_acquisition(BO.acq,BO.model,BO.domain)
         
 
-        println("New point acquired: $(x_cand) with acq func $(BO.acq(BO.model, x_cand))")
+        
         push!(acq_list,BO.acq(BO.model, x_cand))
 
         y_cand = BO.func(x_cand) 
         y_cand = y_cand .+ sqrt(BO.noise)/(σ[1])*randn(length(y_cand))
         # y_cand here is NOT standardized
         push!(BO.ys_non_std, y_cand)
-        println("New value probed: ",y_cand)
+        
+        @debug "New point acquired: $(x_cand) with acq func $(BO.acq(BO.model, x_cand))" y_cand
+
         i +=1
-        println("Time update GP")
        
         
         # here we have μ and σ according to the standardization choice
@@ -396,7 +395,7 @@ function optimize(BO::BOStruct;
         # if mean_scale, μ ≠ 0 and σ ≠ 1
         
         y_cand = (y_cand .- μ)./σ[1]
-        @time BO = update(BO, x_cand, y_cand, i)
+        BO = update(BO, x_cand, y_cand, i)
     end
 
     return BO, acq_list, (μ,σ)

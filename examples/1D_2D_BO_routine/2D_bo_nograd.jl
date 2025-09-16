@@ -45,7 +45,7 @@ upper = [6.0,6.0]
 domain = ContinuousDomain(lower, upper)
 σ² = 1e-12
 
-kernel_constructor = ApproxMatern52Kernel()
+kernel = ApproxMatern52Kernel()
 
 # Generate uniform random samples
 n_train = 10
@@ -54,7 +54,6 @@ y_train = f.(x_train) #+ sqrt(σ²).* randn(n_train)
 
 y_train = map(x -> [x], y_train)
 
-kernel = 1 *(kernel_constructor ∘ ScaleTransform(1))
 model = StandardGP(kernel,σ²) # Instantiates the StandardGP (gives it the prior).
 
 # Conditioning: no need if true
