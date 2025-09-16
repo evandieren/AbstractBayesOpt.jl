@@ -6,7 +6,6 @@ using Optim
 # using QuasiMonteCarlo
 using Statistics
 using SpecialFunctions
-using Plots
 using Distributions
 using LinearAlgebra
 using Random
@@ -50,7 +49,7 @@ export EnsembleAcquisition
 
 # Core Bayesian Optimization framework
 include("bayesian_opt.jl")
-export optimize, update, BOStruct, stop_criteria, optimize_hyperparameters 
+export optimize, update, BOStruct, stop_criteria, optimize_hyperparameters
 
 # Utility functions
 include("BO_utils.jl")
