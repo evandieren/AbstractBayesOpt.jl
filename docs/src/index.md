@@ -18,15 +18,13 @@ The library uses **Bayesian Optimisation (BO)** to iteratively propose evaluatio
 
 We currently have three main abstract interfaces that work with our BO loop:
 
-- `AbstractAcquisition`: Interface to implement for an acquisition function to be used in `AbstractBayesOpt`.
-- `AbstractSurrogate`: Interface to implement for a surrogate to be used in `AbstractBayesOpt`.
-- `AbstractDomain`: Interface to implement for the optimisation domain to be used in `AbstractBayesOpt`.
+- [`AbstractAcquisition`](@ref): Interface to implement for an acquisition function to be used in `AbstractBayesOpt`.
+- [`AbstractSurrogate`](@ref): Interface to implement for a surrogate to be used in `AbstractBayesOpt`.
+- [`AbstractDomain`](@ref): Interface to implement for the optimisation domain to be used in `AbstractBayesOpt`.
 
 AbstractBayesOpt.jl defines the core abstractions for building Bayesian optimization
 algorithms. To add a new surrogate model, acquisition function, or domain, implement
 the following interfaces:
-
----
 
 ### Surrogates
 
@@ -44,8 +42,6 @@ Subtype [`AbstractSurrogate`](@ref) and implement:
 - `nlml(model::AbstractSurrogate, params::AbstractVector, xs::AbstractVector, ys::AbstractVector)`:  
   Compute the negative log marginal likelihood given hyperparameters and data.
 
----
-
 ### Acquisition Functions
 
 Subtype [`AbstractAcquisition`](@ref) and implement:
@@ -60,8 +56,6 @@ Subtype [`AbstractAcquisition`](@ref) and implement:
 - `Base.copy(acq::AbstractAcquisition)`:  
   Return a copy of the acquisition function.
 
----
-
 ### Domains
 
 Subtype [`AbstractDomain`](@ref) and implement:
@@ -71,23 +65,24 @@ Concrete implementations should subtype this and define the necessary properties
 - `upper`: The upper bounds of the domain.
 
 as well as creating its constructor.
----
+
 
 Concrete implementations may add additional methods as needed, but these are the
 minimum required for compatibility with the Bayesian optimization loop.
 
-## What abstract subtypes are currently implemented in AbstractBayesOpt
-
-### Acquisition functions
-- `ExpectedImprovement`: Standard expected improvement acquisition function for balancing exploration and exploitation.
-- `UpperConfidenceBound`: Acquisition function using a confidence bound to guide optimisation.
-- `GradientNormUCB`: Gradient-based variant of the Upper Confidence Bound acquisition function.
-- `ProbabilityImprovement`: Probability of improvement acquisition function.
-- `EnsembleAcquisition`: Combines multiple acquisition functions into an ensemble to leverage complementary strategies.
+## What is currently implemented?
+We list below the abstract subtypes currently implemented in AbstractBayesOpt.
 
 ### Surrogates
-- `StandardGP`: Gaussian Process surrogate model with standard mean and covariance functions.
-- `GradientGP`: Gaussian Process surrogate model supporting gradient information. 
+- [`StandardGP`](@ref): Gaussian Process surrogate model with standard mean and covariance functions.
+- [`GradientGP`](@ref): Gaussian Process surrogate model supporting gradient information. 
+
+### Acquisition functions
+- [`ExpectedImprovement`](@ref): Standard expected improvement acquisition function for balancing exploration and exploitation.
+- [`UpperConfidenceBound`](@ref): Acquisition function using a confidence bound to guide optimisation.
+- [`GradientNormUCB`](@ref): Gradient-based variant of the Upper Confidence Bound acquisition function.
+- [`ProbabilityImprovement`](@ref): Probability of improvement acquisition function.
+- [`EnsembleAcquisition`](@ref): Combines multiple acquisition functions into an ensemble to leverage complementary strategies.
 
 ### Domains
-- `ContinuousDomain`: Represents a continuous optimisation domain, defining bounds and dimensionality for optimisation problems.
+- [`ContinuousDomain`](@ref): Represents a continuous optimisation domain, defining bounds and dimensionality for optimisation problems.
