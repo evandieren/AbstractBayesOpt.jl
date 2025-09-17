@@ -14,17 +14,26 @@ The library uses **Bayesian Optimisation (BO)** to iteratively propose evaluatio
 2. Using an **acquisition function** to select the next query point that balances exploration and exploitation.  
 3. Updating the surrogate with new observations and repeating until a **stopping criterion** is met.
 
+### How AbstractBayesOpt.jl fits in the Julia ecosystem
+
+AbstractBayesOpt.jl provides a modular, abstract framework for Bayesian Optimisation in Julia.
+It defines three core abstractions: [`AbstractSurrogate`](@ref), [`AbstractAcquisition`](@ref), and [`AbstractDomain`](@ref), as well as a standard optimisation loop, allowing users to plug in any surrogate model, acquisition function, or search space.
+
+Unlike traditional BO libraries that rely on a specific surrogate implementation (e.g. [BayesianOptimization.jl](https://github.com/jbrea/BayesianOptimization.jl) using [GaussianProcesses.jl](https://github.com/STOR-i/GaussianProcesses.jl)), AbstractBayesOpt.jl is fully flexible. Users are free to use packages such as [AbstractGPs.jl](https://github.com/JuliaGaussianProcesses/AbstractGPs.jl) or [GaussianProcesses.jl](https://github.com/STOR-i/GaussianProcesses.jl); in fact, our standard and gradient-enhanced GP implementations leverage [AbstractGPs.jl](https://github.com/JuliaGaussianProcesses/AbstractGPs.jl) and [KernelFunctions.jl](https://github.com/JuliaGaussianProcesses/KernelFunctions.jl). We also mention the [Surrogates.jl](https://github.com/SciML/Surrogates.jl) package, that implements a high level of BO using AbstractGPs.jl.
+
+In short, AbstractBayesOpt.jl acts as a general "glue" layer, unifying the Julia BO ecosystem under a simple and extensible interface.
+
 ## Abstract Interfaces
 
 We currently have three main abstract interfaces that work with our BO loop:
 
-- [`AbstractAcquisition`](@ref): Interface to implement for an acquisition function to be used in `AbstractBayesOpt`.
-- [`AbstractSurrogate`](@ref): Interface to implement for a surrogate to be used in `AbstractBayesOpt`.
-- [`AbstractDomain`](@ref): Interface to implement for the optimisation domain to be used in `AbstractBayesOpt`.
+- [`AbstractAcquisition`](@ref): Interface to implement for an acquisition function to be used in AbstractBayesOpt.
+- [`AbstractSurrogate`](@ref): Interface to implement for a surrogate to be used in AbstractBayesOpt.
+- [`AbstractDomain`](@ref): Interface to implement for the optimisation domain to be used in AbstractBayesOpt.
 
 AbstractBayesOpt.jl defines the core abstractions for building Bayesian optimization
 algorithms. To add a new surrogate model, acquisition function, or domain, implement
-the following interfaces:
+the following interfaces.
 
 ### Surrogates
 
@@ -68,7 +77,9 @@ as well as creating its constructor.
 
 
 Concrete implementations may add additional methods as needed, but these are the
-minimum required for compatibility with the Bayesian optimization loop.
+minimum required for compatibility with the BO loop. We note that we are using Optim.jl to solve the acquisition function
+maximisation problem for now, and hence the lower and upper bounds must be compatible with their optimisation interface, which might limit
+quite a lot the type of usable domains.
 
 ## What is currently implemented?
 We list below the abstract subtypes currently implemented in AbstractBayesOpt.
