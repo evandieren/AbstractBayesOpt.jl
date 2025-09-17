@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "../../literate/tutorials/StandardGP_1D.jl"
+EditURL = "../../../literate/tutorials/StandardGP_1D.jl"
 ```
 
 # AbstractBayesOpt Tutorial: Basic 1D Optimization
