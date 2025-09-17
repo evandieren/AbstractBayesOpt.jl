@@ -1,11 +1,8 @@
 """
-    GradientGP
-    
-Implementation of the Abstract structures for the gradient GP.
+Implementation of the Abstract structures for the gradient-enhanced GP.
 
 
 This relies on MOGP from AbstractGPs.jl and KernelFunctions.jl.
-As we are leveraging AutoDiff with Matern 5/2 kernel, we need to approximate it around d ≈ 0 because of differentiation issues.
 """
 struct GradientGP <: AbstractSurrogate
     gp::AbstractGPs.GP
@@ -21,8 +18,6 @@ Base.copy(s::GradientGP) = GradientGP(s.gp, s.noise_var, s.p, copy(s.gpx))
 # We will use the squared euclidean distance because this is fine to differentiate when d ≈ 0.
 
 """
-    ApproxMatern52Kernel(; metric=Distances.SqEuclidean())
-
 Approximate Matern 5/2 kernel using a second-order Taylor expansion around d=0.
 
 Arguments:
@@ -55,8 +50,6 @@ function Base.show(io::IO, k::ApproxMatern52Kernel)
 end
 
 """
-    gradConstMean(c::AbstractVector)
-
 Custom mean function for the GradientGP model. Returns a constant per-output
 mean across MO inputs (function value + gradients). The first element corresponds
 to the function value, the following ones to the gradient outputs.
@@ -81,8 +74,6 @@ function Base.show(io::IO, m::gradConstMean)
 end
 
 """
-    gradKernel(base_kernel::KernelFunctions.Kernel)
-
 Custom kernel function for the GradientGP model that handles both function values and gradients.
 
 Arguments:
@@ -208,8 +199,8 @@ Compute the negative log marginal likelihood (NLML) of the GP model given hyperp
 Arguments:
 - `model::GradientGP`: The GP model.
 - `params::Tuple`: A tuple containing the log lengthscale and log scale parameters.
-- `x`: The input data points.
-- `y`: The observed function values and gradients.
+- `xs`: The input data points.
+- `ys`: The observed function values and gradients.
 - `mean`: (optional) The mean function of the GP, defaults to ZeroMean()
 
 returns:
@@ -218,8 +209,8 @@ returns:
 function nlml(
     model::GradientGP,
     params::AbstractVector{T},
-    x::AbstractVector,
-    y::AbstractVector;
+    xs::AbstractVector,
+    ys::AbstractVector;
     mean=ZeroMean(),
 ) where {T}
     log_ℓ, log_scale = params
@@ -229,15 +220,12 @@ function nlml(
     # Kernel with current parameters
     kernel_constructor::Kernel = get_kernel_constructor(model)
     k = scale * with_lengthscale(kernel_constructor, ℓ)
-    #println("creation time of gradgp")
+    
+    # GP with current parameters
     gp = GradientGP(k, model.p, model.noise_var; mean=mean)
+    gpx = gp.gp(xs, model.noise_var)
 
-    #println("finite gpx time")
-    gpx = gp.gp(x, model.noise_var)
-
-    #println("logpdf")
-    #@time fastnlml_grad(gpx,y)
-    return -AbstractGPs.logpdf(gpx, y)  # Negative log marginal likelihood
+    return -AbstractGPs.logpdf(gpx, ys)  # Negative log marginal likelihood
 end
 
 """

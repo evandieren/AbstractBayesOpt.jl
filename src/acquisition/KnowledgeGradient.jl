@@ -1,10 +1,8 @@
 """
-    KnowledgeGradient(domain::ContinuousDomain, best_μ::AbstractVector)
-
 Knowledge Gradient acquisition function. **UNDER DEVELOPMENT**
 
 Arguments:
-- `domain::ContinuousDomain`: Domain over which to optimize the acquisition function
+- `domain::AbstractDomain`: Domain over which to optimize the acquisition function
 - `best_μ::AbstractVector`: Best predicted mean value from the surrogate model
 
 returns:
@@ -14,7 +12,7 @@ References:
 [Frazier et al., 2009](https://pubsonline.informs.org/doi/10.1287/ijoc.1080.0314)
 """
 struct KnowledgeGradient <: AbstractAcquisition
-    domain::ContinuousDomain
+    domain::AbstractDomain
     best_μ::AbstractVector
 end
 
@@ -25,7 +23,7 @@ function (KG::KnowledgeGradient)(surrogate::AbstractSurrogate, x, J=1_000)
 
     y = μ .+ sqrt(σ²) .* randn(J)
     for j in 1:J
-        new_model = update!(
+        new_model = update(
             surrogate, [surrogate.gpx.data.x; x], [surrogate.gpx.data.δ; y[j]]
         )
 

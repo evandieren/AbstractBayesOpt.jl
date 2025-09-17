@@ -1,3 +1,11 @@
+"""
+
+Ensemble of acquisition functions.
+
+An ensemble acquisition function combines multiple acquisition functions, each weighted by a specified factor,
+
+All weights must be non-negative.
+"""
 struct EnsembleAcquisition <: AbstractAcquisition
     weights::Vector{Float64}
     acquisitions::Vector{AbstractAcquisition}

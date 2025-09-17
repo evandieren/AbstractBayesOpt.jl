@@ -1,6 +1,4 @@
 """
-    StandardGP
-
 Implementation of the Abstract structures for the standard GP.
 
 Remark: this is a simple wrapper around AbstractGPs.jl that implements the AbstractSurrogate abstract type
@@ -15,8 +13,6 @@ end
 Base.copy(s::StandardGP) = StandardGP(s.gp, s.noise_var, copy(s.gpx))
 
 """
-    StandardGP(kernel::Kernel, noise_var::Float64; mean=ZeroMean())
-
 StandardGP constructor with the specified kernel and noise variance.
 
 Arguments:

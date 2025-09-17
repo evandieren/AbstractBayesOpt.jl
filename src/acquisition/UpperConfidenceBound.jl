@@ -1,6 +1,4 @@
 """
-    UpperConfidenceBound(β::Float64)
-
 Upper Confidence Bound (UCB) acquisition function.
 
 Arguments:

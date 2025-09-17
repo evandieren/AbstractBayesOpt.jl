@@ -7,10 +7,25 @@ using Random
 inner_optimizer = LBFGS(; linesearch=Optim.LineSearches.HagerZhang(; linesearchmax=20))
 box_optimizer = Fminbox(inner_optimizer)
 
+"""
+Optimize the acquisition function over the given domain.
+
+
+Arguments:
+- `acqf::AbstractAcquisition`: The acquisition function to optimize.
+- `surrogate::AbstractSurrogate`: The surrogate model used by the acquisition function.
+- `domain::AbstractDomain`: The domain over which to optimize the acquisition function.
+- `n_grid::Int`: Number of random grid points to sample for initialisation (default: 10000).
+- `n_local::Int`: Number of top points from the grid to use as starting points.
+
+returns:
+- `best_x::Vector{Float64}`: The point in the domain that maximizes
+    the acquisition function.
+"""
 function optimize_acquisition(
     acqf::AbstractAcquisition,
     surrogate::AbstractSurrogate,
-    domain::ContinuousDomain;
+    domain::AbstractDomain;
     n_grid=10000,
     n_local=100,
 )

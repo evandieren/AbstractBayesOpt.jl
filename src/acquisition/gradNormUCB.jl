@@ -1,6 +1,4 @@
 """
-    GradientNormUCB(β)
-
 Acquisition function implementing the Squared 2-norm of the gradient with Upper Confidence Bound (UCB) exploration strategy.
 
 
@@ -34,8 +32,6 @@ function (gradUCB::GradientNormUCB)(surrogate::AbstractSurrogate, x, x_buf=nothi
 end
 
 """
-    update!(acqf::GradientNormUCB, ys::AbstractVector, surrogate::AbstractSurrogate)
-
 Update the GradientNormUCB acquisition function with new array of observations.
 
 Arguments:

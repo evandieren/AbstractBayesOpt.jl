@@ -1,6 +1,4 @@
 """
-    ProbabilityImprovement(ξ::Float64, best_y::Float64)
-
 Probability of Improvement acquisition function.
 
 Arguments:
