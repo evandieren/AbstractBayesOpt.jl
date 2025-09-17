@@ -4,7 +4,7 @@ using AbstractGPs
 using ForwardDiff
 
 using Random
-Random.seed!(1234)  # setting the seed for reproducibility of this notebook
+Random.seed!(42)  # setting the seed for reproducibility of this notebook
 #md nothing #hide
 
 # ## Define the objective function
@@ -25,7 +25,7 @@ y_train = f.(x_train)
 y_train = map(x -> [x], y_train) # make y_train a vector of vectors, usual format for AbstractBayesOpt
 
 
-
+y_train_prepped = reduce(vcat, y_train)
 obj = p -> AbstractBayesOpt.nlml(surrogate, p, x_train, y_train_prepped)
 
 obj([0.0; 0.0])

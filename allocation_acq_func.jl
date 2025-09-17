@@ -26,8 +26,8 @@ y_train = map(x -> [x], y_train) # make y_train a vector of vectors, usual forma
 # ## Choose an acquisition function
 # We'll use the Expected Improvement acquisition function with an exploration parameter ξ = 0.0.
 ξ = 0.0
-acq = ExpectedImprovement(ξ, minimum(reduce(vcat, y_train)))
+acq = UpperConfidenceBound(0.0)# minimum(reduce(vcat, y_train)))
 
 surrogate = update(surrogate, x_train, y_train)
 
-@profview x_cand = optimize_acquisition(acq, surrogate, domain)
+@time x_cand = optimize_acquisition(acq, surrogate, domain)
