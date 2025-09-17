@@ -30,4 +30,4 @@ acq = ExpectedImprovement(ξ, minimum(reduce(vcat, y_train)))
 
 surrogate = update(surrogate, x_train, y_train)
 
-@time x_cand = optimize_acquisition(acq, surrogate, domain)
+@profview x_cand = optimize_acquisition(acq, surrogate, domain)
