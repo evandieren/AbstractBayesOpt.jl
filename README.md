@@ -26,9 +26,9 @@ The library uses **Bayesian Optimisation (BO)** to iteratively propose evaluatio
 
 We currently have three main abstract interfaces that work with our BO loop:
 
-- [`AbstractAcquisition`](@ref): Interface to implement for an acquisition function to be used in AbstractBayesOpt.
-- [`AbstractSurrogate`](@ref): Interface to implement for a surrogate to be used in AbstractBayesOpt.
-- [`AbstractDomain`](@ref): Interface to implement for the optimisation domain to be used in AbstractBayesOpt.
+- `AbstractAcquisition`: Interface to implement for an acquisition function to be used in AbstractBayesOpt.
+- `AbstractSurrogate`: Interface to implement for a surrogate to be used in AbstractBayesOpt.
+- `AbstractDomain`: Interface to implement for the optimisation domain to be used in AbstractBayesOpt.
 
 AbstractBayesOpt.jl defines the core abstractions for building Bayesian optimisation
 algorithms. To add a new surrogate model, acquisition function, or domain, implement
