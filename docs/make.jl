@@ -17,7 +17,7 @@ for dir_path in filter(isdir,readdir( joinpath(@__DIR__, "literate"), join=true)
         # full path to a literate script
         ipath = joinpath(root, file)
         # generated output path
-        opath = splitdir(replace(ipath, LITERATE_INPUT => joinpath(LITERATE_OUTPUT,dirname)))[1]
+        opath = splitdir(replace(ipath, LITERATE_INPUT => LITERATE_OUTPUT))[1]
         # generate the markdown file calling Literate
         Literate.markdown(ipath, opath)
     end
