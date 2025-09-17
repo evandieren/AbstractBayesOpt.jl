@@ -7,23 +7,23 @@ Parts of the code are inspired by:
 - GradientGPs.jl (internal package) of MatMat group at EPFL (BOStruct, and update routines)
 """
 
-mutable struct BOStruct{F,M<:AbstractSurrogate,A<:AbstractAcquisition}
+mutable struct BOStruct{F,M<:AbstractSurrogate,A<:AbstractAcquisition,D<:AbstractDomain, T, V}
 
     # Core components of Bayesian Optimization problem
     func::F
     acq::A
     model::M
-    domain::AbstractDomain
+    domain::D
 
     # Recording history of points and values
-    xs::AbstractVector
-    ys::AbstractVector
-    ys_non_std::AbstractVector
+    xs::Vector{T}
+    ys::Vector{T}
+    ys_non_std::Vector{T}
 
     # Optimization parameters
     max_iter::Int
     iter::Int
-    noise::Float64
+    noise::V
     flag::Bool
 end
 
@@ -48,14 +48,11 @@ function BOStruct(
     acq::AbstractAcquisition,
     model::AbstractSurrogate,
     domain::AbstractDomain,
-    x_train::AbstractVector,
-    y_train::AbstractVector,
+    x_train::Vector{T},
+    y_train::Vector{T},
     max_iter::Int,
-    noise::Float64,
-)
-    """
-    Initialize the Bayesian Optimization problem.
-    """
+    noise::V,
+) where {T, V}
     BOStruct(
         func,
         copy(acq),
@@ -253,7 +250,7 @@ function optimize_hyperparameters(
                 init_guesses[i],
                 Fminbox(inner_optimizer),
                 opts;
-                autodiff=:forward,
+                autodiff=AutoMooncake(),
             )
 
             @debug "Optimization result: " result
@@ -267,6 +264,7 @@ function optimize_hyperparameters(
             end
         catch e
             @warn "Optimization failed at restart $i with error: $e, and parameters $(exp.(init_guesses[i]))"
+            throw(e)
             continue
         end
     end

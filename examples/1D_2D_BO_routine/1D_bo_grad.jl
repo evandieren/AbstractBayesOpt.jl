@@ -10,7 +10,7 @@ using Plots
 using Distributions
 using ForwardDiff
 using LinearAlgebra
-using LaTeXStrings
+# using LaTeXStrings
 using Random: Random
 using Optim
 using AbstractBayesOpt

@@ -80,7 +80,7 @@ returns:
 """
 function nlml(
     model::StandardGP,
-    params::AbstractVector{T},
+    params::Vector{T},
     x::AbstractVector,
     y::AbstractVector;
     mean::AbstractGPs.MeanFunction=ZeroMean(),
@@ -96,14 +96,24 @@ function nlml(
     #println("creation time of standardgp")
     gp = StandardGP(k, model.noise_var; mean=mean) # Use fixed noise here, or optimize σ² too
 
-
-    K = AbstractGPs.kernelmatrix(k, x) + model.noise_var*I
-    println("Eigenvalues of K: ", eigvals(K))
-
     # Evaluate GP at training points with noise, creates a FiniteGP
     #println("finite gpx time")
     gpx = gp.gp(x, model.noise_var)
     #println("logpdf")
+
+    # _, K = mean_and_cov(gpx)
+
+    # println(typeof(K))
+    # println("eigenvals of K:", eigvals(K))
+    # try 
+    # K = kernelmatrix(k, x) + model.noise_var * I
+
+    # println("Condition number of K: ", cond(K))
+    # println("Eigenvalues of K: ", eigvals(K))
+    # catch e
+    #     println("Error in computing kernel matrix: ", e)
+    # end
+
     return -AbstractGPs.logpdf(gpx, y)
 end
 
@@ -160,11 +170,11 @@ returns:
 - `y_mean`: Empirical mean
 - `y_std`: Empirical standard deviation
 """
-function get_mean_std(model::StandardGP, y_train::AbstractVector)
+function get_mean_std(model::StandardGP, y_train::Vector{T}) where {T}
     y_flat = reduce(vcat, y_train)
 
-    y_mean::Float64 = mean(y_flat)
-    y_std::Float64 = std(y_flat)
+    y_mean = mean(y_flat)
+    y_std = std(y_flat)
 
     return [y_mean], [y_std]
 end

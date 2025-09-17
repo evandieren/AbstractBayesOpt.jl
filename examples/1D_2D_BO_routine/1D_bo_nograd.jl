@@ -11,7 +11,7 @@ using Distributions
 using AbstractBayesOpt
 using Optim
 using LinearAlgebra
-using LaTeXStrings
+# using LaTeXStrings
 using Random: Random
 Random.seed!(555)
 

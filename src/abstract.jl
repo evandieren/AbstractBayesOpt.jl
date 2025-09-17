@@ -6,7 +6,6 @@ An abstract type for surrogate models and acquisition functions used in Bayesian
 Use abstraction to keep the types used in AbstractBayesOpt.jl 
 separated from their implementation (e.g. using AbstractGP.jl and KernelFunctions.jl) in folders acquisition/ and surrogates/
 """
-# AbstractBayesOpt.jl: Abstract types and update/optimize functions
 
 """
     AbstractSurrogate

@@ -48,7 +48,7 @@ function standardize_problem(BO::BOStruct; choice="mean_scale")
     p = length(BO.ys[1])
 
     # Attention: here it is the standard deviation, need to square for kernel scaling
-    μ::Vector{Float64}, σ::Vector{Float64} = get_mean_std(BO.model, ys_non_std)
+    μ, σ = get_mean_std(BO.model, ys_non_std) #μ,σ are Vectors
 
     # Taking into account the choice of the user
     if choice == "scale_only"

@@ -208,7 +208,7 @@ returns:
 """
 function nlml(
     model::GradientGP,
-    params::AbstractVector{T},
+    params::Vector{T},
     xs::AbstractVector,
     ys::AbstractVector;
     mean=ZeroMean(),
