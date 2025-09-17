@@ -22,7 +22,7 @@ nothing #hide
 ````
 
 ## Define the objective function
-We will optimise a simple 1D function: f(x) = (x[1]-2)^2 + sin(3*x[1])
+We will optimise a simple 1D function: ``f(x) = (x-2)^2 + \sin(3*x)``
 
 ````@example StandardGP_1D
 f(x) = sum(x .- 2)^2 + sin(3*sum(x))
@@ -30,7 +30,26 @@ f(x) = sum(x .- 2)^2 + sin(3*sum(x))
 min_f = -0.8494048256167165
 
 d = 1
-domain = ContinuousDomain([0.0], [5.0])
+
+
+domain = ContinuousDomain([0.0], [5.0]) #hide
+
+plot_domain = domain.lower[1]:0.01:domain.upper[1] #hide
+ys = f.(plot_domain) #hide
+
+plot(                                           #hide
+    plot_domain,                                #hide
+    ys;                                          #hide
+    xlim=(domain.lower[1], domain.upper[1]),    #hide
+    label="f(x)",               #hide
+    xlabel="x",                 #hide
+    ylabel="f(x)",             #hide
+    legend=:outertopright,              #hide
+) #hide
+
+x_min = plot_domain[argmin(ys)] #hide
+
+scatter!([x_min], [minimum(ys)]; label="Minimum", color=:red, markersize=5) #hide
 ````
 
 ## Initialize the surrogate model
