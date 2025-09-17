@@ -172,7 +172,7 @@ plot_domain = collect(domain.lower[1]:0.01:domain.upper[1])
 plot_x = map(x -> [x], plot_domain)
 plot_x = prep_input(grad_surrogate, plot_x)
 post_mean, post_var = unstandardized_mean_and_var(
-    result_grad.model, plot_x, standard_params
+    result_grad.model, plot_x, standard_params_grad
 )
 
 post_mean = reshape(post_mean, :, d+1)[:, 1] # This returns f(x) to match the StandardGP
