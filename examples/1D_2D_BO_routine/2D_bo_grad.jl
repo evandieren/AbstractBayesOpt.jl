@@ -9,7 +9,6 @@ using KernelFunctions
 using Plots
 using Distributions
 using ForwardDiff
-using LaTeXStrings
 using AbstractBayesOpt
 
 using Random: Random
@@ -82,7 +81,6 @@ p = Plots.plot(
     yaxis=:log,
     title="Error w.r.t true minimum (2D GradBO)",
     xlabel="Function evaluations",
-    ylabel=L"|| f(x^*_n) - f^* ||",
     label="GradBO",
     xlims=(1, length(running_min)),
 )

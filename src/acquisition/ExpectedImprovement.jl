@@ -18,7 +18,7 @@ end
 
 Base.copy(EI::ExpectedImprovement) = ExpectedImprovement(EI.ξ, EI.best_y)
 
-function (EI::ExpectedImprovement)(surrogate::AbstractSurrogate, x, x_buf=[copy(x)])
+function (EI::ExpectedImprovement)(surrogate::AbstractSurrogate, x, x_buf=nothing)#[copy(x)])
 
     # Allocate buffer if not provided
     if x_buf === nothing

@@ -250,7 +250,7 @@ function optimize_hyperparameters(
                 init_guesses[i],
                 Fminbox(inner_optimizer),
                 opts;
-                autodiff=AutoMooncake(),
+                autodiff=:forward #AutoMooncake(),
             )
 
             @debug "Optimization result: " result
