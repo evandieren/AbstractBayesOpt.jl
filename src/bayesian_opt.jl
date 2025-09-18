@@ -7,7 +7,7 @@ Parts of the code are inspired by:
 - GradientGPs.jl (internal package) of MatMat group at EPFL (BOStruct, and update routines)
 """
 
-mutable struct BOStruct{F,M<:AbstractSurrogate,A<:AbstractAcquisition,D<:AbstractDomain, T, V}
+mutable struct BOStruct{F, M<:AbstractSurrogate, A<:AbstractAcquisition, D<:AbstractDomain, X, Y, T}
 
     # Core components of Bayesian Optimization problem
     func::F
@@ -16,14 +16,14 @@ mutable struct BOStruct{F,M<:AbstractSurrogate,A<:AbstractAcquisition,D<:Abstrac
     domain::D
 
     # Recording history of points and values
-    xs::Vector{T}
-    ys::Vector{T}
-    ys_non_std::Vector{T}
+    xs::Vector{X}
+    ys::Vector{Y}
+    ys_non_std::Vector{Y}
 
     # Optimization parameters
     max_iter::Int
     iter::Int
-    noise::V
+    noise::T # T should somehow be linked to Y, but not Y itself (think Real for gradient-enhanced BO)
     flag::Bool
 end
 
@@ -31,29 +31,29 @@ end
 Initialize the Bayesian Optimization problem.
 
 Arguments:
-- `func::Function`: The target function to be optimized.
-- `acq::AbstractAcquisition`: The acquisition function guiding the optimization.
-- `model::AbstractSurrogate`: The surrogate model (e.g., Gaussian Process).
-- `domain::AbstractDomain`: The domain over which to optimize.
-- `x_train::AbstractVector`: Initial input training points.
-- `y_train::AbstractVector`: Corresponding output training values.
-- `max_iter::Int`: Maximum number of iterations for the optimization.
-- `noise::Float64`: Noise level in the observations.
+- `func`: The target function to be optimized.
+- `acq`: The acquisition function guiding the optimization.
+- `model`: The surrogate model (e.g., Gaussian Process).
+- `domain`: The domain over which to optimize.
+- `x_train`: Initial input training points.
+- `y_train`: Corresponding output training values.
+- `max_iter`: Maximum number of iterations for the optimization.
+- `noise`: Noise level in the observations.
 
 returns:
 - `BOStruct`: An instance of the BOStruct containing all components for Bayesian Optimization.
 """
 function BOStruct(
-    func::Function,
-    acq::AbstractAcquisition,
-    model::AbstractSurrogate,
-    domain::AbstractDomain,
-    x_train::Vector{T},
-    y_train::Vector{T},
-    max_iter::Int,
-    noise::V,
-) where {T, V}
-    BOStruct(
+    func,
+    acq,
+    model,
+    domain,
+    x_train,
+    y_train,
+    max_iter,
+    noise,
+)
+    return BOStruct(
         func,
         copy(acq),
         copy(model),
@@ -73,8 +73,8 @@ Update the Bayesian Optimization structure with a new data point (x, y).
 
 Arguments:
 - `BO::BOStruct`: The current Bayesian Optimization structure.
-- `x::AbstractVector`: The new input point where the function has been evaluated.
-- `y::AbstractVector`: The corresponding function value at the input point.
+- `x::X`: The new input point where the function has been evaluated.
+- `y::Y`: The corresponding function value at the input point.
 - `i::Int`: The current iteration number.
 
 returns:
@@ -84,7 +84,7 @@ Remarks:
     This function handles potential ill-conditioning issues when updating the GP, 
     by returning the previous state if an error occurs and setting a flag to stop the optimization loop.
 """
-function update(BO::BOStruct, x::AbstractVector, y::AbstractVector, i::Int)
+function update(BO::BOStruct, x::X, y::Y, i::Int) where {X, Y}
 
     #TODO make the copy only if we fail
     prev_gp = copy(BO.model)
@@ -130,8 +130,8 @@ Optimize the hyperparameters of the Gaussian Process model using Maximum Likelih
 
 Arguments:
 - `model::AbstractSurrogate`: Surrogate model.
-- `x_train::AbstractVector`: A vector of input training points.
-- `y_train::AbstractVector`: A vector of corresponding output training values.
+- `x_train::Vector{X}`: A vector of input training points.
+- `y_train::Vector{Y}`: A vector of corresponding output training values.
 - `old_params::Vector{Float64}`: A vector containing the current log lengthscale
     and log scale parameters.
 - `classic_bo::Bool`: Indicates if using classic Bayesian Optimization (true) or gradient-enhanced (false).
@@ -146,8 +146,8 @@ returns:
 """
 function optimize_hyperparameters(
     model::AbstractSurrogate,
-    x_train::AbstractVector,
-    y_train::AbstractVector,
+    x_train::Vector{X},
+    y_train::Vector{Y},
     old_params::Vector{Float64},
     classic_bo::Bool;
     scale_std::Float64=1.0,
@@ -155,18 +155,13 @@ function optimize_hyperparameters(
     mean::AbstractGPs.MeanFunction=ZeroMean(),
     num_restarts::Int=1,
     domain::Union{Nothing,AbstractDomain}=nothing,
-)
-
-    # old_params is always a 2-element vector: [log(lengthscale), log(scale)]
-    if length(old_params) != 2
-        error("old_params must be a 2-element vector: [log(lengthscale), log(scale)]")
-    end
+) where {X, Y}
 
     best_nlml = Inf
     best_result = nothing
 
-    # Store original scale for length_scale_only case
-    original_scale = exp(old_params[2])
+
+    #TODO ask the user for the bounds of the hyperparameters, so this below should dissapear
 
     # Adjust scale bounds by 1/σ² to account for standardization
     # This ensures bounds in original space remain 1e-3 to 1e4 regardless of standardization
@@ -209,13 +204,8 @@ function optimize_hyperparameters(
     @debug "upper bounds (ℓ,scale)" exp.(upper_bounds)
 
     x_train_prepped = prep_input(model, x_train)
-    y_train_prepped = nothing
-    if classic_bo
-        y_train_prepped = reduce(vcat, y_train)
-    else
-        y_train_prepped = vec(permutedims(reduce(hcat, y_train)))
-    end
-
+    y_train_prepped = prep_output(model, y_train)
+    
     obj = nothing
     if length_scale_only
         # Only optimize lengthscale, keep scale fixed at original log value (second parameter)
@@ -343,8 +333,9 @@ function optimize(
 
     classic_bo = (length(BO.ys[1])==1)
 
-    μ=zeros(length(BO.ys[1]))
-    σ=ones(length(BO.ys[1])) # default values if we do not standardize
+    μ=zero(BO.ys[1])
+    println(μ)
+    σ=ones(eltype(BO.ys[1]), size(BO.ys[1])) # default values if we do not standardize
     if isnothing(standardize)
         BO.model = update(BO.model, BO.xs, BO.ys) # because we might not to that before
     else
@@ -411,8 +402,8 @@ function optimize(
         push!(acq_list, BO.acq(BO.model, x_cand))
 
         y_cand = BO.func(x_cand)
-        y_cand = y_cand .+ sqrt(BO.noise)/(σ[1])*randn(length(y_cand))
-        # y_cand here is NOT standardized
+        y_cand = y_cand + _noise_like(y_cand, σ = sqrt(BO.noise)/σ[1]) # Add noise to the observation
+        
         push!(BO.ys_non_std, y_cand)
 
         @debug "New point acquired: $(x_cand) with acq func $(BO.acq(BO.model, x_cand))" y_cand
@@ -424,7 +415,8 @@ function optimize(
         # if scale_only, μ = 0, σ ≠ 1
         # if mean_scale, μ ≠ 0 and σ ≠ 1
 
-        y_cand = (y_cand .- μ) ./ σ[1]
+        # μ and σ should be the same type as y_cand
+        y_cand = (y_cand - μ) ./ σ
         BO = update(BO, x_cand, y_cand, i)
     end
 

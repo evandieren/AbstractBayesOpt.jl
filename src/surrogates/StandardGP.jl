@@ -170,13 +170,22 @@ returns:
 - `y_mean`: Empirical mean
 - `y_std`: Empirical standard deviation
 """
-function get_mean_std(model::StandardGP, y_train::Vector{T}) where {T}
+function get_mean_std(model::StandardGP, y_train::Vector{Y}) where {Y}
     y_flat = reduce(vcat, y_train)
 
     y_mean = mean(y_flat)
     y_std = std(y_flat)
 
-    return [y_mean], [y_std]
+
+    # Taking into account the choice of the user
+    if choice == "scale_only"
+        y_mean = 0.0
+    elseif choice == "mean_only"
+        y_std = ones(p)
+    end
+
+    # This is of type Y
+    return y_mean, y_std
 end
 
 """
@@ -234,6 +243,8 @@ get_scale(model::StandardGP) = model.gp.kernel.σ²
 get_kernel_constructor(model::StandardGP) = model.gp.kernel.kernel.kernel
 
 prep_input(model::StandardGP, x::AbstractVector) = x
+
+prep_output(model::StandardGP, y::AbstractVector) = y
 
 # These functions are used when we need to query one point
 posterior_mean(model::StandardGP, x::AbstractVector) = mean(model.gpx([x]))[1] # we do the function values
