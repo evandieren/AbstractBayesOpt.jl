@@ -109,7 +109,7 @@ Plots.vspan!([1, n_train]; color=:blue, alpha=0.2, label="")
 # ## Gradient-enhanced GPs
 # Now, let's see how to use gradient information to improve the optimization. We'll use the same function but now also provide its gradient.
 # We define a new surrogate model that can handle gradient information, specifically a `GradientGP`.
-grad_surrogate = GradientGP(ApproxMatern52Kernel(), d+1, noise_var)
+grad_surrogate = GradientGP(SqExponentialKernel(),d+1, noise_var)
 
 ξ = 0.0
 acq = ExpectedImprovement(ξ, minimum(reduce(vcat, y_train)))
