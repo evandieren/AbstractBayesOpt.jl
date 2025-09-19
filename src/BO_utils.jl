@@ -47,7 +47,6 @@ function standardize_problem(BO::BOStruct; choice="mean_scale")
     # Attention: here it is the standard deviation, need to square for kernel scaling
     μ, σ = get_mean_std(BO.model, BO.ys_non_std, choice) # μ should be the type of Y 
 
-    
 
     println("Standardization choice: $choice")
     println("Standardization parameters: μ=$μ, σ=$σ")

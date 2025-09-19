@@ -205,7 +205,7 @@ function optimize_hyperparameters(
 
     x_train_prepped = prep_input(model, x_train)
     y_train_prepped = prep_output(model, y_train)
-    
+   
     obj = nothing
     if length_scale_only
         # Only optimize lengthscale, keep scale fixed at original log value (second parameter)
@@ -254,7 +254,6 @@ function optimize_hyperparameters(
             end
         catch e
             @warn "Optimization failed at restart $i with error: $e, and parameters $(exp.(init_guesses[i]))"
-            throw(e)
             continue
         end
     end
