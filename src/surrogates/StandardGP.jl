@@ -81,10 +81,10 @@ returns:
 function nlml(
     model::StandardGP,
     params::Vector{T},
-    x::AbstractVector,
-    y::AbstractVector;
+    xs::Vector{X},
+    ys::Vector{Y};
     mean::AbstractGPs.MeanFunction=ZeroMean(),
-) where {T}
+) where {T, X, Y}
     log_ℓ, log_scale = params
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
@@ -93,28 +93,12 @@ function nlml(
 
     # Kernel with current parameters
     k = scale * with_lengthscale(kernel_constructor, ℓ)
-    #println("creation time of standardgp")
     gp = StandardGP(k, model.noise_var; mean=mean) # Use fixed noise here, or optimize σ² too
 
     # Evaluate GP at training points with noise, creates a FiniteGP
-    #println("finite gpx time")
-    gpx = gp.gp(x, model.noise_var)
-    #println("logpdf")
+    gpx = gp.gp(xs, model.noise_var)
 
-    # _, K = mean_and_cov(gpx)
-
-    # println(typeof(K))
-    # println("eigenvals of K:", eigvals(K))
-    # try 
-    # K = kernelmatrix(k, x) + model.noise_var * I
-
-    # println("Condition number of K: ", cond(K))
-    # println("Eigenvalues of K: ", eigvals(K))
-    # catch e
-    #     println("Error in computing kernel matrix: ", e)
-    # end
-
-    return -AbstractGPs.logpdf(gpx, y)
+    return -AbstractGPs.logpdf(gpx, ys)
 end
 
 """
@@ -170,13 +154,22 @@ returns:
 - `y_mean`: Empirical mean
 - `y_std`: Empirical standard deviation
 """
-function get_mean_std(model::StandardGP, y_train::Vector{T}) where {T}
+function get_mean_std(model::StandardGP, y_train::Vector{Y}, choice::String) where {Y}
     y_flat = reduce(vcat, y_train)
 
     y_mean = mean(y_flat)
     y_std = std(y_flat)
 
-    return [y_mean], [y_std]
+
+    # Taking into account the choice of the user
+    if choice == "scale_only"
+        y_mean = 0.0
+    elseif choice == "mean_only"
+        y_std = 1.0 
+    end
+
+    # This is of type Y
+    return y_mean, y_std
 end
 
 """
@@ -185,14 +178,14 @@ Standardize the output values of the training data
 Arguments:
 - `model::StandardGP`: The GP model.
 - `ys::AbstractVector`: A vector of observed function values.
-- `μ::AbstractVector`: Empirical mean
-- `σ::AbstractVector`: Empirical standard deviation
+- `μ`: Empirical mean
+- `σ`: Empirical standard deviation
 
 returns:
 - `y_std`: A vector of standardized function values.
 """
-function std_y(model::StandardGP, ys::AbstractVector, μ::AbstractVector, σ::AbstractVector)
-    y_std = [(y .- μ) ./ σ[1] for y in ys]
+function std_y(model::StandardGP, ys::Vector{Y}, μ, σ) where {Y}
+    y_std = [(y .- μ) ./ σ for y in ys]
     return y_std
 end
 
@@ -201,30 +194,30 @@ Update the kernel scale of the GP model.
 
 Arguments:
 - `model::StandardGP`: The GP model.
-- `σ::AbstractVector`: Empirical standard deviation
+- `σ`: Empirical standard deviation
 
 returns:
 - `model::StandardGP`: The updated GP model with the new kernel scale.
 """
-function rescale_model(model::StandardGP, σ::AbstractVector)
+function rescale_model(model::StandardGP, σ)
     ℓ::Float64 = get_lengthscale(model)[1]
     old_scale::Float64 = get_scale(model)[1]
     kernel_constructor = get_kernel_constructor(model)
 
-    new_scale = old_scale / (σ[1]^2)
+    new_scale = old_scale / (σ^2)
 
     new_kernel = new_scale * (with_lengthscale(kernel_constructor, ℓ))
 
     # If the GP mean is not a ZeroMean, we need to rescale it too for consistency
     if !(model.gp.mean isa ZeroMean)
-        new_mean_val = model.gp.mean.c / σ[1] # works for ConstMean
+        new_mean_val = model.gp.mean.c / σ # works for ConstMean
         model = StandardGP(
-            new_kernel, model.noise_var / (σ[1]^2); mean=ConstMean(new_mean_val)
+            new_kernel, model.noise_var / (σ^2); mean=ConstMean(new_mean_val)
         )
         return model
     end
 
-    return StandardGP(new_kernel, model.noise_var / (σ[1]^2); mean=model.gp.mean)
+    return StandardGP(new_kernel, model.noise_var / (σ^2); mean=model.gp.mean)
 end
 
 get_lengthscale(model::StandardGP) = 1 ./ model.gp.kernel.kernel.transform.s
@@ -234,6 +227,8 @@ get_scale(model::StandardGP) = model.gp.kernel.σ²
 get_kernel_constructor(model::StandardGP) = model.gp.kernel.kernel.kernel
 
 prep_input(model::StandardGP, x::AbstractVector) = x
+
+prep_output(model::StandardGP, y::AbstractVector) = y
 
 # These functions are used when we need to query one point
 posterior_mean(model::StandardGP, x::AbstractVector) = mean(model.gpx([x]))[1] # we do the function values

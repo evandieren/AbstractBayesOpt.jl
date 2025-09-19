@@ -56,12 +56,11 @@ n_train = 5
 x_train = [domain.lower .+ (domain.upper .- domain.lower) .* rand(d) for _ in 1:n_train]
 
 y_train = f.(x_train)
-y_train = map(x -> [x], y_train) # make y_train a vector of vectors, usual format for AbstractBayesOpt
 
 # ## Choose an acquisition function
 # We'll use the Expected Improvement acquisition function with an exploration parameter ξ = 0.0.
 ξ = 0.0
-acq = ExpectedImprovement(ξ, minimum(reduce(vcat, y_train)))
+acq = ExpectedImprovement(ξ, minimum(y_train))
 
 # ## Set up the Bayesian Optimization structure
 # We use BOStruct to bundle all components needed for the optimization. Here, we set the number of iterations to 5 and the actual noise level to 0.0 (since our function is noiseless).

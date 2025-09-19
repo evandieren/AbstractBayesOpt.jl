@@ -44,18 +44,9 @@ returns:
 function standardize_problem(BO::BOStruct; choice="mean_scale")
     @assert choice in ["mean_scale", "scale_only", "mean_only"] "choice must be one of: 'mean_scale', 'scale_only', 'mean_only'"
 
-    ys_non_std = BO.ys_non_std
-    p = length(BO.ys[1])
-
     # Attention: here it is the standard deviation, need to square for kernel scaling
-    μ, σ = get_mean_std(BO.model, ys_non_std) #μ,σ are Vectors
+    μ, σ = get_mean_std(BO.model, BO.ys_non_std, choice) # μ should be the type of Y 
 
-    # Taking into account the choice of the user
-    if choice == "scale_only"
-        μ = zeros(p)
-    elseif choice == "mean_only"
-        σ = ones(p)
-    end
 
     println("Standardization choice: $choice")
     println("Standardization parameters: μ=$μ, σ=$σ")
@@ -66,7 +57,7 @@ function standardize_problem(BO::BOStruct; choice="mean_scale")
     end
 
     # Need to standardize the outputs too:
-    BO.ys = std_y(BO.model, ys_non_std, μ, σ)
+    BO.ys = std_y(BO.model, BO.ys_non_std, μ, σ)
     BO.model = update(BO.model, BO.xs, BO.ys)
     BO.acq = update(BO.acq, BO.ys, BO.model)
 
@@ -175,3 +166,7 @@ function rescale_output(ys::AbstractVector, params::Tuple)
         return [(y .* σ) .+ μ for y in ys]
     end
 end
+
+
+_noise_like(y::AbstractFloat; σ=1.0) = σ * randn()
+_noise_like(y::AbstractVector{T}; σ=1.0) where {T<:AbstractFloat} = σ * randn(length(y))

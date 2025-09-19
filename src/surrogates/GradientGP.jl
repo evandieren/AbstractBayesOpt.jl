@@ -281,7 +281,7 @@ returns:
 - `y_mean`: Empirical mean
 - `y_std`: Empirical standard deviation
 """
-function get_mean_std(model::GradientGP, y_train::AbstractVector)
+function get_mean_std(model::GradientGP, y_train::AbstractVector, choice::String)
     y_mat = reduce(hcat, y_train)
 
     μ = vec(mean(y_mat; dims=2))
@@ -289,6 +289,11 @@ function get_mean_std(model::GradientGP, y_train::AbstractVector)
     σ = vec(std(y_mat; dims=2))
     σ[2:end] .= σ[1]  # Use same scaling for gradients
 
+    if choice == "scale_only"
+        μ .= 0.0
+    elseif choice == "mean_only"
+        σ .= ones(length(σ))
+    end
     return μ, σ
 end
 
@@ -345,8 +350,13 @@ get_scale(model::GradientGP) = model.gp.kernel.base_kernel.σ²
 
 get_kernel_constructor(model::GradientGP) = model.gp.kernel.base_kernel.kernel.kernel
 
-function prep_input(model::GradientGP, x::AbstractVector)
-    KernelFunctions.MOInputIsotopicByOutputs(x, model.p)
+function prep_input(model::GradientGP, x::Vector{X}) where {X}
+    return KernelFunctions.MOInputIsotopicByOutputs(x, model.p)
+end
+
+function prep_output(model::GradientGP, y::Vector{Y}) where {Y}
+    # Need to align them properly for MOGP
+    return vec(permutedims(reduce(hcat, y)))
 end
 
 # These functions is used when we need to query one point)
