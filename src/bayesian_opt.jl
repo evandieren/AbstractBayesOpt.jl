@@ -23,7 +23,7 @@ mutable struct BOStruct{F, M<:AbstractSurrogate, A<:AbstractAcquisition, D<:Abst
     # Optimization parameters
     max_iter::Int
     iter::Int
-    noise::T # T should somehow be linked to Y, but not Y itself (think Real for gradient-enhanced BO)
+    noise::T #TODO: should be Y but  
     flag::Bool
 end
 
