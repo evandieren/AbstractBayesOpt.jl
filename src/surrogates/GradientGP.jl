@@ -201,7 +201,6 @@ Arguments:
 - `params::Tuple`: A tuple containing the log lengthscale and log scale parameters.
 - `xs`: The input data points.
 - `ys`: The observed function values and gradients.
-- `mean`: (optional) The mean function of the GP, defaults to ZeroMean()
 
 returns:
 - nlml : The negative log marginal likelihood of the model.
@@ -209,10 +208,9 @@ returns:
 function nlml(
     model::GradientGP,
     params::Vector{T},
-    xs::AbstractVector,
-    ys::AbstractVector;
-    mean=ZeroMean(),
-) where {T}
+    xs::Vector{X},
+    ys::Vector{Y}
+) where {T, X, Y}
     log_ℓ, log_scale = params
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
@@ -222,7 +220,7 @@ function nlml(
     k = scale * with_lengthscale(kernel_constructor, ℓ)
     
     # GP with current parameters
-    gp = GradientGP(k, model.p, model.noise_var; mean=mean)
+    gp = GradientGP(k, model.p, model.noise_var; mean=model.gp.mean)
     gpx = gp.gp(xs, model.noise_var)
 
     return -AbstractGPs.logpdf(gpx, ys)  # Negative log marginal likelihood
@@ -237,7 +235,6 @@ Arguments:
 - `log_scale::Float64`: The logarithm of the scale parameter.
 - `x::AbstractVector`: The input data points.
 - `y::AbstractVector`: The observed function values and gradients.
-- `mean`: (optional) The mean function of the GP, defaults to ZeroMean()
 
 returns:
 - nlml : The negative log marginal likelihood of the model.
@@ -248,10 +245,9 @@ function nlml_ls(
     model::GradientGP,
     log_ℓ::T,
     log_scale::Float64,
-    x::AbstractVector,
-    y::AbstractVector;
-    mean::AbstractGPs.MeanFunction=ZeroMean(),
-) where {T}
+    xs::Vector{X},
+    ys::Vector{Y}
+) where {T, X, Y}
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
 
@@ -260,14 +256,14 @@ function nlml_ls(
 
     k = scale * with_lengthscale(kernel_constructor, ℓ)
 
-    gp = GradientGP(k, model.p, model.noise_var; mean=mean)
+    gp = GradientGP(k, model.p, model.noise_var; mean=model.gp.mean)
 
     # Evaluate GP at training points with noise, creates a FiniteGP
     #println("finite gpx time")
-    gpx = gp.gp(x, model.noise_var)
+    gpx = gp.gp(xs, model.noise_var)
 
     #println("logpdf")
-    return -AbstractGPs.logpdf(gpx, y)
+    return -AbstractGPs.logpdf(gpx, ys)
 end
 
 """
@@ -281,7 +277,7 @@ returns:
 - `y_mean`: Empirical mean
 - `y_std`: Empirical standard deviation
 """
-function get_mean_std(model::GradientGP, y_train::AbstractVector, choice::String)
+function get_mean_std(model::GradientGP, y_train::Vector{Y}, choice::String) where {Y}
     y_mat = reduce(hcat, y_train)
 
     μ = vec(mean(y_mat; dims=2))
@@ -294,6 +290,7 @@ function get_mean_std(model::GradientGP, y_train::AbstractVector, choice::String
     elseif choice == "mean_only"
         σ .= ones(length(σ))
     end
+    # This will be of the same type as elements of y_train
     return μ, σ
 end
 
@@ -360,9 +357,13 @@ function prep_output(model::GradientGP, y::Vector{Y}) where {Y}
 end
 
 # These functions is used when we need to query one point)
-posterior_mean(model::GradientGP, x::AbstractVector) = mean(model.gpx([(x, 1)]))[1] # we do the function value only for now
-posterior_var(model::GradientGP, x::AbstractVector) = var(model.gpx([(x, 1)]))[1] # we do the function value only for now
+function posterior_mean(model::GradientGP, x::X) where {X}
+    mean(model.gpx([(x, 1)]))[1] # we do the function value only for now
+end
 
+function posterior_var(model::GradientGP, x::X) where {X} 
+    var(model.gpx([(x, 1)]))[1] # we do the function value only for now
+end
 # These functions are used in a buffer way within the optimisation of the acquisition function
 function posterior_mean(model::GradientGP, x_buf::Vector{Tuple{Vector{Float64},Int}})
     mean(model.gpx(x_buf))[1]
@@ -406,3 +407,5 @@ function unstandardized_mean_and_var(gp::GradientGP, X, params::Tuple)
     v_unstd = v .* (σ .^ 2)
     return m_unstd, v_unstd
 end
+
+_get_minimum(gp::GradientGP, ys::Vector{Y}) where {Y} = minimum(hcat(ys...)[1,:])[1]

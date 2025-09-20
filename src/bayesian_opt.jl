@@ -148,14 +148,13 @@ function optimize_hyperparameters(
     model::AbstractSurrogate,
     x_train::Vector{X},
     y_train::Vector{Y},
-    old_params::Vector{Float64},
+    old_params::Vector{T},
     classic_bo::Bool;
     scale_std::Float64=1.0,
     length_scale_only::Bool=false,
-    mean::AbstractGPs.MeanFunction=ZeroMean(),
     num_restarts::Int=1,
     domain::Union{Nothing,AbstractDomain}=nothing,
-) where {X, Y}
+) where {X, Y, T}
 
     best_nlml = Inf
     best_result = nothing
@@ -211,11 +210,13 @@ function optimize_hyperparameters(
         # Only optimize lengthscale, keep scale fixed at original log value (second parameter)
         obj =
             p -> nlml_ls(
-                model, p[1], old_params[2], x_train_prepped, y_train_prepped; mean=mean
+                model, p[1], old_params[2], x_train_prepped, y_train_prepped
             )
     else
         # Optimize both lengthscale and scale (vector p)
-        obj = p -> nlml(model, p, x_train_prepped, y_train_prepped; mean=mean)
+        obj = p -> nlml(
+            model, p, x_train_prepped, y_train_prepped
+            )
     end
 
     opts = Optim.Options(; g_tol=1e-6, f_abstol=2.2e-9)
@@ -327,7 +328,6 @@ function optimize(
 
     @assert standardize in ["mean_scale", "scale_only", "mean_only", nothing] "standardize must be one of: 'mean_scale', 'scale_only', 'mean_only', or nothing."
 
-    acq_list = []
     n_train = length(BO.xs)
 
     classic_bo = (length(BO.ys[1])==1)
@@ -338,12 +338,11 @@ function optimize(
     if isnothing(standardize)
         BO.model = update(BO.model, BO.xs, BO.ys) # because we might not to that before
     else
-        BO, (μ, σ) = standardize_problem(BO; choice=standardize)
+        BO, (μ, σ) = standardize_problem(BO, standardize)
     end
 
-    original_mean = BO.model.gp.mean
+    acq_list = Vector{Float64}(undef, 0)
 
-    println(original_mean)
     i = 0
     while !stop_criteria(BO) & !BO.flag
         if !isnothing(hyper_params)&&(i%10==0)
@@ -359,7 +358,6 @@ function optimize(
                     old_params,
                     classic_bo;
                     length_scale_only=true,
-                    mean=original_mean,
                     scale_std=σ[1],
                     num_restarts=num_restarts_HP,
                     domain=BO.domain,
@@ -372,7 +370,6 @@ function optimize(
                     old_params,
                     classic_bo;
                     length_scale_only=false,
-                    mean=original_mean,
                     scale_std=σ[1],
                     num_restarts=num_restarts_HP,
                     domain=BO.domain,
@@ -390,11 +387,8 @@ function optimize(
             @info "New parameters: ℓ=$(get_lengthscale(BO.model)), variance =$(get_scale(BO.model))"
         end
 
-        if classic_bo
-            @info "Iteration #$(i+1), current min val: $(minimum(BO.ys_non_std)[1])"
-        else
-            @info "Iteration #$(i+1), current min val: $(minimum(hcat(BO.ys_non_std...)[1,:])[1])"
-        end
+        @info "Iteration #$(i+1), current min val: $(_get_minimum(BO.model, BO.ys_non_std))"
+        
 
         x_cand = optimize_acquisition(BO.acq, BO.model, BO.domain)
 

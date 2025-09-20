@@ -41,7 +41,7 @@ returns:
 - `BO::BOStruct`: The updated BOStruct with standardized outputs and updated model/acquisition.
 - `params::Tuple`: A tuple containing the mean and standard deviation used for standardization (vectors matching the output dimension).
 """
-function standardize_problem(BO::BOStruct; choice="mean_scale")
+function standardize_problem(BO::BOStruct, choice::String)
     @assert choice in ["mean_scale", "scale_only", "mean_only"] "choice must be one of: 'mean_scale', 'scale_only', 'mean_only'"
 
     # Attention: here it is the standard deviation, need to square for kernel scaling

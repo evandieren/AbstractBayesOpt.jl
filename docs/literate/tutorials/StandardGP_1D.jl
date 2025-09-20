@@ -49,7 +49,7 @@ scatter!([x_min], [minimum(ys)]; label="Minimum", color=:red, markersize=5) #hid
 # ## Initialize the surrogate model
 # We'll use a standard Gaussian Process surrogate with a Matérn 5/2 kernel. We add a small jitter term for numerical stability of 1e-12.
 noise_var = 1e-9
-surrogate = StandardGP(SqExponentialKernel(), noise_var)
+surrogate = StandardGP(ApproxMatern52Kernel(), noise_var)
 
 # Generate uniform random samples x_train
 n_train = 5
@@ -72,7 +72,7 @@ bo_struct = BOStruct(
     domain,
     x_train,
     y_train,
-    10,  # number of iterations
+    40,  # number of iterations
     0.0,  # Actual noise level (0.0 for noiseless)
 )
 
@@ -86,7 +86,7 @@ result, acq_list, standard_params = AbstractBayesOpt.optimize(
 # ## Results
 # The optimization result is stored in `result`. We can print the best found input and its corresponding function value.
 xs = reduce(vcat, result.xs)
-ys = reduce(vcat, result.ys_non_std)
+ys = result.ys_non_std
 
 println("Optimal point: ", xs[argmin(ys)])
 println("Optimal value: ", minimum(ys))
@@ -97,7 +97,7 @@ running_min = accumulate(min, f.(xs))
 
 p = Plots.plot(
     n_train:length(running_min),
-    running_min[n_train:end] .- min_f;
+    running_min[n_train:end] .- min_f,
     yaxis=:log,
     title="Error w.r.t true minimum (1D BO)",
     xlabel="Function evaluations",
