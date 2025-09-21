@@ -23,14 +23,14 @@ using Random
 
             # Create training data
             x_train = [[-1.0, -1.0], [0.0, 0.0], [1.0, 1.0]]
-            y_train = [f.(x_train)...]
-            y_train = [[y] for y in y_train]  # Convert to Vector{Vector{Float64}}
+            y_train = f.(x_train)
 
             # Create acquisition function
-            acqf = ExpectedImprovement(0.01, minimum(reduce(vcat, y_train)))
+            acqf = ExpectedImprovement(0.01, minimum(y_train))
 
             # Create BOStruct
             problem = BOStruct(f, acqf, gp, domain, x_train, y_train, 10, 0.1)
+
 
             @test problem.func === f
             @test problem.domain === domain
@@ -52,27 +52,27 @@ using Random
             domain = ContinuousDomain(lower, upper)
 
             # Create surrogate with training data
-            kernel_constructor = SqExponentialKernel()
-            kernel = 1 * (kernel_constructor ∘ ScaleTransform(1.0))
+            kernel = SqExponentialKernel()
             gp = StandardGP(kernel, 0.1)
 
             # Create initial training data and update GP
             x_train = [[-1.0, -1.0], [0.0, 0.0]]
-            y_train = [f.(x_train)...]
-            y_train = [[y] for y in y_train]
+            y_train = f.(x_train)
             updated_gp = update(gp, x_train, y_train)
 
             # Create acquisition function
-            acqf = ExpectedImprovement(0.01, minimum(reduce(vcat, y_train)))
+            acqf = ExpectedImprovement(0.01, minimum(y_train))
 
             # Create BOStruct with updated GP
             problem = BOStruct(f, acqf, updated_gp, domain, x_train, y_train, 10, 0.1)
 
             # Test update
             x_new = [1.0, 1.0]
-            y_new = [f(x_new)]
+            y_new = f(x_new)
 
             updated_problem = update(problem, x_new, y_new, 1)
+
+
 
             @test length(updated_problem.xs) == 3
             @test length(updated_problem.ys) == 3
@@ -91,17 +91,15 @@ using Random
             domain = ContinuousDomain(lower, upper)
 
             # Create surrogate
-            kernel_constructor = SqExponentialKernel()
-            kernel = 1 * (kernel_constructor ∘ ScaleTransform(1.0))
+            kernel = SqExponentialKernel()
             gp = StandardGP(kernel, 0.1)
 
             # Create training data
             x_train = [[-1.0], [0.0], [1.0]]
-            y_train = [f.(x_train)...]
-            y_train = [[y] for y in y_train]
+            y_train = f.(x_train)
 
             # Create acquisition function
-            acqf = ExpectedImprovement(0.01, minimum(reduce(vcat, y_train)))
+            acqf = ExpectedImprovement(0.01, minimum(y_train))
 
             # Create BOStruct
             problem = BOStruct(f, acqf, gp, domain, x_train, y_train, 3, 0.1)
@@ -123,7 +121,7 @@ using Random
 
             # Create training data
             X_train = [[-1.0], [0.0], [1.0]]
-            y_train = [[1.0], [0.0], [1.0]]
+            y_train = [1.0, 0.0, 1.0]
 
             # Update GP with data
             updated_gp = update(gp, X_train, y_train)
@@ -149,7 +147,7 @@ using Random
             catch e
                 @warn "Hyperparameter optimization failed: $e"
                 # For now, just test that it doesn't crash completely
-                @test true
+                @test false
             end
         end
 
@@ -163,16 +161,15 @@ using Random
             domain = ContinuousDomain(lower, upper)
 
             # Create surrogate
-            kernel = 1 * (SqExponentialKernel() ∘ ScaleTransform(1.0))
+            kernel = SqExponentialKernel()
             gp = StandardGP(kernel, 0.1)
 
             # Create training data with offset
             x_train = [[-1.0], [0.0], [1.0]]
-            y_train = [f.(x_train)...]
-            y_train = [[y] for y in y_train]
+            y_train = f.(x_train)
 
             # Create acquisition function
-            acqf = ExpectedImprovement(0.01, minimum(reduce(vcat, y_train)))
+            acqf = ExpectedImprovement(0.01, minimum(y_train))
 
             # Test all standardization modes
             standardization_modes = ["mean_scale", "scale_only", "mean_only"]
@@ -185,9 +182,7 @@ using Random
                 standardized_problem, params = standardize_problem(problem, choice=mode)
                 μ, σ = params
 
-                @test isa(μ, AbstractVector)
-                @test isa(σ, AbstractVector)
-                @test all(σ .> 0)
+                @test σ > 0
 
                 # Test that the model was updated correctly
                 @test isa(standardized_problem.model, StandardGP)
@@ -213,17 +208,15 @@ using Random
             domain = ContinuousDomain(lower, upper)
 
             # Create surrogate
-            kernel_constructor = SqExponentialKernel()
-            kernel = 1 * (kernel_constructor ∘ ScaleTransform(1.0))
+            kernel = SqExponentialKernel()
             gp = StandardGP(kernel, 0.01)
 
             # Create initial training data
             x_train = [[-0.5], [0.0], [1.5]]
-            y_train = [f.(x_train)...]
-            y_train = [[y] for y in y_train]
+            y_train = f.(x_train)
 
             # Create acquisition function
-            acqf = ExpectedImprovement(0.01, minimum(reduce(vcat, y_train)))
+            acqf = ExpectedImprovement(0.01, minimum(y_train))
 
             # Create BOStruct with small number of iterations
             problem = BOStruct(f, acqf, gp, domain, x_train, y_train, 3, 0.01)
@@ -266,18 +259,17 @@ using Random
 
             @testset "StandardGP Equivalence: mean_only vs prior mean" begin
                 # Test for StandardGP
-                y_test_standard = [f.(x_test)...]
-                y_test_standard = [[y] for y in y_test_standard]
+                y_test_standard = f.(x_test)
 
                 # Compute empirical mean for prior
-                empirical_mean = mean(reduce(vcat, y_test_standard))
+                empirical_mean = mean(y_test_standard)
 
                 # Setup 1: ZeroMean + mean_only
-                kernel = 1*(SqExponentialKernel() ∘ ScaleTransform(1))
+                kernel = SqExponentialKernel()
                 model1 = StandardGP(kernel, 1e-12)
                 bo1 = BOStruct(
                     f,
-                    ExpectedImprovement(0.01, minimum(reduce(vcat, y_test_standard))),
+                    ExpectedImprovement(0.01, minimum(y_test_standard)),
                     model1,
                     ContinuousDomain([-5.0, -5.0], [5.0, 5.0]),
                     x_test,
@@ -328,17 +320,16 @@ using Random
             end
 
             @testset "StandardGP Equivalence: mean_scale vs scale_only + prior" begin
-                y_test_standard = [f.(x_test)...]
-                y_test_standard = [[y] for y in y_test_standard]
+                y_test_standard = f.(x_test)
 
-                empirical_mean = mean(reduce(vcat, y_test_standard))
+                empirical_mean = mean(y_test_standard)
 
                 # Setup 1: ZeroMean + mean_scale
-                kernel = 1*(SqExponentialKernel() ∘ ScaleTransform(1))
+                kernel = SqExponentialKernel()
                 model1 = StandardGP(kernel, 1e-12)
                 bo1 = BOStruct(
                     f,
-                    ExpectedImprovement(0.01, minimum(reduce(vcat, y_test_standard))),
+                    ExpectedImprovement(0.01, minimum(y_test_standard)),
                     model1,
                     ContinuousDomain([-5.0, -5.0], [5.0, 5.0]),
                     x_test,
@@ -351,7 +342,7 @@ using Random
                 model2 = StandardGP(kernel, 1e-12, mean=ConstMean(empirical_mean))
                 bo2 = BOStruct(
                     f,
-                    ExpectedImprovement(0.01, minimum(reduce(vcat, y_test_standard))),
+                    ExpectedImprovement(0.01, minimum(y_test_standard)),
                     model2,
                     ContinuousDomain([-5.0, -5.0], [5.0, 5.0]),
                     x_test,
@@ -476,10 +467,10 @@ using Random
             # Create domain and training data
             domain = ContinuousDomain([-2.0, -2.0], [2.0, 2.0])
             x_train = [[-1.0, -1.0], [0.0, 0.0], [1.0, 1.0]]
-            y_train = [[f(x)] for x in x_train]
+            y_train = f.(x_train)
 
             # Create and update GP
-            kernel = 1.0 * (SqExponentialKernel() ∘ ScaleTransform(1.0))
+            kernel = SqExponentialKernel()
             gp = StandardGP(kernel, 0.01)
             updated_gp = update(gp, x_train, y_train)
 
@@ -531,11 +522,11 @@ using Random
             kernel = 1.0 * (SqExponentialKernel() ∘ ScaleTransform(1.0))
             gp = StandardGP(kernel, 0.01)
             x_train = [[-1.0], [0.0], [1.0]]
-            y_train = [[1.0], [0.25], [1.0]]
+            y_train = [1.0, 0.25, 1.0]
             updated_gp = update(gp, x_train, y_train)
 
             # Test Expected Improvement
-            best_y = minimum(reduce(vcat, y_train))
+            best_y = minimum(y_train)
             ei = ExpectedImprovement(0.01, best_y)
 
             # Test 1: EI should be non-negative everywhere
@@ -551,7 +542,7 @@ using Random
             noiseless_updated = update(noiseless_gp, x_train, y_train)
 
             # At the point with minimum observed value, EI should be very small
-            min_idx = argmin(reduce(vcat, y_train))
+            min_idx = argmin(y_train)
             ei_at_min = ei(noiseless_updated, x_train[min_idx])
             @test ei_at_min < 0.01
 
@@ -587,12 +578,12 @@ using Random
 
             # Create initial training data (not including optimum)
             x_train = [[-1.0], [0.0], [2.0]]
-            y_train = [[f(x)] for x in x_train]
+            y_train = f.(x_train)
 
             # Setup optimization
             kernel = 1.0 * (SqExponentialKernel() ∘ ScaleTransform(0.5))
             gp = StandardGP(kernel, 0.01)
-            ei = ExpectedImprovement(0.01, minimum(reduce(vcat, y_train)))
+            ei = ExpectedImprovement(0.01, minimum(y_train))
 
             problem = BOStruct(f, ei, gp, domain, x_train, y_train, 15, 0.01)
 
@@ -638,7 +629,7 @@ using Random
 
             # Generate y values that are consistent with the true kernel
             # (This is a simplified test - in practice, we'd sample from the GP)
-            y_train = [[sin(2*x[1]) + 0.1*randn()] for x in x_train]
+            y_train = [sin(2*x[1]) + 0.1*randn() for x in x_train]
 
             # Create GP with initial hyperparameters
             initial_kernel = 1.0 * (SqExponentialKernel() ∘ ScaleTransform(1.0))
@@ -675,7 +666,7 @@ using Random
 
             catch e
                 @warn "Hyperparameter optimization test failed: $e"
-                @test true  # Don't fail the test suite for optimization issues
+                @test false # Don't fail the test suite for optimization issues
             end
         end
 
@@ -737,17 +728,16 @@ using Random
 
             # Generate training data
             x_train = [[-1.0], [-0.5], [0.0], [0.5], [1.0]]
-            y_train = [[f(x)] for x in x_train]
+            y_train = f.(x_train)
 
             # Calculate empirical statistics
-            y_values = reduce(vcat, y_train)
-            empirical_mean = mean(y_values)
-            empirical_std = std(y_values)
+            empirical_mean = mean(y_train)
+            empirical_std = std(y_train)
 
             # Create BO problem
             kernel = SqExponentialKernel()
             gp = StandardGP(kernel, 0.01)
-            ei = ExpectedImprovement(0.01, minimum(y_values))
+            ei = ExpectedImprovement(0.01, minimum(y_train))
             domain = ContinuousDomain([-2.0], [2.0])
 
             problem = BOStruct(f, ei, gp, domain, x_train, y_train, 5, 0.01)
@@ -781,7 +771,7 @@ using Random
             @testset "Near-singular kernel matrices" begin
                 # Test with very close points that might cause numerical issues
                 x_train = [[0.0], [1e-10], [2e-10]]  # Very close points
-                y_train = [[1.0], [1.001], [1.002]]
+                y_train = [1.0, 1.001, 1.002]
 
                 kernel = SqExponentialKernel()
                 gp = StandardGP(kernel, 1e-12)  # Very low noise
@@ -805,7 +795,7 @@ using Random
             @testset "Extreme hyperparameter values" begin
                 # Test with very large/small hyperparameters
                 x_train = [[-1.0], [0.0], [1.0]]
-                y_train = [[1.0], [0.0], [1.0]]
+                y_train = [1.0, 0.0, 1.0]
 
                 # Very large lengthscale (smooth function)
                 large_ls_kernel = SqExponentialKernel()

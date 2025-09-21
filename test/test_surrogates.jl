@@ -58,14 +58,6 @@ using Random
             ys = [[0.0], [0.25], [1.0]]
             updated_gp = update(gp, xs, ys)
 
-            # Test lengthscale and scale extraction - skip for now due to kernel structure
-            # lengthscale = get_lengthscale(updated_gp)
-            # scale = get_scale(updated_gp)
-
-            # @test isa(lengthscale, AbstractVector)
-            # @test isa(scale, Real)
-            # @test all(lengthscale .> 0)
-            # @test scale > 0
         end
 
         @testset "StandardGP Standardization" begin
@@ -75,12 +67,12 @@ using Random
 
             # Test standardization using the functions from bayesian_opt.jl
             y_train = [[1.0], [2.0], [3.0], [4.0], [5.0]]
-            μ, σ = get_mean_std(gp, y_train)
+            μ, σ = get_mean_std(gp, y_train, "mean_scale")
             y_std = std_y(gp, y_train, μ, σ)
 
             @test length(y_std) == length(y_train)
-            @test μ[1] ≈ 3.0  # mean of [1,2,3,4,5]
-            @test σ[1] > 0
+            @test μ ≈ 3.0  # mean of [1,2,3,4,5]
+            @test σ > 0
 
             # Check that rescaled data has different scale
             y_flat_std = reduce(vcat, y_std)
@@ -137,7 +129,7 @@ using Random
             # Test GradientGP construction
             p = 3  # 2D problem + function value (1 + 2 gradients)
             noise_var = 0.1
-            gp = GradientGP(grad_kernel, p, noise_var)
+            gp = GradientGP(SqExponentialKernel(), p, noise_var)
 
             @test gp.noise_var == noise_var
             @test gp.p == p
@@ -214,7 +206,7 @@ using Random
 
             # Test standardization using the functions from bayesian_opt.jl
             y_train = [[1.0, 0.1, 0.1], [2.0, 0.2, 0.2], [3.0, 0.3, 0.3]]
-            μ, σ = get_mean_std(gp, y_train)
+            μ, σ = get_mean_std(gp, y_train, "mean_scale")
             y_std = std_y(gp, y_train, μ, σ)
 
             @test length(y_std) == length(y_train)
