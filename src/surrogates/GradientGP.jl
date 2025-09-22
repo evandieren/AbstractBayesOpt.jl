@@ -60,7 +60,7 @@ value and zero for the gradients.
 
 struct gradConstMean{V}
     c::V
-    function f_mean(vec_const, (x, px)::Tuple{AbstractVector, Int})
+    function f_mean(vec_const, (x, px)::Tuple{X, Int}) where {X}
         return vec_const[px]
     end
 
@@ -87,7 +87,7 @@ mutable struct gradKernel{K} <: MOKernel
 end
 
 function (κ::gradKernel)(
-        (x, px)::Tuple{AbstractVector, Int}, (y, py)::Tuple{AbstractVector, Int})
+        (x, px)::Tuple{X, Int}, (y, py)::Tuple{Y, Int}) where {X, Y}
     """
     ```math
     k((\vec{x},p),(\vec{x}',p'))
