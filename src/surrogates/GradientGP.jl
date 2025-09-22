@@ -339,6 +339,11 @@ function rescale_model(model::GradientGP, σ::AbstractVector)
     return GradientGP(new_kernel, model.p, model.noise_var / (σ[1]^2); mean = model.gp.mean)
 end
 
+
+function _update_model_parameters(model::GradientGP, kernel::Kernel)
+    return GradientGP(kernel, model.p, model.noise_var; mean = model.gp.mean)
+end
+
 get_lengthscale(model::GradientGP) = 1 ./ model.gp.kernel.base_kernel.kernel.transform.s
 
 get_scale(model::GradientGP) = model.gp.kernel.base_kernel.σ²

@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "../../literate/tutorials/StandardGP_1D.jl"
+EditURL = "../../literate/tutorials/1D_BO.jl"
 ```
 
 # AbstractBayesOpt Tutorial: Basic 1D Optimization
@@ -8,7 +8,7 @@ EditURL = "../../literate/tutorials/StandardGP_1D.jl"
 
 Loading the necessary packages.
 
-````@example StandardGP_1D
+````@example 1D_BO
 using AbstractBayesOpt
 using AbstractGPs
 using ForwardDiff
@@ -24,7 +24,7 @@ nothing #hide
 ## Define the objective function
 We will optimise a simple 1D function: ``f(x) = (x-2)^2 + \sin(3*x)``
 
-````@example StandardGP_1D
+````@example 1D_BO
 f(x) = (x - 2)^2 + sin(3x)
 
 min_f = -0.8494048256167165
@@ -54,14 +54,14 @@ scatter!([x_min], [minimum(ys)]; label = "Minimum", color = :red, markersize = 5
 ## Initialize the surrogate model
 We'll use a standard Gaussian Process surrogate with a Matérn 5/2 kernel. We add a small jitter term for numerical stability of 1e-12.
 
-````@example StandardGP_1D
+````@example 1D_BO
 noise_var = 1e-9
 surrogate = StandardGP(SqExponentialKernel(), noise_var)
 ````
 
 Generate uniform random samples x_train
 
-````@example StandardGP_1D
+````@example 1D_BO
 n_train = 5
 x_train = first.([domain.lower .+ (domain.upper .- domain.lower) .* rand(d)
                   for _ in 1:n_train])
@@ -72,7 +72,7 @@ y_train = f.(x_train)
 ## Choose an acquisition function
 We'll use the Expected Improvement acquisition function with an exploration parameter ξ = 0.0.
 
-````@example StandardGP_1D
+````@example 1D_BO
 ξ = 0.0
 acq = ExpectedImprovement(ξ, minimum(y_train))
 ````
@@ -81,7 +81,7 @@ acq = ExpectedImprovement(ξ, minimum(y_train))
 We use BOStruct to bundle all components needed for the optimization. Here, we set the number of iterations to 5 and the actual noise level to 0.0 (since our function is noiseless).
 We then run the optimize function to perform the Bayesian Optimization.
 
-````@example StandardGP_1D
+````@example 1D_BO
 bo_struct = BOStruct(
     f,
     acq,
@@ -105,7 +105,7 @@ standard_params = AbstractBayesOpt.optimize(
 ## Results
 The optimization result is stored in `result`. We can print the best found input and its corresponding function value.
 
-````@example StandardGP_1D
+````@example 1D_BO
 xs = reduce(vcat, result.xs)
 ys = result.ys_non_std
 
@@ -116,7 +116,7 @@ println("Optimal value: ", minimum(ys))
 ## Plotting of running minimum over iterations
 The running minimum is the best function value found up to each iteration.
 
-````@example StandardGP_1D
+````@example 1D_BO
 running_min = accumulate(min, f.(xs))
 
 p = Plots.plot(
@@ -135,11 +135,11 @@ Plots.vspan!([1, n_train]; color = :blue, alpha = 0.2, label = "")
 Now, let's see how to use gradient information to improve the optimization. We'll use the same function but now also provide its gradient.
 We define a new surrogate model that can handle gradient information, specifically a `GradientGP`.
 
-````@example StandardGP_1D
+````@example 1D_BO
 grad_surrogate = GradientGP(SqExponentialKernel(), d + 1, noise_var)
 
 ξ = 0.0
-acq = ExpectedImprovement(ξ, minimum(reduce(vcat, y_train)))
+acq = ExpectedImprovement(ξ, minimum(y_train))
 
 ∇f(x) = ForwardDiff.derivative(f, x)
 f_val_grad(x) = [f(x); ∇f(x)]
@@ -147,13 +147,13 @@ f_val_grad(x) = [f(x); ∇f(x)]
 
 Generate value and gradients at random samples
 
-````@example StandardGP_1D
+````@example 1D_BO
 y_train_grad = f_val_grad.(x_train)
 ````
 
 Set up the Bayesian Optimization structure
 
-````@example StandardGP_1D
+````@example 1D_BO
 bo_struct_grad = BOStruct(
     f_val_grad,
     acq,
@@ -174,7 +174,7 @@ result_grad, acq_list_grad, standard_params_grad = AbstractBayesOpt.optimize(bo_
 ## Results
 The optimization result is stored in `result`. We can print the best found input and its corresponding function value.
 
-````@example StandardGP_1D
+````@example 1D_BO
 xs_grad = reduce(vcat, result_grad.xs)
 ys_grad = hcat(result_grad.ys_non_std...)[1, :]
 
@@ -185,13 +185,13 @@ println("Optimal value (GradBO): ", minimum(ys_grad))
 ## Plotting of running minimum over iterations
 The running minimum is the best function value found up to each iteration.
 
-````@example StandardGP_1D
+````@example 1D_BO
 running_min_grad = accumulate(min, f.(xs_grad))
 ````
 
 Double function evaluations due to gradients
 
-````@example StandardGP_1D
+````@example 1D_BO
 running_min_grad = collect(Iterators.flatten(fill(x, 2) for x in (running_min_grad)))
 
 p = Plots.plot(
@@ -209,7 +209,7 @@ Plots.vspan!([1, 2 * n_train]; color = :blue, alpha = 0.2, label = "")
 ## Plotting the surrogate model
 We can visualize the surrogate model's mean and uncertainty along with the true function and the evaluated
 
-````@example StandardGP_1D
+````@example 1D_BO
 plot_domain = collect(domain.lower[1]:0.01:domain.upper[1])
 
 plot_x = map(x -> [x], plot_domain)

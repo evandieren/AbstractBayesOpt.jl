@@ -1,5 +1,5 @@
 #=
-# AbstractBayesOpt Tutorial: Basic 1D Optimization
+# AbstractBayesOpt Tutorial: Basic 2D Optimization
 =#
 
 # ## Setup
@@ -17,31 +17,24 @@ Random.seed!(42)  # setting the seed for reproducibility of this notebook
 #md nothing #hide
 
 # ## Define the objective function
-# We will optimise a simple 1D function: ``f(x) = (x-2)^2 + \sin(3*x)``
-f(x) = (x - 2)^2 + sin(3x)
+d = 2
+f(x) = (x[1]^2 + x[2] - 11)^2 + (x[1]+x[2]^2-7)^2
 
-min_f = -0.8494048256167165
 
-d = 1
+min_f = 0.0 
 
-domain = ContinuousDomain([0.0], [5.0]) #hide
+domain = ContinuousDomain([-6.0, -6.0], [6.0, 6.0]) #hide
 
-plot_domain = domain.lower[1]:0.01:domain.upper[1] #hide
-ys = f.(plot_domain) #hide
+X = domain.lower[1]:0.01:domain.upper[1] #hide
+Y = domain.lower[2]:0.01:domain.upper[2] #hide
 
-plot(                                           #hide
-    plot_domain,                                #hide
-    ys;                                          #hide
-    xlim = (domain.lower[1], domain.upper[1]),    #hide
-    label = "f(x)",               #hide
-    xlabel = "x",                 #hide
-    ylabel = "f(x)",             #hide
-    legend = :outertopright              #hide
-) #hide
+p1 = contour(X, Y, (x,y) -> f([x,y]), fill = true, levels = 50, c = :viridis, title = "Target function : Himmelblau", xlabel = "x₁", ylabel = "x₂") # hide
 
-x_min = plot_domain[argmin(ys)] #hide
+x_mins = [[3.0, 2.0], [-2.805118, 3.131312], [-3.779310, -3.283186], [3.584428, -1.848126]] #hide
 
-scatter!([x_min], [minimum(ys)]; label = "Minimum", color = :red, markersize = 5) #hide
+# Scatter them on the contour plot
+scatter!([p[1] for p in x_mins], [p[2] for p in x_mins]; 
+         label="Minima", color=:red, markersize=5, legend=:bottomright)
 
 # ## Initialize the surrogate model
 # We'll use a standard Gaussian Process surrogate with a Matérn 5/2 kernel. We add a small jitter term for numerical stability of 1e-12.
@@ -50,8 +43,8 @@ surrogate = StandardGP(SqExponentialKernel(), noise_var)
 
 # Generate uniform random samples x_train
 n_train = 5
-x_train = first.([domain.lower .+ (domain.upper .- domain.lower) .* rand(d)
-                  for _ in 1:n_train])
+x_train = [domain.lower .+ (domain.upper .- domain.lower) .* rand(d)
+                  for _ in 1:n_train]
 
 y_train = f.(x_train)
 
@@ -70,11 +63,15 @@ bo_struct = BOStruct(
     domain,
     x_train,
     y_train,
-    10,  # number of iterations
+    50,  # number of iterations
     0.0  # Actual noise level (0.0 for noiseless)
 )
 
 print_info(bo_struct)
+
+surrogate = update(surrogate, x_train, y_train)
+
+acq(surrogate, [[0.0, 0.0]])
 
 @info "Starting Bayesian Optimization..."
 result, acq_list,
@@ -84,7 +81,7 @@ standard_params = AbstractBayesOpt.optimize(
 
 # ## Results
 # The optimization result is stored in `result`. We can print the best found input and its corresponding function value.
-xs = reduce(vcat, result.xs)
+xs = result.xs
 ys = result.ys_non_std
 
 println("Optimal point: ", xs[argmin(ys)])
@@ -98,7 +95,7 @@ p = Plots.plot(
     n_train:length(running_min),
     running_min[n_train:end] .- min_f,
     yaxis = :log,
-    title = "Error w.r.t true minimum (1D BO)",
+    title = "Error w.r.t true minimum (2D BO)",
     xlabel = "Function evaluations",
     label = "BO",
     xlims = (1, length(running_min))
@@ -111,9 +108,9 @@ Plots.vspan!([1, n_train]; color = :blue, alpha = 0.2, label = "")
 grad_surrogate = GradientGP(SqExponentialKernel(), d + 1, noise_var)
 
 ξ = 0.0
-acq = ExpectedImprovement(ξ, minimum(reduce(vcat, y_train)))
+acq = ExpectedImprovement(ξ, minimum(y_train))
 
-∇f(x) = ForwardDiff.derivative(f, x)
+∇f(x) = ForwardDiff.gradient(f, x)
 f_val_grad(x) = [f(x); ∇f(x)]
 
 # Generate value and gradients at random samples
@@ -127,7 +124,7 @@ bo_struct_grad = BOStruct(
     domain,
     x_train,
     y_train_grad,
-    10,  # number of iterations
+    50,  # number of iterations
     0.0  # Actual noise level (0.0 for noiseless)
 )
 
@@ -138,8 +135,8 @@ result_grad, acq_list_grad, standard_params_grad = AbstractBayesOpt.optimize(bo_
 
 # ## Results
 # The optimization result is stored in `result`. We can print the best found input and its corresponding function value.
-xs_grad = reduce(vcat, result_grad.xs)
-ys_grad = hcat(result_grad.ys_non_std...)[1, :]
+xs_grad = result_grad.xs
+ys_grad = first.(result_grad.ys_non_std)
 
 println("Optimal point (GradBO): ", xs_grad[argmin(ys_grad)])
 println("Optimal value (GradBO): ", minimum(ys_grad))
@@ -154,7 +151,7 @@ p = Plots.plot(
     (2 * n_train):length(running_min_grad),
     running_min_grad[(2 * n_train):end] .- min_f;
     yaxis = :log,
-    title = "Error w.r.t true minimum (1D GradBO)",
+    title = "Error w.r.t true minimum (2D GradBO)",
     xlabel = "Function evaluations",
     label = "gradBO",
     xlims = (1, length(running_min_grad))
@@ -166,35 +163,5 @@ Plots.vspan!([1, 2 * n_train]; color = :blue, alpha = 0.2, label = "")
 
 plot_domain = collect(domain.lower[1]:0.01:domain.upper[1])
 
-plot_x = map(x -> [x], plot_domain)
-plot_x = prep_input(grad_surrogate, plot_x)
-post_mean,
-post_var = unstandardized_mean_and_var(
-    result_grad.model, plot_x, standard_params_grad
-)
-
-post_mean = reshape(post_mean, :, d + 1)[:, 1] # This returns f(x) to match the StandardGP
-post_var = reshape(post_var, :, d + 1)[:, 1]
-post_var[post_var .< 0] .= 0
-
-plot(
-    plot_domain,
-    f.(plot_domain);
-    label = "target function",
-    xlim = (domain.lower[1], domain.upper[1]),
-    xlabel = "x",
-    ylabel = "y",
-    title = "AbstractBayesOpt",
-    legend = :outertopright
-)
-plot!(
-    plot_domain,
-    post_mean;
-    label = "gradGP",
-    ribbon = sqrt.(post_var),
-    ribbon_scale = 2,
-    color = "green"
-)
-scatter!(xs_grad[1:n_train], ys_grad[1:n_train]; label = "Train Data")
-scatter!(xs_grad[(n_train + 1):end], ys_grad[(n_train + 1):end]; label = "Candidates")
-scatter!([xs_grad[argmin(ys_grad)]], [minimum(ys_grad)]; label = "Best candidate")
+# TODO: finish this plotting part to show the surrogate mean with the points etc.
+# TODO: Do a slice of the 2D function and plot the surrogate on that slice too.

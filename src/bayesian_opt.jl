@@ -135,7 +135,6 @@ Arguments:
 - `y_train::Vector{Y}`: A vector of corresponding output training values.
 - `old_params::Vector{Float64}`: A vector containing the current log lengthscale
     and log scale parameters.
-- `classic_bo::Bool`: Indicates if using classic Bayesian Optimization (true) or gradient-enhanced (false).
 - `length_scale_only::Bool`: If true, only optimize the lengthscale, keeping the scale fixed.
 - `mean::AbstractGPs.MeanFunction`: The mean function of the GP, defaults to ZeroMean().
 - `num_restarts::Int`: Number of random restarts for the optimization. If set to 1, uses the current parameters as the initial guess.
@@ -149,8 +148,7 @@ function optimize_hyperparameters(
         model::AbstractSurrogate,
         x_train::Vector{X},
         y_train::Vector{Y},
-        old_params::Vector{T},
-        classic_bo::Bool;
+        old_params::Vector{T};
         scale_std::Float64 = 1.0,
         length_scale_only::Bool = false,
         num_restarts::Int = 1,
@@ -279,14 +277,9 @@ function optimize_hyperparameters(
     end
 
     kernel_constructor = get_kernel_constructor(model)
-
     k_opt = scale * with_lengthscale(kernel_constructor, ℓ)
 
-    if classic_bo
-        return StandardGP(k_opt, model.noise_var; mean = model.gp.mean)
-    else
-        return GradientGP(k_opt, model.p, model.noise_var; mean = model.gp.mean)
-    end
+    return _update_model_parameters(model, k_opt)
 end
 
 """
@@ -326,11 +319,10 @@ function optimize(
 
     @assert standardize in ["mean_scale", "scale_only", "mean_only", nothing] "standardize must be one of: 'mean_scale', 'scale_only', 'mean_only', or nothing."
 
-    classic_bo = (length(BO.ys[1]) == 1)
+    d = length(BO.xs[1])
 
     μ = zero(BO.ys[1])
-
-    σ = ones(eltype(BO.ys[1]), size(BO.ys[1])) # default values if we do not standardize
+    σ = μ isa AbstractArray ? ones(eltype(μ), size(μ)) : one(μ)
     if isnothing(standardize)
         BO.model = update(BO.model, BO.xs, BO.ys) # because we might not to that before
     else
@@ -351,8 +343,7 @@ function optimize(
                     BO.model,
                     BO.xs,
                     BO.ys,
-                    old_params,
-                    classic_bo;
+                    old_params;
                     length_scale_only = true,
                     scale_std = σ[1],
                     num_restarts = num_restarts_HP,
@@ -363,8 +354,7 @@ function optimize(
                     BO.model,
                     BO.xs,
                     BO.ys,
-                    old_params,
-                    classic_bo;
+                    old_params;
                     length_scale_only = false,
                     scale_std = σ[1],
                     num_restarts = num_restarts_HP,
@@ -386,8 +376,10 @@ function optimize(
         @info "Iteration #$(i+1), current min val: $(_get_minimum(BO.model, BO.ys_non_std))"
         x_cand = optimize_acquisition(BO.acq, BO.model, BO.domain)
 
+        x_cand = d == 1 ? first(x_cand) : x_cand
+
         @info "Acquisition optimized, new candidate point: $(x_cand)"
-        push!(acq_list, BO.acq(BO.model, x_cand)[1])
+        push!(acq_list, BO.acq(BO.model, [x_cand])[1])
 
         y_cand = BO.func(x_cand)
         y_cand = y_cand + _noise_like(y_cand, σ = sqrt(BO.noise) / σ[1]) # Add noise to the observation

@@ -30,8 +30,8 @@ function optimize_acquisition(
         acqf::AbstractAcquisition,
         surrogate::AbstractSurrogate,
         domain::AbstractDomain;
-        n_grid = 10000,
-        n_local = 100
+        n_grid::Int = 10000,
+        n_local::Int = 100
 )
     # We will use BFGS for now
     best_acq = -Inf
@@ -46,10 +46,11 @@ function optimize_acquisition(
     indices_sorted = sortperm(scores; rev = true)
     top_points = grid_points[indices_sorted[1:min(n_local, length(indices_sorted))]]
 
+    
     # Loop over a number of random starting points
     for initial_x in top_points
         result = Optim.optimize(
-            x -> -acqf(surrogate, x)[1],
+            x -> -acqf(surrogate, [x])[1],
             domain.lower,
             domain.upper,
             initial_x,
@@ -57,6 +58,7 @@ function optimize_acquisition(
             Optim.Options(; g_tol = 1e-5, f_abstol = 2.2e-9, x_abstol = 1e-4)
         )
         # Check if the current run is better (lower negative acqf)
+        
         current_acq = -Optim.minimum(result)
         if current_acq > best_acq
             best_acq = current_acq
@@ -64,7 +66,8 @@ function optimize_acquisition(
         end
     end
     # not sure about below...
-    return first(best_x)
+    # Let's always return a vector and bring it back to Float potentially outside
+    return best_x
 end
 
 # function sample_gp_function(surrogate::AbstractSurrogate, domain::ContinuousDomain;n_points=50)

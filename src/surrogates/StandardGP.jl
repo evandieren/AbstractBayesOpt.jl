@@ -212,6 +212,11 @@ function rescale_model(model::StandardGP, σ)
     return StandardGP(new_kernel, model.noise_var / (σ^2); mean = model.gp.mean)
 end
 
+
+function _update_model_parameters(model::StandardGP, kernel::Kernel)
+    return StandardGP(kernel, model.noise_var; mean = model.gp.mean) # Use fixed noise here, or optimize σ² too
+end
+
 get_lengthscale(model::StandardGP) = 1 ./ model.gp.kernel.kernel.transform.s
 
 get_scale(model::StandardGP) = model.gp.kernel.σ²

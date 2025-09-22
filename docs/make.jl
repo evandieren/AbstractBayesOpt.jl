@@ -26,8 +26,10 @@ makedocs(;
     checkdocs = :none,
     pages = [
         "Home" => "index.md",
+        "Public API" => "reference.md",
         "Tutorials" => [
-            "StandardGP - 1D BO" => "tutorials/StandardGP_1D.md",
+            "1D Bayesian Optimisation" => "tutorials/1D_BO.md",
+            "2D Bayesian Optimisation" => "tutorials/2D_BO.md",
         ]
     ],
     format = Documenter.HTML(
