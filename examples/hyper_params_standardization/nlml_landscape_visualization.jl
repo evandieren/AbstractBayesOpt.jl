@@ -41,10 +41,9 @@ domain = ContinuousDomain(lower, upper)
 
 # Generate training data using Sobol sampling for better coverage
 n_train = 120
-x_train = [
-    collect(col) for
-    col in eachcol(QuasiMonteCarlo.sample(n_train, lower, upper, SobolSample()))
-]
+x_train = [collect(col)
+           for
+           col in eachcol(QuasiMonteCarlo.sample(n_train, lower, upper, SobolSample()))]
 
 println("Training points:")
 for (i, x) in enumerate(x_train)
@@ -86,8 +85,8 @@ println("  Gradient GP: x=$(length(x_gradient)), y=$(length(y_gradient))")
 
 # Define parameter ranges for NLML landscape
 
-log_lengthscale_range = range(log(1e-3), log(1e3); length=100)
-log_scale_range = range(log(1e-3), log(1e6); length=100)
+log_lengthscale_range = range(log(1e-3), log(1e3); length = 100)
+log_scale_range = range(log(1e-3), log(1e6); length = 100)
 
 println("\nParameter ranges:")
 println(
@@ -99,7 +98,7 @@ println(
 
 # Compute NLML landscapes
 function compute_nlml_landscape(
-    model, x_data, y_data, log_ls_range, log_scale_range, model_name
+        model, x_data, y_data, log_ls_range, log_scale_range, model_name
 )
     println("\nComputing NLML landscape for $model_name...")
 
@@ -129,7 +128,7 @@ function compute_nlml_landscape(
 
             completed += 1
             if completed % 500 == 0
-                progress = round(100 * completed / total_combinations; digits=1)
+                progress = round(100 * completed / total_combinations; digits = 1)
                 println("  Progress: $progress% ($completed/$total_combinations)")
             end
         end
@@ -150,7 +149,7 @@ nlml_standard = compute_nlml_landscape(
     y_standard,
     log_lengthscale_range,
     log_scale_range,
-    "Standard GP",
+    "Standard GP"
 )
 
 nlml_gradient = compute_nlml_landscape(
@@ -159,7 +158,7 @@ nlml_gradient = compute_nlml_landscape(
     y_gradient,
     log_lengthscale_range,
     log_scale_range,
-    "Gradient GP",
+    "Gradient GP"
 )
 
 # Find optimal parameters for both models
@@ -171,11 +170,11 @@ function find_optimal_params(nlml_values, log_ls_range, log_scale_range)
     opt_nlml = nlml_values[i, j]
 
     return (
-        log_lengthscale=opt_log_ls,
-        log_scale=opt_log_scale,
-        lengthscale=exp(opt_log_ls),
-        scale=exp(opt_log_scale),
-        nlml=opt_nlml,
+        log_lengthscale = opt_log_ls,
+        log_scale = opt_log_scale,
+        lengthscale = exp(opt_log_ls),
+        scale = exp(opt_log_scale),
+        nlml = opt_nlml
     )
 end
 
@@ -203,7 +202,7 @@ println("  NLML: $(round(opt_gradient.nlml, digits=3))")
 
 # Create visualization functions
 function create_2d_heatmap(
-    nlml_values, log_ls_range, log_scale_range, title_str, optimal_params=nothing
+        nlml_values, log_ls_range, log_scale_range, title_str, optimal_params = nothing
 )
     # Clip extreme values for better visualization
     # clipped_nlml = clamp.(nlml_values, minimum(nlml_values), minimum(nlml_values) + 50)
@@ -212,12 +211,12 @@ function create_2d_heatmap(
         log_scale_range,
         log_ls_range,
         log.(nlml_values);
-        title=title_str,
-        xlabel="log Scale Parameter",
-        ylabel="log Lengthscale Parameter",
-        color=:viridis,
-        aspect_ratio=:equal,
-        size=(600, 500),
+        title = title_str,
+        xlabel = "log Scale Parameter",
+        ylabel = "log Lengthscale Parameter",
+        color = :viridis,
+        aspect_ratio = :equal,
+        size = (600, 500)
     )
 
     # Add optimal point if provided
@@ -226,10 +225,10 @@ function create_2d_heatmap(
             p,
             [log.(optimal_params.scale)],
             [log.(optimal_params.lengthscale)];
-            color=:red,
-            markersize=8,
-            markershape=:star,
-            label="Optimal (NLML=$(round(optimal_params.nlml, digits=1)))",
+            color = :red,
+            markersize = 8,
+            markershape = :star,
+            label = "Optimal (NLML=$(round(optimal_params.nlml, digits=1)))"
         )
     end
 
@@ -244,20 +243,20 @@ function create_3d_surface(nlml_values, log_ls_range, log_scale_range, title_str
         log_scale_range,
         log_ls_range,
         log.(nlml_values);
-        title=title_str,
-        xlabel="log Scale Parameter",
-        ylabel="log Lengthscale Parameter",
-        zlabel="NLML",
-        color=:viridis,
-        camera=(45, 60),
-        size=(700, 600),
+        title = title_str,
+        xlabel = "log Scale Parameter",
+        ylabel = "log Lengthscale Parameter",
+        zlabel = "NLML",
+        color = :viridis,
+        camera = (45, 60),
+        size = (700, 600)
     )
 
     return p
 end
 
 function create_contour_plot(
-    nlml_values, log_ls_range, log_scale_range, title_str, optimal_params=nothing
+        nlml_values, log_ls_range, log_scale_range, title_str, optimal_params = nothing
 )
     # Create contour levels
     # min_nlml = minimum(nlml_values)
@@ -268,14 +267,14 @@ function create_contour_plot(
         log_scale_range,
         log_ls_range,
         log.(nlml_values);
-        title=title_str,
-        xlabel="log Scale Parameter",
-        ylabel="log Lengthscale Parameter",
-        color=:viridis,
-        fill=true,
-        levels=50,
-        aspect_ratio=:equal,
-        size=(600, 500),
+        title = title_str,
+        xlabel = "log Scale Parameter",
+        ylabel = "log Lengthscale Parameter",
+        color = :viridis,
+        fill = true,
+        levels = 50,
+        aspect_ratio = :equal,
+        size = (600, 500)
     )
 
     # Add optimal point if provided
@@ -284,10 +283,10 @@ function create_contour_plot(
             p,
             [log.(optimal_params.scale)],
             [log.(optimal_params.lengthscale)];
-            color=:red,
-            markersize=8,
-            markershape=:star,
-            label="Optimal",
+            color = :red,
+            markersize = 8,
+            markershape = :star,
+            label = "Optimal"
         )
     end
 
@@ -303,7 +302,7 @@ contour_standard = create_contour_plot(
     log_lengthscale_range,
     log_scale_range,
     "Standard GP log(NLML) Contours",
-    opt_standard,
+    opt_standard
 )
 
 contour_gradient = create_contour_plot(
@@ -311,15 +310,15 @@ contour_gradient = create_contour_plot(
     log_lengthscale_range,
     log_scale_range,
     "Gradient GP log(NLML) Contours",
-    opt_gradient,
+    opt_gradient
 )
 
 combined_contours = plot(
     contour_standard,
     contour_gradient;
-    layout=(1, 2),
-    size=(1200, 500),
-    plot_title="NLML Contour Comparison: Standard vs Gradient GP",
+    layout = (1, 2),
+    size = (1200, 500),
+    plot_title = "NLML Contour Comparison: Standard vs Gradient GP"
 )
 
 display(combined_contours)

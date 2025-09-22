@@ -31,7 +31,6 @@ using Random
             # Create BOStruct
             problem = BOStruct(f, acqf, gp, domain, x_train, y_train, 10, 0.1)
 
-
             @test problem.func === f
             @test problem.domain === domain
             @test problem.max_iter == 10
@@ -71,8 +70,6 @@ using Random
             y_new = f(x_new)
 
             updated_problem = update(problem, x_new, y_new, 1)
-
-
 
             @test length(updated_problem.xs) == 3
             @test length(updated_problem.ys) == 3
@@ -140,8 +137,8 @@ using Random
                     y_train,
                     old_params,
                     true,
-                    num_restarts=2,
-                    scale_std=1.0,
+                    num_restarts = 2,
+                    scale_std = 1.0
                 )
                 @test isa(optimized_gp, StandardGP)
             catch e
@@ -223,8 +220,9 @@ using Random
 
             # Run optimization (should work without errors)
             try
-                result, acqf_list, std_params = AbstractBayesOpt.optimize(
-                    problem, standardize=nothing, hyper_params=nothing
+                result, acqf_list,
+                std_params = AbstractBayesOpt.optimize(
+                    problem, standardize = nothing, hyper_params = nothing
                 )
 
                 @test length(result.xs) >= length(x_train)
@@ -275,11 +273,11 @@ using Random
                     x_test,
                     y_test_standard,
                     10,
-                    0.0,
+                    0.0
                 )
 
                 # Setup 2: ConstMean(empirical_mean) + no standardization
-                model2 = StandardGP(kernel, 1e-12, mean=ConstMean(empirical_mean))
+                model2 = StandardGP(kernel, 1e-12, mean = ConstMean(empirical_mean))
                 bo2 = BOStruct(
                     f,
                     ExpectedImprovement(0.01, minimum(reduce(vcat, y_test_standard))),
@@ -288,7 +286,7 @@ using Random
                     x_test,
                     y_test_standard,
                     10,
-                    0.0,
+                    0.0
                 )
 
                 # Apply standardizations
@@ -299,9 +297,10 @@ using Random
                 x_pred = [[0.5, -0.3], [-1.2, 0.8], [2.1, -1.5]]
 
                 # Get predictions from both setups
-                pred1_mean = [
-                    posterior_mean(bo1_std.model, [x]) + params1[1][1] for x in x_pred
-                ]
+                pred1_mean_alt = posterior_mean(bo1_std.model, x_pred) .+ params1[1][1]
+                pred1_mean = [posterior_mean(bo1_std.model, [x]) + params1[1][1]
+                              for x in x_pred]
+                @test pred1_mean == pred1_mean_alt
                 pred1_var = [posterior_var(bo1_std.model, [x]) for x in x_pred]
 
                 pred2_mean = [posterior_mean(bo2.model, [x]) for x in x_pred]
@@ -335,11 +334,11 @@ using Random
                     x_test,
                     y_test_standard,
                     10,
-                    0.0,
+                    0.0
                 )
 
                 # Setup 2: ConstMean(empirical_mean) + scale_only
-                model2 = StandardGP(kernel, 1e-12, mean=ConstMean(empirical_mean))
+                model2 = StandardGP(kernel, 1e-12, mean = ConstMean(empirical_mean))
                 bo2 = BOStruct(
                     f,
                     ExpectedImprovement(0.01, minimum(y_test_standard)),
@@ -348,7 +347,7 @@ using Random
                     x_test,
                     y_test_standard,
                     10,
-                    0.0,
+                    0.0
                 )
 
                 # Apply standardizations
@@ -359,10 +358,9 @@ using Random
                 x_pred = [[0.5, -0.3], [-1.2, 0.8], [2.1, -1.5]]
 
                 # Get predictions from both setups (standardized)
-                pred1_mean = [
-                    posterior_mean(bo1_std.model, [x]) + params1[1][1] / params1[2][1] for
-                    x in x_pred
-                ]
+                pred1_mean = [posterior_mean(bo1_std.model, [x]) +
+                              params1[1][1] / params1[2][1] for
+                              x in x_pred]
                 pred1_var = [posterior_var(bo1_std.model, [x]) for x in x_pred]
 
                 pred2_mean = [posterior_mean(bo2_std.model, [x]) for x in x_pred]
@@ -400,12 +398,12 @@ using Random
                         x_test,
                         y_test_gradient,
                         10,
-                        0.0,
+                        0.0
                     )
 
                     # Setup 2: gradConstMean([empirical_mean, 0, 0]) + no standardization
                     model2_grad = GradientGP(
-                        kernel, dim + 1, 1e-12, mean=gradConstMean(prior_mean_vector)
+                        kernel, dim + 1, 1e-12, mean = gradConstMean(prior_mean_vector)
                     )
                     bo2_grad = BOStruct(
                         f_val_grad,
@@ -415,7 +413,7 @@ using Random
                         x_test,
                         y_test_gradient,
                         10,
-                        0.0,
+                        0.0
                     )
 
                     # Apply standardizations
@@ -428,27 +426,24 @@ using Random
                     x_pred = [[0.5, -0.3], [-1.2, 0.8]]
 
                     # Get gradient predictions from both setups
-                    pred1_grad_mean = [
-                        posterior_grad_mean(bo1_grad_std.model, x) .+ params1_grad[1] for
-                        x in x_pred
-                    ]
-                    pred1_grad_var = [
-                        posterior_grad_var(bo1_grad_std.model, x) for x in x_pred
-                    ]
+                    pred1_grad_mean = [posterior_grad_mean(bo1_grad_std.model, x) .+
+                                       params1_grad[1] for
+                                       x in x_pred]
+                    pred1_grad_var = [posterior_grad_var(bo1_grad_std.model, x)
+                                      for x in x_pred]
 
-                    pred2_grad_mean = [
-                        posterior_grad_mean(bo2_grad.model, x) for x in x_pred
-                    ]
+                    pred2_grad_mean = [posterior_grad_mean(bo2_grad.model, x)
+                                       for x in x_pred]
                     pred2_grad_var = [posterior_grad_var(bo2_grad.model, x) for x in x_pred]
 
-                    mean_diff_grad = maximum([
-                        maximum(abs.(m1 .- m2)) for
-                        (m1, m2) in zip(pred1_grad_mean, pred2_grad_mean)
-                    ])
-                    var_diff_grad = maximum([
-                        maximum(abs.(v1 .- v2)) for
-                        (v1, v2) in zip(pred1_grad_var, pred2_grad_var)
-                    ])
+                    mean_diff_grad = maximum([maximum(abs.(m1 .- m2))
+                                              for
+                                              (m1, m2) in
+                                              zip(pred1_grad_mean, pred2_grad_mean)])
+                    var_diff_grad = maximum([maximum(abs.(v1 .- v2))
+                                             for
+                                             (v1, v2) in
+                                             zip(pred1_grad_var, pred2_grad_var)])
 
                     @test mean_diff_grad < 1e-10
                     @test var_diff_grad < 1e-10
@@ -585,8 +580,9 @@ using Random
             problem = BOStruct(f, ei, gp, domain, x_train, y_train, 15, 0.01)
 
             # Run optimization
-            result, _, _ = AbstractBayesOpt.optimize(
-                problem, standardize=nothing, hyper_params=nothing
+            result, _,
+            _ = AbstractBayesOpt.optimize(
+                problem, standardize = nothing, hyper_params = nothing
             )
 
             # Test 1: Best found value should improve over iterations
@@ -595,7 +591,7 @@ using Random
 
             # Should be non-increasing (monotonic improvement)
             for i in 2:length(best_values)
-                @test best_values[i] <= best_values[i-1] + 1e-10
+                @test best_values[i] <= best_values[i - 1] + 1e-10
             end
 
             # Test 2: Should get reasonably close to true optimum
@@ -618,8 +614,8 @@ using Random
             noise_var = 0.01
 
             # Generate data from a GP with known hyperparameters
-            true_kernel =
-                true_scale * (SqExponentialKernel() ∘ ScaleTransform(1 / true_lengthscale))
+            true_kernel = true_scale *
+                          (SqExponentialKernel() ∘ ScaleTransform(1 / true_lengthscale))
 
             # Training points
             x_train = [[-1.0], [-0.5], [0.0], [0.5], [1.0]]
@@ -638,7 +634,7 @@ using Random
 
             try
                 optimized_gp = optimize_hyperparameters(
-                    updated_gp, x_train, y_train, initial_params, true, num_restarts=3
+                    updated_gp, x_train, y_train, initial_params, true, num_restarts = 3
                 )
 
                 # Test that optimization improved the likelihood
@@ -783,8 +779,8 @@ using Random
                     @test isa(
                         e,
                         Union{
-                            LinearAlgebra.SingularException,LinearAlgebra.PosDefException
-                        },
+                            LinearAlgebra.SingularException, LinearAlgebra.PosDefException
+                        }
                     )
                 end
             end

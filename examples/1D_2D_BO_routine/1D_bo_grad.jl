@@ -53,7 +53,8 @@ print_info(bo_struct)
 
 @info "Starting Bayesian Optimization..."
 choice = "mean_only"
-result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct; standardize=choice)
+result, acq_list,
+standard_params = AbstractBayesOpt.optimize(bo_struct; standardize = choice)
 xs = reduce(vcat, result.xs)
 ys = result.ys_non_std
 ys = hcat(ys...)[1, :]
@@ -68,14 +69,14 @@ running_min = collect(Iterators.flatten(fill(x, 2) for x in (running_min)))
 p = Plots.plot(
     (2 * n_train):length(running_min),
     running_min[(2 * n_train):end] .- min_f;
-    yaxis=:log,
-    title="Error w.r.t true minimum (1D GradBO)",
-    xlabel="Function evaluations",
-    ylabel=L"|| f(x^*_n) - f^* ||",
-    label="GradBO",
-    xlims=(1, length(running_min)),
+    yaxis = :log,
+    title = "Error w.r.t true minimum (1D GradBO)",
+    xlabel = "Function evaluations",
+    ylabel = L"|| f(x^*_n) - f^* ||",
+    label = "GradBO",
+    xlims = (1, length(running_min))
 )
-Plots.vspan!([1, 2*n_train]; color=:blue, alpha=0.2, label="")
+Plots.vspan!([1, 2*n_train]; color = :blue, alpha = 0.2, label = "")
 Plots.display(p)
 
 plot_domain = collect(lower[1]:0.01:upper[1])
@@ -91,24 +92,24 @@ post_var[post_var .< 0] .= 0
 plot(
     plot_domain,
     f.(plot_domain);
-    label="target function",
-    xlim=(lower[1], upper[1]),
-    xlabel="x",
-    ylabel="y",
-    title="AbstractBayesOpt, σ²=$(σ²)",
-    legend=:outertopright,
+    label = "target function",
+    xlim = (lower[1], upper[1]),
+    xlabel = "x",
+    ylabel = "y",
+    title = "AbstractBayesOpt, σ²=$(σ²)",
+    legend = :outertopright
 )
 plot!(
     plot_domain,
     post_mean;
-    label="GP",
-    ribbon=sqrt.(post_var),
-    ribbon_scale=2,
-    color="green",
+    label = "GP",
+    ribbon = sqrt.(post_var),
+    ribbon_scale = 2,
+    color = "green"
 )
-scatter!(xs[1:n_train], ys[1:n_train]; label="Train Data")
-scatter!(xs[(n_train + 1):end], ys[(n_train + 1):end]; label="Candidates")
-scatter!([xs[argmin(ys)]], [minimum(ys)]; label="Best candidate")
+scatter!(xs[1:n_train], ys[1:n_train]; label = "Train Data")
+scatter!(xs[(n_train + 1):end], ys[(n_train + 1):end]; label = "Candidates")
+scatter!([xs[argmin(ys)]], [minimum(ys)]; label = "Best candidate")
 
 # Plots.plot(n_train:length(acq_nothing), acq_nothing[n_train:end] .+ eps(), label="standardize = nothing", xlabel="Iteration",
 #         ylabel="Acquisition value", title="Acquisition value over iterations (1D BO)", yaxis=:log)

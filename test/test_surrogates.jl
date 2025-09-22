@@ -38,9 +38,9 @@ using Random
             mean_pred = posterior_mean(updated_gp, test_x)
             var_pred = posterior_var(updated_gp, test_x)
 
-            @test isa(mean_pred, Float64)
-            @test isa(var_pred, Float64)
-            @test var_pred >= 0.0
+            @test isa(mean_pred[1], Float64)
+            @test isa(var_pred[1], Float64)
+            @test var_pred[1] >= 0.0
         end
 
         @testset "StandardGP Utility Functions" begin
@@ -57,7 +57,6 @@ using Random
             xs = [0.0, 0.5, 1.0]
             ys = [0.0, 0.25, 1.0]
             updated_gp = update(gp, xs, ys)
-
         end
 
         @testset "StandardGP Standardization" begin
@@ -77,7 +76,7 @@ using Random
             # Check that rescaled data has different scale
             y_flat_std = reduce(vcat, y_std)
             y_flat_orig = reduce(vcat, y_train)
-            @test std(y_flat_std) ≈ 1.0 atol = 1e-10
+            @test std(y_flat_std)≈1.0 atol=1e-10
         end
 
         @testset "StandardGP Copy" begin
@@ -157,9 +156,9 @@ using Random
             @test isa(updated_gp, GradientGP)
 
             # Test predictions
-            test_x = [0.25, 0.25]
-            mean_pred = posterior_mean(updated_gp, test_x)
-            var_pred = posterior_var(updated_gp, test_x)
+            test_x = [[0.25, 0.25]]
+            mean_pred = posterior_mean(updated_gp, test_x)[1]
+            var_pred = posterior_var(updated_gp, test_x)[1]
             grad_mean = posterior_grad_mean(updated_gp, test_x)
             grad_var = posterior_grad_var(updated_gp, test_x)
 
@@ -225,9 +224,9 @@ using Random
 
             # Check that the standardized values match with the original standardization formula
             for (y_orig, y_s) in zip(y_train, y_std)
-                @test y_s[1] ≈ (y_orig[1] - μ[1]) / σ[1] atol = 1e-8
-                @test y_s[2] ≈ (y_orig[2] - μ[2]) / σ[2] atol = 1e-8
-                @test y_s[3] ≈ (y_orig[3] - μ[3]) / σ[3] atol = 1e-8
+                @test y_s[1]≈(y_orig[1] - μ[1]) / σ[1] atol=1e-8
+                @test y_s[2]≈(y_orig[2] - μ[2]) / σ[2] atol=1e-8
+                @test y_s[3]≈(y_orig[3] - μ[3]) / σ[3] atol=1e-8
             end
         end
 

@@ -35,7 +35,7 @@ using Random
 
             # Test evaluation
             test_x = [0.25]
-            ei_val = ei(updated_gp, test_x)
+            ei_val = ei(updated_gp, test_x)[1]
 
             @test isa(ei_val, Real)
             @test isfinite(ei_val)
@@ -93,7 +93,7 @@ using Random
             ucb = UpperConfidenceBound(β)
 
             # Test evaluation
-            test_x = [0.25]
+            test_x = 0.25
             ucb_val = ucb(updated_gp, test_x)
 
             @test isa(ucb_val, Real)
@@ -146,7 +146,7 @@ using Random
             pi = ProbabilityImprovement(ξ, best_y)
 
             # Test evaluation - skip for now due to implementation bugs
-            test_x = [0.25]
+            test_x = 0.25
             pi_val = pi(updated_gp, test_x)
             @test isa(pi_val, Real)
             @test isfinite(pi_val)
@@ -245,7 +245,7 @@ using Random
             ensemble = EnsembleAcquisition(weights, acqs)
 
             # Test evaluation
-            test_x = [0.25]
+            test_x = 0.25
             ensemble_val = ensemble(updated_gp, test_x)
 
             @test isa(ensemble_val, Real)

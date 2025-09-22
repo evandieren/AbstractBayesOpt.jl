@@ -18,34 +18,26 @@ end
 
 Base.copy(PI::ProbabilityImprovement) = ProbabilityImprovement(PI.ξ, PI.best_y)
 
-function (PI::ProbabilityImprovement)(surrogate::AbstractSurrogate, x, x_buf=nothing)
+function (PI::ProbabilityImprovement)(surrogate::AbstractSurrogate, x::AbstractVector)
+    μ = posterior_mean(surrogate, x)
+    σ² = posterior_var(surrogate, x)
+    Δ = (PI.best_y - PI.ξ) .- μ # we are substracting ξ because we are minimising.
+    return _single_input_pi.(Δ, σ²)
 
-    # Allocate buffer if not provided
-    if x_buf === nothing
-        if surrogate isa GradientGP
-            x_buf = [(copy(x), 1)]
-        else
-            x_buf = [copy(x)]
-        end
-    else
-        # Reuse buffer
-        if surrogate isa GradientGP
-            x_buf[1][1] .= x  # copy x into the tuple buffer
-        else
-            x_buf[1] .= x  # copy into 1×d matrix
-        end
+    # max(σ², 0) == 0 && return max(Δ, 0.0)
+
+    # σ = sqrt(σ²)
+    # @evandieren was z not useful or is that a typo?
+    # z = (PI.best_y .- μ) ./ σ
+    # return normcdf(Δ / σ, 1)
+end
+
+function _single_input_pi(Δ, σ²)
+    if σ² <= 0
+        return max(Δ, 0.0)
     end
-
-    μ = posterior_mean(surrogate, x_buf)
-    σ² = posterior_var(surrogate, x_buf)
-    Δ = (PI.best_y - PI.ξ) - μ # we are substracting ξ because we are minimising.
-
-    max(σ², 0) == 0 && return max(Δ, 0.0)
-
     σ = sqrt(σ²)
-
-    z = (PI.best_y .- μ) ./ σ
-    return normcdf(Δ/σ, 1)
+    return normcdf(Δ / σ, 1)
 end
 
 """
@@ -60,7 +52,7 @@ returns:
 - `PI::ProbabilityImprovement`: Updated Probability of Improvement acquisition function
 """
 function update(
-    acq::ProbabilityImprovement, ys::AbstractVector, surrogate::AbstractSurrogate
+        acq::ProbabilityImprovement, ys::AbstractVector, surrogate::AbstractSurrogate
 )
     if isa(ys[1], Float64) # we are in 1d
         ProbabilityImprovement(acq.ξ, minimum(reduce(vcat, ys)))

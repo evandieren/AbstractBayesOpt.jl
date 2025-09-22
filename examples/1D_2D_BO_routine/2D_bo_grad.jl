@@ -58,7 +58,7 @@ bo_struct = BOStruct(
     copy(x_train),
     copy(y_train),
     30,
-    σ²,
+    σ²
 )
 
 print_info(bo_struct)
@@ -78,17 +78,18 @@ running_min = collect(Iterators.flatten(fill(x, 3) for x in (running_min)))
 p = Plots.plot(
     (3 * n_train):length(running_min),
     running_min[(3 * n_train):end];
-    yaxis=:log,
-    title="Error w.r.t true minimum (2D GradBO)",
-    xlabel="Function evaluations",
-    label="GradBO",
-    xlims=(1, length(running_min)),
+    yaxis = :log,
+    title = "Error w.r.t true minimum (2D GradBO)",
+    xlabel = "Function evaluations",
+    label = "GradBO",
+    xlims = (1, length(running_min))
 )
-Plots.vspan!([1, 3*n_train]; color=:blue, alpha=0.2, label="")
+Plots.vspan!([1, 3*n_train]; color = :blue, alpha = 0.2, label = "")
 Plots.display(p)
 
 x_train_prepped = prep_input(result.model, x_train)
-post_mean, post_var = unstandardized_mean_and_var(
+post_mean,
+post_var = unstandardized_mean_and_var(
     result.model, x_train_prepped, standard_params
 )
 println("Posterior at training points:")
@@ -103,6 +104,6 @@ for i in eachindex(x_train)
         " | ∇f: ",
         post_mean[i, 2:end],
         " ± ",
-        sqrt.(post_var[i, 2:end] .+ 5e-10),
+        sqrt.(post_var[i, 2:end] .+ 5e-10)
     )
 end

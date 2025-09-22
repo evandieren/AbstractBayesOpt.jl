@@ -54,7 +54,8 @@ print_info(bo_struct)
 
 choice = "mean_only"
 
-result, acq_list, standard_params = AbstractBayesOpt.optimize(bo_struct; standardize=choice)
+result, acq_list,
+standard_params = AbstractBayesOpt.optimize(bo_struct; standardize = choice)
 xs = reduce(vcat, result.xs)
 ys = reduce(vcat, result.ys_non_std)
 
@@ -78,11 +79,11 @@ running_min = accumulate(min, f.(xs))
 p = Plots.plot(
     n_train:length(running_min),
     running_min[n_train:end] .- min_f;
-    yaxis=:log,
-    title="Error w.r.t true minimum (1D BO)",
-    xlabel="Function evaluations",
-    label="BO",
-    xlims=(1, length(running_min)),
+    yaxis = :log,
+    title = "Error w.r.t true minimum (1D BO)",
+    xlabel = "Function evaluations",
+    label = "BO",
+    xlims = (1, length(running_min))
 )
-Plots.vspan!([1, n_train]; color=:blue, alpha=0.2, label="")
+Plots.vspan!([1, n_train]; color = :blue, alpha = 0.2, label = "")
 Plots.display(p)

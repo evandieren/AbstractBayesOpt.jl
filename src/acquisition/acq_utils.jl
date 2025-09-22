@@ -4,7 +4,7 @@ normcdf(μ, σ²) = 1 / 2 * (1 + SpecialFunctions.erf(μ / √(2σ²)))
 using Optim
 using Random
 
-inner_optimizer = LBFGS(; linesearch=Optim.LineSearches.HagerZhang(; linesearchmax=20))
+inner_optimizer = LBFGS(; linesearch = Optim.LineSearches.HagerZhang(; linesearchmax = 20))
 box_optimizer = Fminbox(inner_optimizer)
 
 """
@@ -23,11 +23,11 @@ returns:
     the acquisition function.
 """
 function optimize_acquisition(
-    acqf::AbstractAcquisition,
-    surrogate::AbstractSurrogate,
-    domain::AbstractDomain;
-    n_grid=10000,
-    n_local=100,
+        acqf::AbstractAcquisition,
+        surrogate::AbstractSurrogate,
+        domain::AbstractDomain;
+        n_grid = 10000,
+        n_local = 100
 )
     # We will use BFGS for now
     best_acq = -Inf
@@ -43,15 +43,15 @@ function optimize_acquisition(
     end
 
     d = length(domain.bounds)
-    grid_points = [
-        domain.lower .+ rand(d) .* (domain.upper .- domain.lower) for _ in 1:n_grid
-    ]
+    grid_points = [domain.lower .+ rand(d) .* (domain.upper .- domain.lower)
+                   for _ in 1:n_grid]
 
     # println("Grid points generated: ", grid_points[1:5])
+    scores = acqf(surrogate, grid_points)
+    evaluated = collect(zip(grid_points, scores)) # probably not memory efficient
+    # evaluated = [(x, acqf(surrogate, x, x_buf)) for x in grid_points]
 
-    evaluated = [(x, acqf(surrogate, x, x_buf)) for x in grid_points]
-
-    sorted_points = sort(evaluated; by=x -> -x[2])  # higher EI is better
+    sorted_points = sort(evaluated; by = x -> -x[2])  # higher EI is better
     top_points = first.(sorted_points[1:min(n_local, length(sorted_points))])
 
     # Loop over a number of random starting points
@@ -62,7 +62,7 @@ function optimize_acquisition(
             domain.upper,
             initial_x,
             box_optimizer,
-            Optim.Options(; g_tol=1e-5, f_abstol=2.2e-9, x_abstol=1e-4),
+            Optim.Options(; g_tol = 1e-5, f_abstol = 2.2e-9, x_abstol = 1e-4)
         )
         # Check if the current run is better (lower negative acqf)
         current_acq = -Optim.minimum(result)

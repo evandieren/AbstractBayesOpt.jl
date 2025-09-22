@@ -73,8 +73,9 @@ print_info(bo_struct)
 
 choice = "mean_scale"
 
-@time result, acq_list, std_params = AbstractBayesOpt.optimize(
-    bo_struct, standardize=choice
+@time result, acq_list,
+std_params = AbstractBayesOpt.optimize(
+    bo_struct, standardize = choice
 )
 xs = result.xs
 ys = result.ys_non_std
@@ -99,14 +100,14 @@ running_min = accumulate(min, f.(xs))
 Plots.plot(
     n_train:length(running_min),
     norm.(running_min)[n_train:end];
-    yaxis=:log,
-    title="Error w.r.t true minimum (2D BO)",
-    xlabel="Function evaluations",
-    ylabel=L"|| f(x^*_n) - f^* ||",
-    label="BO",
-    xlims=(1, length(running_min)),
+    yaxis = :log,
+    title = "Error w.r.t true minimum (2D BO)",
+    xlabel = "Function evaluations",
+    ylabel = L"|| f(x^*_n) - f^* ||",
+    label = "BO",
+    xlims = (1, length(running_min))
 )
-Plots.vspan!([1, n_train]; color=:blue, alpha=0.2, label="")
+Plots.vspan!([1, n_train]; color = :blue, alpha = 0.2, label = "")
 
 # Plots.plot(n_train:length(acq_nothing), acq_nothing[n_train:end] .+ eps(), label="standardize = nothing", xlabel="Iteration",
 #         ylabel="Acquisition value", title="Acquisition value over iterations (1D BO)", yaxis=:log)
