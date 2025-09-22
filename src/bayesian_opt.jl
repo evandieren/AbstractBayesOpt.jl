@@ -283,9 +283,9 @@ function optimize_hyperparameters(
     k_opt = scale * with_lengthscale(kernel_constructor, ℓ)
 
     if classic_bo
-        return StandardGP(k_opt, model.noise_var; mean = mean)
+        return StandardGP(k_opt, model.noise_var; mean = model.gp.mean)
     else
-        return GradientGP(k_opt, model.p, model.noise_var; mean = mean)
+        return GradientGP(k_opt, model.p, model.noise_var; mean = model.gp.mean)
     end
 end
 
