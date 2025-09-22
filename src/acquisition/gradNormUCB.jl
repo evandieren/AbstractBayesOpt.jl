@@ -18,7 +18,7 @@ end
 
 Base.copy(gradUCB::GradientNormUCB) = GradientNormUCB(gradUCB.β)
 
-function (gradUCB::GradientNormUCB)(surrogate::AbstractSurrogate, x, x_buf=nothing)
+function (gradUCB::GradientNormUCB)(surrogate::AbstractSurrogate, x::AbstractVector)
 
     # no buf needed here because we prep everything
 

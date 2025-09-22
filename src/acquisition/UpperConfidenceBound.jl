@@ -16,30 +16,13 @@ end
 
 Base.copy(UCB::UpperConfidenceBound) = UpperConfidenceBound(UCB.β)
 
-function (UCB::UpperConfidenceBound)(surrogate::AbstractSurrogate, x, x_buf=nothing)
-
-    # Allocate buffer if not provided
-    if x_buf === nothing
-        if surrogate isa GradientGP
-            x_buf = [(copy(x), 1)]
-        else
-            x_buf = [copy(x)]
-        end
-    else
-        # Reuse buffer
-        if surrogate isa GradientGP
-            x_buf[1][1] .= x  # copy x into the tuple buffer
-        else
-            x_buf[1] .= x  # copy into 1×d matrix
-        end
-    end
-
-    μ = posterior_mean(surrogate, x_buf)
-    σ² = posterior_var(surrogate, x_buf)
+function (UCB::UpperConfidenceBound)(surrogate::AbstractSurrogate, x::AbstractVector)
+    μ = posterior_mean(surrogate, x)
+    σ² = posterior_var(surrogate, x)
 
     σ²_safe = max.(σ², 0.0)  # Ensure non-negative variance
 
-    return -μ + UCB.β*sqrt.(σ²_safe)
+    return -μ .+ UCB.β .* sqrt.(σ²_safe)
 end
 
 """

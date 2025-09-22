@@ -93,7 +93,7 @@ using Random
             gp = StandardGP(kernel, 0.1)
 
             # Create training data
-            x_train = [[-1.0], [0.0], [1.0]]
+            x_train = [-1.0, 0.0, 1.0]
             y_train = f.(x_train)
 
             # Create acquisition function
@@ -138,8 +138,8 @@ using Random
                     y_train,
                     old_params,
                     true,
-                    num_restarts=2,
-                    scale_std=1.0,
+                    num_restarts = 2,
+                    scale_std = 1.0
                 )
                 @test isa(optimized_gp, StandardGP)
             catch e
@@ -177,7 +177,7 @@ using Random
                 problem = BOStruct(f, acqf, gp, domain, x_train, y_train, 10, 0.1)
 
                 # Test standardization
-                standardized_problem, params = standardize_problem(problem, choice=mode)
+                standardized_problem, params = standardize_problem(problem, mode)
                 μ, σ = params
 
                 @test σ > 0
@@ -210,7 +210,7 @@ using Random
             gp = StandardGP(kernel, 0.01)
 
             # Create initial training data
-            x_train = [[-0.5], [0.0], [1.5]]
+            x_train = [-0.5, 0.0, 1.5]
             y_train = f.(x_train)
 
             # Create acquisition function
@@ -219,27 +219,21 @@ using Random
             # Create BOStruct with small number of iterations
             problem = BOStruct(f, acqf, gp, domain, x_train, y_train, 3, 0.01)
 
-            # Run optimization (should work without errors)
-            try
-                result, acqf_list, std_params = AbstractBayesOpt.optimize(
-                    problem, standardize=nothing, hyper_params=nothing
-                )
+            # Run optimization
+            result, acqf_list,
+            std_params = AbstractBayesOpt.optimize(
+                problem, standardize = nothing, hyper_params = nothing
+            )
 
-                @test length(result.xs) >= length(x_train)
-                @test length(result.ys) >= length(y_train)
-                @test length(acqf_list) >= 0
-                @test result.iter > 0
+            @test length(result.xs) >= length(x_train)
+            @test length(result.ys) >= length(y_train)
+            @test length(acqf_list) >= 0
+            @test result.iter > 0
 
-                # Check that we found improvement
-                initial_best = minimum(reduce(vcat, y_train))
-                final_best = minimum(reduce(vcat, result.ys_non_std))
-                @test final_best <= initial_best  # Should not get worse
-
-            catch e
-                @warn "Optimization failed: $e"
-                # For now, just test that basic structure is correct
-                @test isa(problem, BOStruct)
-            end
+            # Check that we found improvement
+            initial_best = minimum(reduce(vcat, y_train))
+            final_best = minimum(reduce(vcat, result.ys_non_std))
+            @test final_best <= initial_best  # Should not get worse
         end
 
         @testset "Standardization Equivalence Tests" begin
@@ -253,7 +247,7 @@ using Random
             # Generate test data
             dim = 2
             n_points = 8
-            x_test = [[randn(dim)...] for _ in 1:n_points]
+            x_test = [randn(dim) for _ in 1:n_points]
 
             @testset "StandardGP Equivalence: mean_only vs prior mean" begin
                 # Test for StandardGP
@@ -273,11 +267,11 @@ using Random
                     x_test,
                     y_test_standard,
                     10,
-                    0.0,
+                    0.0
                 )
 
                 # Setup 2: ConstMean(empirical_mean) + no standardization
-                model2 = StandardGP(kernel, 1e-12, mean=ConstMean(empirical_mean))
+                model2 = StandardGP(kernel, 1e-12, mean = ConstMean(empirical_mean))
                 bo2 = BOStruct(
                     f,
                     ExpectedImprovement(0.01, minimum(reduce(vcat, y_test_standard))),
@@ -286,24 +280,22 @@ using Random
                     x_test,
                     y_test_standard,
                     10,
-                    0.0,
+                    0.0
                 )
 
                 # Apply standardizations
-                bo1_std, params1 = standardize_problem(bo1, choice="mean_only")
+                bo1_std, params1 = standardize_problem(bo1, "mean_only")
                 bo2.model = update(bo2.model, x_test, y_test_standard)
 
                 # Test points for prediction
                 x_pred = [[0.5, -0.3], [-1.2, 0.8], [2.1, -1.5]]
 
                 # Get predictions from both setups
-                pred1_mean = [
-                    posterior_mean(bo1_std.model, x) + params1[1][1] for x in x_pred
-                ]
-                pred1_var = [posterior_var(bo1_std.model, x) for x in x_pred]
+                pred1_mean = posterior_mean(bo1_std.model, x_pred) .+ params1[1]
+                pred1_var = posterior_var(bo1_std.model, x_pred)
 
-                pred2_mean = [posterior_mean(bo2.model, x) for x in x_pred]
-                pred2_var = [posterior_var(bo2.model, x) for x in x_pred]
+                pred2_mean = posterior_mean(bo2.model, x_pred)
+                pred2_var = posterior_var(bo2.model, x_pred)
 
                 println("Pred1 Mean: ", pred1_mean)
                 println("Pred2 Mean: ", pred2_mean)
@@ -333,11 +325,11 @@ using Random
                     x_test,
                     y_test_standard,
                     10,
-                    0.0,
+                    0.0
                 )
 
                 # Setup 2: ConstMean(empirical_mean) + scale_only
-                model2 = StandardGP(kernel, 1e-12, mean=ConstMean(empirical_mean))
+                model2 = StandardGP(kernel, 1e-12, mean = ConstMean(empirical_mean))
                 bo2 = BOStruct(
                     f,
                     ExpectedImprovement(0.01, minimum(y_test_standard)),
@@ -346,25 +338,24 @@ using Random
                     x_test,
                     y_test_standard,
                     10,
-                    0.0,
+                    0.0
                 )
 
                 # Apply standardizations
-                bo1_std, params1 = standardize_problem(bo1, choice="mean_scale")
-                bo2_std, params2 = standardize_problem(bo2, choice="scale_only")
+                bo1_std, params1 = standardize_problem(bo1, "mean_scale")
+                bo2_std, params2 = standardize_problem(bo2, "scale_only")
 
                 # Test points for prediction
                 x_pred = [[0.5, -0.3], [-1.2, 0.8], [2.1, -1.5]]
 
                 # Get predictions from both setups (standardized)
-                pred1_mean = [
-                    posterior_mean(bo1_std.model, x) + params1[1][1] / params1[2][1] for
-                    x in x_pred
-                ]
-                pred1_var = [posterior_var(bo1_std.model, x) for x in x_pred]
 
-                pred2_mean = [posterior_mean(bo2_std.model, x) for x in x_pred]
-                pred2_var = [posterior_var(bo2_std.model, x) for x in x_pred]
+                pred1_mean = posterior_mean(bo1_std.model, x_pred) .+
+                             params1[1] / params1[2]
+                pred1_var = posterior_var(bo1_std.model, x_pred)
+
+                pred2_mean = posterior_mean(bo2_std.model, x_pred)
+                pred2_var = posterior_var(bo2_std.model, x_pred)
 
                 println("Pred1 Mean: ", pred1_mean)
                 println("Pred2 Mean: ", pred2_mean)
@@ -398,12 +389,12 @@ using Random
                         x_test,
                         y_test_gradient,
                         10,
-                        0.0,
+                        0.0
                     )
 
                     # Setup 2: gradConstMean([empirical_mean, 0, 0]) + no standardization
                     model2_grad = GradientGP(
-                        kernel, dim + 1, 1e-12, mean=gradConstMean(prior_mean_vector)
+                        kernel, dim + 1, 1e-12, mean = gradConstMean(prior_mean_vector)
                     )
                     bo2_grad = BOStruct(
                         f_val_grad,
@@ -413,12 +404,12 @@ using Random
                         x_test,
                         y_test_gradient,
                         10,
-                        0.0,
+                        0.0
                     )
 
                     # Apply standardizations
                     bo1_grad_std, params1_grad = standardize_problem(
-                        bo1_grad, choice="mean_only"
+                        bo1_grad, "mean_only"
                     )
                     bo2_grad.model = update(bo2_grad.model, x_test, y_test_gradient)
 
@@ -426,30 +417,15 @@ using Random
                     x_pred = [[0.5, -0.3], [-1.2, 0.8]]
 
                     # Get gradient predictions from both setups
-                    pred1_grad_mean = [
-                        posterior_grad_mean(bo1_grad_std.model, x) .+ params1_grad[1] for
-                        x in x_pred
-                    ]
-                    pred1_grad_var = [
-                        posterior_grad_var(bo1_grad_std.model, x) for x in x_pred
-                    ]
+                    pred1_grad_mean = posterior_grad_mean(bo1_grad_std.model, x_pred) +
+                                      repeat(params1_grad[1], inner = length(x_pred))
+                    pred1_grad_var = posterior_grad_var(bo1_grad_std.model, x_pred)
 
-                    pred2_grad_mean = [
-                        posterior_grad_mean(bo2_grad.model, x) for x in x_pred
-                    ]
-                    pred2_grad_var = [posterior_grad_var(bo2_grad.model, x) for x in x_pred]
+                    pred2_grad_mean = posterior_grad_mean(bo2_grad.model, x_pred)
+                    pred2_grad_var = posterior_grad_var(bo2_grad.model, x_pred)
 
-                    mean_diff_grad = maximum([
-                        maximum(abs.(m1 .- m2)) for
-                        (m1, m2) in zip(pred1_grad_mean, pred2_grad_mean)
-                    ])
-                    var_diff_grad = maximum([
-                        maximum(abs.(v1 .- v2)) for
-                        (v1, v2) in zip(pred1_grad_var, pred2_grad_var)
-                    ])
-
-                    @test mean_diff_grad < 1e-10
-                    @test var_diff_grad < 1e-10
+                    @test all(maximum.(abs.(pred1_grad_mean .- pred2_grad_mean)) .< 1e-10)
+                    @test all(maximum.(abs.(pred1_grad_var .- pred2_grad_var)) .< 1e-10)
                 end
             end
         end
@@ -473,20 +449,16 @@ using Random
             updated_gp = update(gp, x_train, y_train)
 
             # Test 1: Posterior mean at training points should match observed values
-            for i in 1:length(x_train)
-                pred_mean = posterior_mean(updated_gp, x_train[i])
-                @test abs(pred_mean - y_train[i][1]) < 0.1  # Should be close to observed values
-            end
+            pred_mean = posterior_mean(updated_gp, x_train)
+            @test all(abs.(pred_mean .- reduce(vcat, y_train)) .< 0.1)
 
             # Test 2: Posterior variance at training points should be small (near noise level)
-            for i in 1:length(x_train)
-                pred_var = posterior_var(updated_gp, x_train[i])
-                @test pred_var < 0.1  # Should be small at training points
-            end
+            pred_vars = posterior_var(updated_gp, x_train)
+            @test all(pred_vars .< 0.1)  # Should be small at training points
 
             # Test 3: Posterior variance should increase with distance from training data
             test_points = [[0.1, 0.1], [1.5, 1.5], [3.0, 3.0]]  # Close, medium, far
-            variances = [posterior_var(updated_gp, x) for x in test_points]
+            variances = posterior_var(updated_gp, test_points)
             @test variances[1] < variances[2] < variances[3]  # Increasing uncertainty
         end
 
@@ -519,7 +491,7 @@ using Random
             # Setup GP
             kernel = 1.0 * (SqExponentialKernel() ∘ ScaleTransform(1.0))
             gp = StandardGP(kernel, 0.01)
-            x_train = [[-1.0], [0.0], [1.0]]
+            x_train = [-1.0, 0.0, 1.0]
             y_train = [1.0, 0.25, 1.0]
             updated_gp = update(gp, x_train, y_train)
 
@@ -528,11 +500,9 @@ using Random
             ei = ExpectedImprovement(0.01, best_y)
 
             # Test 1: EI should be non-negative everywhere
-            test_points = [[-2.0], [-0.5], [0.5], [2.0]]
-            for x in test_points
-                ei_val = ei(updated_gp, x)
-                @test ei_val >= 0.0
-            end
+            test_points = [-2.0, -0.5, 0.5, 2.0]
+            ei_vals = ei(updated_gp, test_points)
+            @test all(ei_vals .>= 0.0)
 
             # Test 2: EI should be zero where posterior mean equals best observed value
             # and posterior variance is zero (at training points with no noise)
@@ -553,13 +523,13 @@ using Random
             ucb_high = UpperConfidenceBound(3.0)
             test_x = [0.5]
 
-            @test ucb_low(updated_gp, test_x) < ucb_high(updated_gp, test_x)
+            @test ucb_low(updated_gp, test_x)[1] < ucb_high(updated_gp, test_x)[1]
 
             # Test 4: UCB should equal -mean + β * variance (as implemented)
             # Note: UCB is maximized, so the implementation uses -μ + β*σ² for maximization
-            ucb_val = ucb(updated_gp, test_x)
-            mean_val = posterior_mean(updated_gp, test_x)
-            var_val = posterior_var(updated_gp, test_x)
+            ucb_val = ucb(updated_gp, test_x)[1]
+            mean_val = posterior_mean(updated_gp, test_x)[1]
+            var_val = posterior_var(updated_gp, test_x)[1]
             expected_ucb = -mean_val + β * sqrt(var_val)
             @test abs(ucb_val - expected_ucb) < 1e-10
         end
@@ -568,14 +538,14 @@ using Random
             # Test mathematical convergence properties of Bayesian optimization
 
             # Define a simple 1D function with known global minimum
-            f(x) = (x[1] - 0.7)^2 + 0.1  # Global minimum at x = 0.7, value = 0.1
+            f(x) = (x - 0.7)^2 + 0.1  # Global minimum at x = 0.7, value = 0.1
             true_min_x = 0.7
             true_min_val = 0.1
 
             domain = ContinuousDomain([-2.0], [3.0])
 
             # Create initial training data (not including optimum)
-            x_train = [[-1.0], [0.0], [2.0]]
+            x_train = [-1.0, 0.0, 2.0]
             y_train = f.(x_train)
 
             # Setup optimization
@@ -586,8 +556,9 @@ using Random
             problem = BOStruct(f, ei, gp, domain, x_train, y_train, 15, 0.01)
 
             # Run optimization
-            result, _, _ = AbstractBayesOpt.optimize(
-                problem, standardize=nothing, hyper_params=nothing
+            result, _,
+            _ = AbstractBayesOpt.optimize(
+                problem, standardize = nothing, hyper_params = nothing
             )
 
             # Test 1: Best found value should improve over iterations
@@ -596,7 +567,7 @@ using Random
 
             # Should be non-increasing (monotonic improvement)
             for i in 2:length(best_values)
-                @test best_values[i] <= best_values[i-1] + 1e-10
+                @test best_values[i] <= best_values[i - 1] + 1e-10
             end
 
             # Test 2: Should get reasonably close to true optimum
@@ -619,9 +590,8 @@ using Random
             noise_var = 0.01
 
             # Generate data from a GP with known hyperparameters
-            true_kernel =
-                true_scale * (SqExponentialKernel() ∘ ScaleTransform(1 / true_lengthscale))
-
+            true_kernel = true_scale *
+                          (SqExponentialKernel() ∘ ScaleTransform(1 / true_lengthscale))
             # Training points
             x_train = [[-1.0], [-0.5], [0.0], [0.5], [1.0]]
 
@@ -640,7 +610,7 @@ using Random
 
             try
                 optimized_gp = optimize_hyperparameters(
-                    updated_gp, x_train, y_train, initial_params, true, num_restarts=3
+                    updated_gp, x_train, y_train, initial_params, true, num_restarts = 3
                 )
 
                 # Test that optimization improved the likelihood
@@ -686,8 +656,8 @@ using Random
             updated_gp = update(gp, x_train, y_train)
 
             # Test 1: Function value predictions should be consistent
-            test_x = [0.5, -0.3]
-            pred_f = posterior_mean(updated_gp, test_x)  # Function value only
+            test_x = [[0.5, -0.3]]
+            pred_f = posterior_mean(updated_gp, test_x)[1]  # Function value only
             pred_full = posterior_grad_mean(updated_gp, test_x)  # Full vector [f, ∇f]
 
             @test abs(pred_f - pred_full[1]) < 1e-10  # Should match
@@ -696,8 +666,9 @@ using Random
             @test length(pred_full) == 3  # f + 2 gradients
 
             # Test 3: Predictions at training points should be close to observations
+            pred_at_train = posterior_mean(updated_gp, x_train)
             for i in 1:length(x_train)
-                pred_at_train = posterior_grad_mean(updated_gp, x_train[i])
+                pred_at_train = posterior_grad_mean(updated_gp, x_train[i:i])
                 for j in 1:3
                     @test abs(pred_at_train[j] - y_train[i][j]) < 1e-4
                 end
@@ -723,10 +694,10 @@ using Random
         @testset "Standardization Mathematical Correctness" begin
             # Test that standardization preserves mathematical relationships
 
-            f(x) = 3 * x[1]^2 + 5.0  # Function with known mean and scale
+            f(x) = 3 * x^2 + 5.0  # Function with known mean and scale
 
             # Generate training data
-            x_train = [[-1.0], [-0.5], [0.0], [0.5], [1.0]]
+            x_train = [-1.0, -0.5, 0.0, 0.5, 1.0]
             y_train = f.(x_train)
 
             # Calculate empirical statistics
@@ -742,20 +713,18 @@ using Random
             problem = BOStruct(f, ei, gp, domain, x_train, y_train, 5, 0.01)
 
             # Test mean_scale standardization
-            std_problem, params = standardize_problem(problem, choice="mean_scale")
+            std_problem, params = standardize_problem(problem, "mean_scale")
             μ, σ = params
 
             @test abs(σ[1] - empirical_std) < 1e-10
 
             # Test 3: Unstandardizing should recover original values
             recovered_y = rescale_output(std_problem.ys, params)
-            for i in 1:length(y_train)
-                @test abs(recovered_y[i][1] - y_train[i][1]) < 1e-10
-            end
+            @test all(abs.(recovered_y .- y_train) .< 1e-10)
 
             # Test 4: Scale-only standardization should preserve mean
             std_problem_scale, params_scale = standardize_problem(
-                problem, choice="scale_only"
+                problem, "scale_only"
             )
             std_y_scale = reduce(vcat, std_problem_scale.ys)
 
@@ -769,7 +738,7 @@ using Random
 
             @testset "Near-singular kernel matrices" begin
                 # Test with very close points that might cause numerical issues
-                x_train = [[0.0], [1e-10], [2e-10]]  # Very close points
+                x_train = [0.0, 1e-10, 2e-10]  # Very close points
                 y_train = [1.0, 1.001, 1.002]
 
                 kernel = SqExponentialKernel()
@@ -778,22 +747,22 @@ using Random
                 # This should not crash due to numerical issues
                 try
                     updated_gp = update(gp, x_train, y_train)
-                    pred = posterior_mean(updated_gp, [0.5])
+                    pred = posterior_mean(updated_gp, [0.5])[1]
                     @test isfinite(pred)
                 catch e
                     # If it fails due to numerical issues, that's expected behavior
                     @test isa(
                         e,
                         Union{
-                            LinearAlgebra.SingularException,LinearAlgebra.PosDefException
-                        },
+                            LinearAlgebra.SingularException, LinearAlgebra.PosDefException
+                        }
                     )
                 end
             end
 
             @testset "Extreme hyperparameter values" begin
                 # Test with very large/small hyperparameters
-                x_train = [[-1.0], [0.0], [1.0]]
+                x_train = [-1.0, 0.0, 1.0]
                 y_train = [1.0, 0.0, 1.0]
 
                 # Very large lengthscale (smooth function)
@@ -801,7 +770,7 @@ using Random
                 gp_large = StandardGP(large_ls_kernel, 0.01)
                 updated_large = update(gp_large, x_train, y_train)
 
-                pred_large = posterior_mean(updated_large, [0.5])
+                pred_large = posterior_mean(updated_large, [0.5])[1]
                 @test isfinite(pred_large)
 
                 # Very small lengthscale (wiggly function)
@@ -809,7 +778,7 @@ using Random
                 gp_small = StandardGP(small_ls_kernel, 0.01)
                 updated_small = update(gp_small, x_train, y_train)
 
-                pred_small = posterior_mean(updated_small, [0.5])
+                pred_small = posterior_mean(updated_small, [0.5])[1]
                 @test isfinite(pred_small)
 
                 # Predictions should be different for very different lengthscales

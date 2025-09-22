@@ -16,8 +16,8 @@ function extract_scale_and_lengthscale(kernel::Kernel)
 
     # Unwrap TransformKernel to get lengthscale
     if isa(inner, KernelFunctions.TransformedKernel) &&
-        isa(inner.transform, KernelFunctions.ScaleTransform)
-        lengthscale = 1/inner.transform.s[1]
+       isa(inner.transform, KernelFunctions.ScaleTransform)
+        lengthscale = 1 / inner.transform.s[1]
         inner = inner.kernel
     end
 

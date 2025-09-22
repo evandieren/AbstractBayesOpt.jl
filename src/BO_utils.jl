@@ -41,12 +41,11 @@ returns:
 - `BO::BOStruct`: The updated BOStruct with standardized outputs and updated model/acquisition.
 - `params::Tuple`: A tuple containing the mean and standard deviation used for standardization (vectors matching the output dimension).
 """
-function standardize_problem(BO::BOStruct; choice="mean_scale")
+function standardize_problem(BO::BOStruct, choice::String)
     @assert choice in ["mean_scale", "scale_only", "mean_only"] "choice must be one of: 'mean_scale', 'scale_only', 'mean_only'"
 
     # Attention: here it is the standard deviation, need to square for kernel scaling
-    μ, σ = get_mean_std(BO.model, BO.ys_non_std, choice) # μ should be the type of Y 
-
+    μ, σ = get_mean_std(BO.model, BO.ys_non_std, choice) # μ should be the type of Y
 
     println("Standardization choice: $choice")
     println("Standardization parameters: μ=$μ, σ=$σ")
@@ -80,11 +79,11 @@ Returns:
 
 """
 function lengthscale_bounds(
-    x_train::AbstractMatrix,
-    domain_lower::AbstractVector,
-    domain_upper::AbstractVector;
-    min_frac::Float64=0.1,
-    max_frac::Float64=1.0,
+        x_train::AbstractMatrix,
+        domain_lower::AbstractVector,
+        domain_upper::AbstractVector;
+        min_frac::Float64 = 0.1,
+        max_frac::Float64 = 1.0
 )
     n, d = size(x_train)
     ℓ_lower = zeros(d)
@@ -104,8 +103,7 @@ function lengthscale_bounds(
                 xj = xi[j]
                 for k in 1:n
                     if k == j
-                        ;
-                        continue;
+                        continue
                     end
                     dk = abs(xj - xi[k])
                     if dk < min_d
@@ -134,14 +132,14 @@ Convenience overload accepting a vector-of-vectors of points and a `ContinuousDo
 Returns the same as the matrix method.
 """
 function lengthscale_bounds(
-    x_train::AbstractVector{<:AbstractVector},
-    domain::ContinuousDomain;
-    min_frac::Float64=0.1,
-    max_frac::Float64=1.0,
+        x_train::AbstractVector,
+        domain::ContinuousDomain;
+        min_frac::Float64 = 0.1,
+        max_frac::Float64 = 1.0
 )
     X = permutedims(reduce(hcat, x_train)) # n × d
     return lengthscale_bounds(
-        X, domain.lower, domain.upper; min_frac=min_frac, max_frac=max_frac
+        X, domain.lower, domain.upper; min_frac = min_frac, max_frac = max_frac
     )
 end
 
@@ -167,6 +165,5 @@ function rescale_output(ys::AbstractVector, params::Tuple)
     end
 end
 
-
-_noise_like(y::AbstractFloat; σ=1.0) = σ * randn()
-_noise_like(y::AbstractVector{T}; σ=1.0) where {T<:AbstractFloat} = σ * randn(length(y))
+_noise_like(y::AbstractFloat; σ = 1.0) = σ * randn()
+_noise_like(y::AbstractVector{T}; σ = 1.0) where {T <: AbstractFloat} = σ * randn(length(y))

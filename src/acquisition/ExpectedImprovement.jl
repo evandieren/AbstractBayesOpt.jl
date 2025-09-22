@@ -11,43 +11,43 @@ returns:
 References:
 [Jones et al., 1998](https://link.springer.com/article/10.1023/A:1008306431147)
 """
-struct ExpectedImprovement <: AbstractAcquisition
-    ξ::Float64
-    best_y::Float64
+struct ExpectedImprovement{Y} <: AbstractAcquisition
+    ξ::Y
+    best_y::Y
 end
 
 Base.copy(EI::ExpectedImprovement) = ExpectedImprovement(EI.ξ, EI.best_y)
 
-function (EI::ExpectedImprovement)(surrogate::AbstractSurrogate, x, x_buf=nothing)#[copy(x)])
+function (EI::ExpectedImprovement)(surrogate::AbstractSurrogate, x::AbstractVector)
 
-    # Allocate buffer if not provided
-    if x_buf === nothing
-        if surrogate isa GradientGP
-            x_buf = [(copy(x), 1)]
-        else
-            x_buf = [copy(x)]
-        end
-    else
-        # Reuse buffer
-        if surrogate isa GradientGP
-            x_buf[1][1] .= x  # copy x into the tuple buffer
-        else
-            x_buf[1] .= x  # copy into 1×d matrix
-        end
-    end
+    # # Allocate buffer if not provided
+    # if x_buf === nothing
+    #     if surrogate isa GradientGP
+    #         x_buf = [(copy(x), 1)]
+    #     else
+    #         x_buf = [copy(x)]
+    #     end
+    # else
+    # # Reuse buffer
+    # if surrogate isa GradientGP
+    #     x_buf[1][1] .= x  # copy x into the tuple buffer
+    # else
+    #     x_buf[1] .= x  # copy into 1×d matrix
+    # end
+    # end
 
-    μ = posterior_mean(surrogate, x_buf)
-    σ² = posterior_var(surrogate, x_buf)
-    Δ = (EI.best_y - EI.ξ) - μ # we are substracting ξ because we are minimising.
+    μ = posterior_mean(surrogate, x)
+    σ² = posterior_var(surrogate, x)
+    Δ = (EI.best_y - EI.ξ) .- μ # we are substracting ξ because we are minimising.
+    return _single_input_ei.(Δ, σ²)
+end
 
+function _single_input_ei(Δ, σ²)
     if σ² <= 1e-12
         return max(Δ, 0.0)
     end
-
     σ = sqrt(σ²)
-
-    z = Δ/σ
-
+    z = Δ / σ
     return Δ * cdf(Normal(0, 1), z) + σ * pdf(Normal(0, 1), z)
 end
 
@@ -63,7 +63,7 @@ returns:
 - `new_acqf::ExpectedImprovement`: Updated Expected Improvement acquisition function
 """
 function update(acq::ExpectedImprovement, ys::AbstractVector, surrogate::AbstractSurrogate)
-    if (length(ys[1])==1) # we are in 1d
+    if (length(ys[1]) == 1) # we are in 1d
         ExpectedImprovement(acq.ξ, minimum(reduce(vcat, ys)))
     else
         ExpectedImprovement(acq.ξ, minimum(hcat(ys...)[1, :]))

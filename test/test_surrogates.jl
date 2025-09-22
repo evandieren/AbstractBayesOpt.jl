@@ -3,6 +3,7 @@ using AbstractBayesOpt
 using AbstractGPs, KernelFunctions
 using Statistics
 using Random
+using LinearAlgebra
 
 @testset "Surrogate Model Tests" begin
     @testset "StandardGP Tests" begin
@@ -16,7 +17,6 @@ using Random
             @test gp.noise_var == noise_var
             @test gp.gpx === nothing
             @test isa(gp.gp, AbstractGPs.GP)
-
 
             # Test the kernel with lengthscale and scale
             ℓ = get_lengthscale(gp)[1]
@@ -34,7 +34,6 @@ using Random
             @test gp_custom.noise_var == noise_var
             @test gp_custom.gpx === nothing
             @test isa(gp_custom.gp, AbstractGPs.GP)
-
 
             # Test with only lengthscale
             custom_ℓ2 = 0.3
@@ -55,7 +54,6 @@ using Random
             @test gp_sc.noise_var == noise_var
             @test gp_sc.gpx === nothing
             @test isa(gp_sc.gp, AbstractGPs.GP)
-
         end
 
         @testset "StandardGP Update" begin
@@ -81,17 +79,29 @@ using Random
             mean_pred = posterior_mean(updated_gp, test_x)
             var_pred = posterior_var(updated_gp, test_x)
 
+            @test isa(mean_pred[1], Float64)
+            @test isa(var_pred[1], Float64)
+            @test var_pred[1] >= 0.0
 
             # Check the value of posterior mean and var
             k_xX = kernel.(Ref(test_x), xs)
             K̃ = kernelmatrix(kernel, xs) + noise_var * I
-            
+
             true_mean_post = k_xX' * (K̃ \ ys)
             true_var_post = kernel(test_x, test_x) - k_xX' * (K̃ \ k_xX)
 
-            @test isapprox(mean_pred, true_mean_post, atol=1e-10)
-            @test isapprox(var_pred, true_var_post, atol=1e-10)
+            # Test prep_input
+            x = [0.5, 1.0]
+            prepped = prep_input(gp, x)
+            @test prepped == x
 
+            # Test with updated GP
+            xs = [0.0, 0.5, 1.0]
+            ys = [0.0, 0.25, 1.0]
+
+            updated_gp = update(gp, xs, ys)
+            @test isapprox(mean_pred[1], true_mean_post, atol = 1e-10)
+            @test isapprox(var_pred[1], true_var_post, atol = 1e-10)
         end
 
         @testset "StandardGP Standardization output" begin
@@ -114,7 +124,7 @@ using Random
             # Check that rescaled data has different scale
             y_flat_std = reduce(vcat, y_std)
             y_flat_orig = reduce(vcat, y_train)
-            @test std(y_flat_std) ≈ 1.0 atol = 1e-10
+            @test std(y_flat_std)≈1.0 atol=1e-10
         end
 
         @testset "StandardGP Copy" begin
@@ -149,15 +159,14 @@ using Random
 
             # Get the current kernel matrix for gradient GP
             K̃ = kernelmatrix(kernel, x) + noise_var * I
-            
+
             # Compute the three components of the logpdf
             K_inv_y = K̃ \ y
             quadratic_form = y' * K_inv_y
             constant_term = length(y) * log(2π)
             analytical_logpdf = -0.5 * (quadratic_form + logdet(K̃) + constant_term)
             true_nlml = -analytical_logpdf
-            @test isapprox(nlml_val, true_nlml, atol=1e-10)
-
+            @test isapprox(nlml_val, true_nlml, atol = 1e-10)
         end
     end
 
@@ -221,7 +230,6 @@ using Random
             @test gp_sc.noise_var == noise_var
             @test gp_sc.gpx === nothing
             @test isa(gp_sc.gp, AbstractGPs.GP)
-
         end
 
         @testset "gradKernel Functionality" begin
@@ -231,15 +239,15 @@ using Random
             ∇₂kernel(x, y) = ForwardDiff.gradient(t -> kernel_base(x, t), y)
 
             ∇₁₂kernel((x, px), (y, py)) = ForwardDiff.derivative(
-                                                    h1 -> ForwardDiff.derivative(
-                                                        h2 -> kernel_base(
-                                                            x .+ h1 .* (1:length(x) .== (px-1)),
-                                                            y .+ h2 .* (1:length(y) .== (py-1)),
-                                                        ),
-                                                        0.0,
-                                                    ),
-                                                    0.0,
-                                                )
+                h1 -> ForwardDiff.derivative(
+                    h2 -> kernel_base(
+                        x .+ h1 .* (1:length(x) .== (px - 1)),
+                        y .+ h2 .* (1:length(y) .== (py - 1))
+                    ),
+                    0.0
+                ),
+                0.0
+            )
 
             grad_kernel = gradKernel(kernel_base)
             x = [0.5, 0.5]
@@ -249,35 +257,34 @@ using Random
             val_ff = grad_kernel((x, 1), (y, 1))
 
             true_val_ff = kernel_base(x, y)
-            @test isapprox(val_ff, true_val_ff, atol=1e-10)
+            @test isapprox(val_ff, true_val_ff, atol = 1e-10)
 
             # Test function-gradient evaluation (px=1, py>1)
             val_fg = [grad_kernel((x, 1), (y, 2)); grad_kernel((x, 1), (y, 3))]
             true_val_fg = ∇₂kernel(x, y)
-            @test isapprox(val_fg, true_val_fg, atol=1e-10)
+            @test isapprox(val_fg, true_val_fg, atol = 1e-10)
 
             # Test gradient-function evaluation (px>1, py=1)
             val_gf = [grad_kernel((x, 2), (y, 1)); grad_kernel((x, 3), (y, 1))]
             true_val_gf = ∇₁kernel(x, y)
-            @test isapprox(val_gf, true_val_gf, atol=1e-10)
-
+            @test isapprox(val_gf, true_val_gf, atol = 1e-10)
 
             # Test gradient-gradient evaluation (px>1, py>1)
             val_gg = grad_kernel((x, 2), (y, 2))
             true_val_gg = ∇₁₂kernel((x, 2), (y, 2))
-            @test isapprox(val_gg, true_val_gg, atol=1e-10)
+            @test isapprox(val_gg, true_val_gg, atol = 1e-10)
 
             val_gg_23 = grad_kernel((x, 2), (y, 3))
             true_val_gg_23 = ∇₁₂kernel((x, 2), (y, 3))
-            @test isapprox(val_gg_23, true_val_gg_23, atol=1e-10)
+            @test isapprox(val_gg_23, true_val_gg_23, atol = 1e-10)
 
             val_gg_32 = grad_kernel((x, 3), (y, 2))
             true_val_gg_32 = ∇₁₂kernel((x, 3), (y, 2))
-            @test isapprox(val_gg_32, true_val_gg_32, atol=1e-10)   
+            @test isapprox(val_gg_32, true_val_gg_32, atol = 1e-10)
 
-            val_gg_33 = grad_kernel((x, 3), (y, 3)) 
+            val_gg_33 = grad_kernel((x, 3), (y, 3))
             true_val_gg_33 = ∇₁₂kernel((x, 3), (y, 3))
-            @test isapprox(val_gg_33, true_val_gg_33, atol=1e-10)
+            @test isapprox(val_gg_33, true_val_gg_33, atol = 1e-10)
 
             # Test symmetry for function-function case
             @test grad_kernel((x, 1), (y, 1)) ≈ grad_kernel((y, 1), (x, 1))
@@ -303,9 +310,12 @@ using Random
             @test isa(updated_gp, GradientGP)
 
             # Test predictions
-            test_x = [0.25, 0.25]
-            mean_pred = posterior_mean(updated_gp, test_x)
-            var_pred = posterior_var(updated_gp, test_x)
+            test_x = [[0.25, 0.25]]
+            mean_pred = posterior_mean(updated_gp, test_x)[1]
+            var_pred = posterior_var(updated_gp, test_x)[1]
+            grad_mean = posterior_grad_mean(updated_gp, test_x)
+            grad_var = posterior_grad_var(updated_gp, test_x)
+
             grad_mean_pred = posterior_grad_mean(updated_gp, test_x)
             grad_var_pred = posterior_grad_var(updated_gp, test_x)
             grad_cov_pred = posterior_grad_cov(updated_gp, test_x)
@@ -319,25 +329,26 @@ using Random
             @test length(grad_var_pred) == p
 
             # Now checking compared to true values
-            prepped_input = prep_input(gp, [test_x])
+            prepped_input = prep_input(gp, test_x)
             prepped_input_train = prep_input(gp, xs)
             grad_kernel = gradKernel(kernel_base)
 
             # Mean check
             # Creates Vector{Vector{Float64}} here
-            k_xX = [grad_kernel.(Ref(prepped_input[i]),prepped_input_train) for i in 1:p]
+            k_xX = [grad_kernel.(Ref(prepped_input[i]), prepped_input_train) for i in 1:p]
             K̃ = kernelmatrix(grad_kernel, prepped_input_train) + noise_var * I
-            ỹ =  vec(permutedims(reduce(hcat, ys)))  # Convert to single vector with right ordering
+            ỹ = vec(permutedims(reduce(hcat, ys)))  # Convert to single vector with right ordering
 
             true_mean_post = reduce(vcat, permutedims.(k_xX)) * (K̃ \ ỹ)
-            @test isapprox(grad_mean_pred, true_mean_post, atol=1e-10)
+            @test isapprox(grad_mean_pred, true_mean_post, atol = 1e-10)
 
             # Covariance check
             # p x p matrix
-            k_xx = grad_kernel.(permutedims(prepped_input), prepped_input) 
-            true_cov_post = k_xx - reduce(vcat, permutedims.(k_xX)) * (K̃ \ reduce(hcat, k_xX))
+            k_xx = grad_kernel.(permutedims(prepped_input), prepped_input)
+            true_cov_post = k_xx -
+                            reduce(vcat, permutedims.(k_xX)) * (K̃ \ reduce(hcat, k_xX))
 
-            @test isapprox(grad_cov_pred, true_cov_post, atol=1e-10)
+            @test isapprox(grad_cov_pred, true_cov_post, atol = 1e-10)
         end
 
         @testset "GradientGP Utility Functions" begin
@@ -379,9 +390,9 @@ using Random
 
             # Check that the standardized values match with the original standardization formula
             for (y_orig, y_s) in zip(y_train, y_std)
-                @test y_s[1] ≈ (y_orig[1] - μ[1]) / σ[1] atol = 1e-8
-                @test y_s[2] ≈ (y_orig[2] - μ[2]) / σ[2] atol = 1e-8
-                @test y_s[3] ≈ (y_orig[3] - μ[3]) / σ[3] atol = 1e-8
+                @test y_s[1]≈(y_orig[1] - μ[1]) / σ[1] atol=1e-8
+                @test y_s[2]≈(y_orig[2] - μ[2]) / σ[2] atol=1e-8
+                @test y_s[3]≈(y_orig[3] - μ[3]) / σ[3] atol=1e-8
             end
         end
 
@@ -401,6 +412,5 @@ using Random
             @test copied_gp.gp === updated_gp.gp  # Should be same reference
             @test copied_gp.gpx !== updated_gp.gpx  # Should be different reference
         end
-
     end
 end
