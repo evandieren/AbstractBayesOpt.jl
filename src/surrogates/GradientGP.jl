@@ -204,10 +204,10 @@ returns:
 """
 function nlml(
         model::GradientGP,
-        params::NTuple{2, T},
+        params,
         xs::AbstractVector,
         ys::AbstractVector
-) where {T}
+)
     log_ℓ, log_scale = params
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
