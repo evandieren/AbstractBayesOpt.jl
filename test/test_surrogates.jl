@@ -67,6 +67,7 @@ using Random
 
             # Test standardization using the functions from bayesian_opt.jl
             y_train = [1.0, 2.0, 3.0, 4.0, 5.0]
+
             μ, σ = get_mean_std(gp, y_train, "mean_scale")
             y_std = std_y(gp, y_train, μ, σ)
 
