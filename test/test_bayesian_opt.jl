@@ -92,7 +92,7 @@ using Random
             gp = StandardGP(kernel, 0.1)
 
             # Create training data
-            x_train = [[-1.0], [0.0], [1.0]]
+            x_train = [-1.0, 0.0, 1.0]
             y_train = f.(x_train)
 
             # Create acquisition function
@@ -246,7 +246,7 @@ using Random
             # Generate test data
             dim = 2
             n_points = 8
-            x_test = [[randn(dim)...] for _ in 1:n_points]
+            x_test = [randn(dim) for _ in 1:n_points]
 
             @testset "StandardGP Equivalence: mean_only vs prior mean" begin
                 # Test for StandardGP
@@ -348,7 +348,7 @@ using Random
                 x_pred = [[0.5, -0.3], [-1.2, 0.8], [2.1, -1.5]]
 
                 # Get predictions from both setups (standardized)
-        
+
                 pred1_mean = posterior_mean(bo1_std.model, x_pred) .+
                              params1[1] / params1[2]
                 pred1_var = posterior_var(bo1_std.model, x_pred)
@@ -416,7 +416,8 @@ using Random
                     x_pred = [[0.5, -0.3], [-1.2, 0.8]]
 
                     # Get gradient predictions from both setups
-
+                    # pred1_grad_mean = posterior_grad_mean(bo1_grad_std.model, x_pred) .+
+                    #                   params1_grad[1]
                     pred1_grad_mean = [posterior_grad_mean(bo1_grad_std.model, x) .+
                                        params1_grad[1] for
                                        x in x_pred]
@@ -578,7 +579,7 @@ using Random
 
             # Should be non-increasing (monotonic improvement)
             for i in 2:length(best_values)
-                @test best_values[i] <= best_values[i-1] + 1e-10
+                @test best_values[i] <= best_values[i - 1] + 1e-10
             end
 
             # Test 2: Should get reasonably close to true optimum
@@ -704,7 +705,7 @@ using Random
 
         @testset "Standardization Mathematical Correctness" begin
             # Test that standardization preserves mathematical relationships
-      
+
             f(x) = 3 * x^2 + 5.0  # Function with known mean and scale
 
             # Generate training data
