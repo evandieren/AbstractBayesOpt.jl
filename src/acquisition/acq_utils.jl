@@ -10,6 +10,12 @@ function _get_box_optimizer()
     box_optimizer = Fminbox(inner_optimizer)
     return box_optimizer
 end
+function _get_box_optimizer()
+    inner_optimizer = LBFGS(;
+        linesearch = Optim.LineSearches.HagerZhang(; linesearchmax = 20))
+    box_optimizer = Fminbox(inner_optimizer)
+    return box_optimizer
+end
 
 """
 Optimize the acquisition function over the given domain.
@@ -40,6 +46,8 @@ function optimize_acquisition(
     d = length(domain.bounds)
     grid_points = [domain.lower .+ rand(d) .* (domain.upper .- domain.lower)
                    for _ in 1:n_grid]
+    grid_points = [domain.lower .+ rand(d) .* (domain.upper .- domain.lower)
+                   for _ in 1:n_grid]
 
     # println("Grid points generated: ", grid_points[1:5])
     scores = acqf(surrogate, grid_points)
@@ -54,6 +62,8 @@ function optimize_acquisition(
             domain.lower,
             domain.upper,
             initial_x,
+            _get_box_optimizer(),
+            Optim.Options(; g_tol = 1e-5, f_abstol = 2.2e-9, x_abstol = 1e-4)
             _get_box_optimizer(),
             Optim.Options(; g_tol = 1e-5, f_abstol = 2.2e-9, x_abstol = 1e-4)
         )
@@ -95,6 +105,7 @@ end
 #                                 domain.lower,
 #                                 domain.upper,
 #                                 initial_x,
+#                                 _get_box_optimizer(),
 #                                 _get_box_optimizer(),
 #                                 Optim.Options(g_tol = 1e-5, f_abstol = 2.2e-9)
 #                                 ; autodiff = :forward)
