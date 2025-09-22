@@ -31,7 +31,6 @@ function (KG::KnowledgeGradient)(surrogate::AbstractSurrogate, x::AbstractVector
 
         Δ[j] = KG.best_μ[1] - μ_new[1]
     end
-    println("KG at $(x):", mean(Δ))
     return mean(Δ)
 end
 

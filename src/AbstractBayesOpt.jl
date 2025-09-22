@@ -11,7 +11,6 @@ using LinearAlgebra
 using Random
 using Distances
 using DifferentiationInterface
-import Mooncake
 
 # Interface definitions
 include("abstract.jl")

@@ -20,22 +20,6 @@ Base.copy(EI::ExpectedImprovement) = ExpectedImprovement(EI.ξ, EI.best_y)
 
 function (EI::ExpectedImprovement)(surrogate::AbstractSurrogate, x::AbstractVector)
 
-    # # Allocate buffer if not provided
-    # if x_buf === nothing
-    #     if surrogate isa GradientGP
-    #         x_buf = [(copy(x), 1)]
-    #     else
-    #         x_buf = [copy(x)]
-    #     end
-    # else
-    # # Reuse buffer
-    # if surrogate isa GradientGP
-    #     x_buf[1][1] .= x  # copy x into the tuple buffer
-    # else
-    #     x_buf[1] .= x  # copy into 1×d matrix
-    # end
-    # end
-
     μ = posterior_mean(surrogate, x)
     σ² = posterior_var(surrogate, x)
     Δ = (EI.best_y - EI.ξ) .- μ # we are substracting ξ because we are minimising.

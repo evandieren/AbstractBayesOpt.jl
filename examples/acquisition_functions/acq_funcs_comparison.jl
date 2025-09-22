@@ -1,3 +1,7 @@
+# OUT OF DATE: need to rework with new implementation
+
+
+
 using AbstractGPs
 using KernelFunctions
 using Plots
@@ -37,10 +41,7 @@ val_grad = f_val_grad.(x_train)
 y_train = [val_grad[i] for i in eachindex(val_grad)]
 
 # Setup kernel and model
-kernel_constructor = ApproxMatern52Kernel()
-kernel = 1 * (kernel_constructor ∘ ScaleTransform(1))
-grad_kernel = gradKernel(kernel)
-model = GradientGP(grad_kernel, d+1, σ²)
+model = GradientGP(ApproxMatern52Kernel(), d+1, σ²)
 
 # Define acquisition functions to compare
 function setup_acquisition_functions(y_train)

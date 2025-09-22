@@ -23,13 +23,6 @@ function (PI::ProbabilityImprovement)(surrogate::AbstractSurrogate, x::AbstractV
     σ² = posterior_var(surrogate, x)
     Δ = (PI.best_y - PI.ξ) .- μ # we are substracting ξ because we are minimising.
     return _single_input_pi.(Δ, σ²)
-
-    # max(σ², 0) == 0 && return max(Δ, 0.0)
-
-    # σ = sqrt(σ²)
-    # @evandieren was z not useful or is that a typo?
-    # z = (PI.best_y .- μ) ./ σ
-    # return normcdf(Δ / σ, 1)
 end
 
 function _single_input_pi(Δ, σ²)

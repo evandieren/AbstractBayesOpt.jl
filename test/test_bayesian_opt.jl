@@ -137,7 +137,6 @@ using Random
                     X_train,
                     y_train,
                     old_params,
-                    true,
                     num_restarts = 2,
                     scale_std = 1.0
                 )
@@ -593,15 +592,15 @@ using Random
             true_kernel = true_scale *
                           (SqExponentialKernel() ∘ ScaleTransform(1 / true_lengthscale))
             # Training points
-            x_train = [[-1.0], [-0.5], [0.0], [0.5], [1.0]]
+            x_train = [-1.0, -0.5, 0.0, 0.5, 1.0]
 
             # Generate y values that are consistent with the true kernel
             # (This is a simplified test - in practice, we'd sample from the GP)
 
-            y_train = [sin(2 * x[1]) + 0.1 * randn() for x in x_train]
+            y_train = [sin(2 * x) + 0.1 * randn() for x in x_train]
 
             # Create GP with initial hyperparameters
-            initial_kernel = 1.0 * (SqExponentialKernel() ∘ ScaleTransform(1.0))
+            initial_kernel = SqExponentialKernel()
             gp = StandardGP(initial_kernel, noise_var)
             updated_gp = update(gp, x_train, y_train)
 
@@ -610,7 +609,7 @@ using Random
 
             try
                 optimized_gp = optimize_hyperparameters(
-                    updated_gp, x_train, y_train, initial_params, true, num_restarts = 3
+                    updated_gp, x_train, y_train, initial_params, num_restarts = 3
                 )
 
                 # Test that optimization improved the likelihood
