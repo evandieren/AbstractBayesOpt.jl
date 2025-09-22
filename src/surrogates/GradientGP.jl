@@ -185,7 +185,6 @@ function update(model::GradientGP, xs::AbstractVector, ys::AbstractVector)
     x_tilde, y_tilde = prepare_isotopic_multi_output_data(xs, ColVecs(reduce(hcat, ys)))
 
     gpx = model.gp(x_tilde, model.noise_var...)
-    @show gpx
     updated_gpx = posterior(gpx, y_tilde)
 
     return GradientGP(model.gp, model.noise_var, model.p, updated_gpx)
