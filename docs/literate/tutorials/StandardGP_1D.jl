@@ -49,7 +49,7 @@ scatter!([x_min], [minimum(ys)]; label="Minimum", color=:red, markersize=5) #hid
 # ## Initialize the surrogate model
 # We'll use a standard Gaussian Process surrogate with a Matérn 5/2 kernel. We add a small jitter term for numerical stability of 1e-12.
 noise_var = 1e-9
-surrogate = StandardGP(ApproxMatern52Kernel(), noise_var)
+surrogate = StandardGP(SqExponentialKernel(), noise_var)
 
 # Generate uniform random samples x_train
 n_train = 5
@@ -72,7 +72,7 @@ bo_struct = BOStruct(
     domain,
     x_train,
     y_train,
-    40,  # number of iterations
+    10,  # number of iterations
     0.0,  # Actual noise level (0.0 for noiseless)
 )
 
