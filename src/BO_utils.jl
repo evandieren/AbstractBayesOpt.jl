@@ -45,7 +45,7 @@ function standardize_problem(BO::BOStruct, choice::String)
     @assert choice in ["mean_scale", "scale_only", "mean_only"] "choice must be one of: 'mean_scale', 'scale_only', 'mean_only'"
 
     # Attention: here it is the standard deviation, need to square for kernel scaling
-    μ, σ = get_mean_std(BO.model, BO.ys_non_std, choice) # μ should be the type of Y 
+    μ, σ = get_mean_std(BO.model, BO.ys_non_std, choice) # μ should be the type of Y
 
 
     println("Standardization choice: $choice")
@@ -104,8 +104,8 @@ function lengthscale_bounds(
                 xj = xi[j]
                 for k in 1:n
                     if k == j
-                        ;
-                        continue;
+
+                        continue
                     end
                     dk = abs(xj - xi[k])
                     if dk < min_d

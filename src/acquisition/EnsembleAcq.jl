@@ -27,7 +27,7 @@ function Base.copy(EA::EnsembleAcquisition)
     EnsembleAcquisition(copy(EA.weights), [Base.copy(acq) for acq in EA.acquisitions])
 end
 
-function (EA::EnsembleAcquisition)(surrogate::AbstractSurrogate, x, x_buf=nothing)
+function (EA::EnsembleAcquisition)(surrogate::AbstractSurrogate, x, x_buf=copy(x))
     sum(
         EA.weights[i] * EA.acquisitions[i](surrogate, x, x_buf) for
         i in eachindex(EA.weights)

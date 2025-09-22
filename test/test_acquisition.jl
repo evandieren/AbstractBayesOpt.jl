@@ -24,8 +24,8 @@ using Random
             gp = StandardGP(kernel, noise_var)
 
             # Update with some data
-            xs = [[0.0], [0.5], [1.0]]
-            ys = [[2.0], [1.0], [0.5]]
+            xs = [0.0, 0.5, 1.0]
+            ys = [2.0, 1.0, 0.5]
             updated_gp = update(gp, xs, ys)
 
             # Create EI acquisition function
@@ -47,8 +47,8 @@ using Random
             kernel = SqExponentialKernel()
             noise_var = 0.1
             gp = StandardGP(kernel, noise_var)
-            xs = [[0.0], [0.5], [1.0]]
-            ys = [[2.0], [1.0], [0.5]]
+            xs = [0.0, 0.5, 1.0]
+            ys = [2.0, 1.0, 0.5]
             updated_gp = update(gp, xs, ys)
 
             ξ = 0.01
@@ -56,7 +56,7 @@ using Random
             ei = ExpectedImprovement(ξ, best_y)
 
             # Test with 1D outputs
-            ys_1d = [[2.0], [1.5], [0.8]]
+            ys_1d = [2.0, 1.5, 0.8]
             updated_ei = update(ei, ys_1d, updated_gp)
             @test updated_ei.ξ == ξ
             @test updated_ei.best_y == 0.8  # minimum of new data
@@ -84,8 +84,8 @@ using Random
             gp = StandardGP(kernel, noise_var)
 
             # Update with some data
-            xs = [[0.0], [0.5], [1.0]]
-            ys = [[2.0], [1.0], [0.5]]
+            xs = [0.0, 0.5, 1.0]
+            ys = [2.0, 1.0, 0.5]
             updated_gp = update(gp, xs, ys)
 
             # Create UCB acquisition function
@@ -105,15 +105,15 @@ using Random
             kernel = SqExponentialKernel()
             noise_var = 0.1
             gp = StandardGP(kernel, noise_var)
-            xs = [[0.0], [0.5], [1.0]]
-            ys = [[2.0], [1.0], [0.5]]
+            xs = [0.0, 0.5, 1.0]
+            ys = [2.0, 1.0, 0.5]
             updated_gp = update(gp, xs, ys)
 
             β = 2.0
             ucb = UpperConfidenceBound(β)
 
             # Update should return the same object
-            ys = [[1.0], [2.0]]
+            ys = [1.0, 2.0]
             updated_ucb = update(ucb, ys, updated_gp)
             @test updated_ucb === ucb
         end
@@ -136,8 +136,8 @@ using Random
             gp = StandardGP(kernel, noise_var)
 
             # Update with some data
-            xs = [[0.0], [0.5], [1.0]]
-            ys = [[2.0], [1.0], [0.5]]
+            xs = [0.0, 0.5, 1.0]
+            ys = [2.0, 1.0, 0.5]
             updated_gp = update(gp, xs, ys)
 
             # Create PI acquisition function
@@ -233,8 +233,8 @@ using Random
             gp = StandardGP(kernel, noise_var)
 
             # Update with some data
-            xs = [[0.0], [0.5], [1.0]]
-            ys = [[2.0], [1.0], [0.5]]
+            xs = [0.0, 0.5, 1.0]
+            ys = [2.0, 1.0, 0.5]
             updated_gp = update(gp, xs, ys)
 
             # Create ensemble
@@ -263,8 +263,8 @@ using Random
             kernel = SqExponentialKernel()
             noise_var = 0.1
             gp = StandardGP(kernel, noise_var)
-            xs = [[0.0], [0.5], [1.0]]
-            ys = [[2.0], [1.0], [0.5]]
+            xs = [0.0, 0.5, 1.0]
+            ys = [2.0, 1.0, 0.5]
             updated_gp = update(gp, xs, ys)
 
             ei = ExpectedImprovement(0.01, 1.0)
@@ -297,7 +297,7 @@ using Random
 
         @testset "normpdf Tests" begin
             # Test standard normal PDF utility
-            @test normpdf(0.0, 1.0) ≈ 1/sqrt(2π)
+            @test normpdf(0.0, 1.0) ≈ 1 / sqrt(2π)
             @test normpdf(0.0, 1.0) > normpdf(1.0, 1.0)  # PDF should be higher at mean
 
             # Test with different variance

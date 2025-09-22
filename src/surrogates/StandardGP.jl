@@ -59,7 +59,7 @@ Arguments:
 returns:
 - `StandardGP`: A new StandardGP model updated with the provided data.
 """
-function update(model::StandardGP, xs::Vector{X}, ys::Vector{Y}) where {X, Y}
+function update(model::StandardGP, xs::Vector{X}, ys::Vector{Y}) where {X,Y}
     gpx = model.gp(xs, model.noise_var...) # This is a FiniteGP with Σy with noise_var on its diagonal.
     updated_gpx = posterior(gpx, ys)
     return StandardGP(model.gp, model.noise_var, updated_gpx)
@@ -82,7 +82,7 @@ function nlml(
     params::Vector{T},
     xs::Vector{X},
     ys::Vector{Y}
-) where {T, X, Y}
+) where {T,X,Y}
     log_ℓ, log_scale = params
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
@@ -120,7 +120,7 @@ function nlml_ls(
     log_scale::Float64,
     xs::Vector{X},
     ys::Vector{Y}
-) where {T, X, Y}
+) where {T,X,Y}
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
 
@@ -156,9 +156,9 @@ function get_mean_std(model::StandardGP, y_train::Vector{Y}, choice::String) whe
 
     # Taking into account the choice of the user
     if choice == "scale_only"
-        y_mean = 0.0
+        y_mean = zero(typeof(y_mean))
     elseif choice == "mean_only"
-        y_std = 1.0 
+        y_std = one(typeof(y_std))
     end
 
     # This is of type Y
@@ -224,12 +224,12 @@ prep_input(model::StandardGP, xs::Vector{X}) where {X} = xs
 prep_output(model::StandardGP, ys::Vector{Y}) where {Y} = ys
 
 # One-point version just wraps into a buffer
-function posterior_mean(model::StandardGP, x::X) where {X}
-    posterior_mean(model, X[x])
+function posterior_mean(model::StandardGP, x::X) where {X<:Real}
+    posterior_mean(model, [x])
 end
 
-function posterior_var(model::StandardGP, x::X) where {X}
-    posterior_var(model, X[x])
+function posterior_var(model::StandardGP, x::X) where {X<:Real}
+    posterior_var(model, [x])
 end
 
 # Buffer version: Vector of Vectors
@@ -253,7 +253,7 @@ returns:
 - `m_unstd`: The unstandardized mean predictions at the input points.
 - `v_unstd`: The unstandardized variance predictions at the input points.
 """
-function unstandardized_mean_and_var(model::StandardGP, xs::Vector{X}, params::Vector{T}) where {X, T}
+function unstandardized_mean_and_var(model::StandardGP, xs::Vector{X}, params::Vector{T}) where {X,T}
     μ, σ = params
     m, v = mean_and_var(model.gpx(xs))
     # Un-standardize mean and variance
