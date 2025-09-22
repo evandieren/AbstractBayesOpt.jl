@@ -300,12 +300,12 @@ using Random
 
                 # Get predictions from both setups
                 pred1_mean = [
-                    posterior_mean(bo1_std.model, x) + params1[1][1] for x in x_pred
+                    posterior_mean(bo1_std.model, [x]) + params1[1][1] for x in x_pred
                 ]
-                pred1_var = [posterior_var(bo1_std.model, x) for x in x_pred]
+                pred1_var = [posterior_var(bo1_std.model, [x]) for x in x_pred]
 
-                pred2_mean = [posterior_mean(bo2.model, x) for x in x_pred]
-                pred2_var = [posterior_var(bo2.model, x) for x in x_pred]
+                pred2_mean = [posterior_mean(bo2.model, [x]) for x in x_pred]
+                pred2_var = [posterior_var(bo2.model, [x]) for x in x_pred]
 
                 println("Pred1 Mean: ", pred1_mean)
                 println("Pred2 Mean: ", pred2_mean)
@@ -352,21 +352,21 @@ using Random
                 )
 
                 # Apply standardizations
-                bo1_std, params1 = standardize_problem(bo1, choice="mean_scale")
-                bo2_std, params2 = standardize_problem(bo2, choice="scale_only")
+                bo1_std, params1 = standardize_problem(bo1, "mean_scale")
+                bo2_std, params2 = standardize_problem(bo2, "scale_only")
 
                 # Test points for prediction
                 x_pred = [[0.5, -0.3], [-1.2, 0.8], [2.1, -1.5]]
 
                 # Get predictions from both setups (standardized)
                 pred1_mean = [
-                    posterior_mean(bo1_std.model, x) + params1[1][1] / params1[2][1] for
+                    posterior_mean(bo1_std.model, [x]) + params1[1][1] / params1[2][1] for
                     x in x_pred
                 ]
-                pred1_var = [posterior_var(bo1_std.model, x) for x in x_pred]
+                pred1_var = [posterior_var(bo1_std.model, [x]) for x in x_pred]
 
-                pred2_mean = [posterior_mean(bo2_std.model, x) for x in x_pred]
-                pred2_var = [posterior_var(bo2_std.model, x) for x in x_pred]
+                pred2_mean = [posterior_mean(bo2_std.model, [x]) for x in x_pred]
+                pred2_var = [posterior_var(bo2_std.model, [x]) for x in x_pred]
 
                 println("Pred1 Mean: ", pred1_mean)
                 println("Pred2 Mean: ", pred2_mean)
@@ -420,7 +420,7 @@ using Random
 
                     # Apply standardizations
                     bo1_grad_std, params1_grad = standardize_problem(
-                        bo1_grad, choice="mean_only"
+                        bo1_grad, "mean_only"
                     )
                     bo2_grad.model = update(bo2_grad.model, x_test, y_test_gradient)
 
@@ -476,19 +476,16 @@ using Random
 
             # Test 1: Posterior mean at training points should match observed values
             for i in 1:length(x_train)
-                pred_mean = posterior_mean(updated_gp, x_train[i])
+                pred_mean = posterior_mean(updated_gp, x_train[i:i])
                 @test abs(pred_mean - y_train[i][1]) < 0.1  # Should be close to observed values
             end
 
             # Test 2: Posterior variance at training points should be small (near noise level)
-            for i in 1:length(x_train)
-                pred_var = posterior_var(updated_gp, x_train[i])
-                @test pred_var < 0.1  # Should be small at training points
-            end
-
+            pred_vars = var(updated_gp.gpx(x_train))
+            @test all(pred_vars .< 0.1)  # Should be small at training points
             # Test 3: Posterior variance should increase with distance from training data
             test_points = [[0.1, 0.1], [1.5, 1.5], [3.0, 3.0]]  # Close, medium, far
-            variances = [posterior_var(updated_gp, x) for x in test_points]
+            variances = var(updated_gp.gpx(test_points))
             @test variances[1] < variances[2] < variances[3]  # Increasing uncertainty
         end
 
@@ -743,7 +740,7 @@ using Random
             problem = BOStruct(f, ei, gp, domain, x_train, y_train, 5, 0.01)
 
             # Test mean_scale standardization
-            std_problem, params = standardize_problem(problem, choice="mean_scale")
+            std_problem, params = standardize_problem(problem, "mean_scale")
             μ, σ = params
 
             @test abs(σ[1] - empirical_std) < 1e-10
@@ -756,7 +753,7 @@ using Random
 
             # Test 4: Scale-only standardization should preserve mean
             std_problem_scale, params_scale = standardize_problem(
-                problem, choice="scale_only"
+                problem, "scale_only"
             )
             std_y_scale = reduce(vcat, std_problem_scale.ys)
 

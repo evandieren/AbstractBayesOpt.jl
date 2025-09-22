@@ -232,12 +232,13 @@ function posterior_var(model::StandardGP, x::X) where {X<:Real}
     posterior_var(model, [x])
 end
 
+## @evandieren why do we return the first element of the vector only ?
 # Buffer version: Vector of Vectors
-function posterior_mean(model::StandardGP, x_buf::Vector{X}) where {X}
+function posterior_mean(model::StandardGP, x_buf::AbstractVector)
     mean(model.gpx(x_buf))[1]
 end
 
-function posterior_var(model::StandardGP, x_buf::Vector{X}) where {X}
+function posterior_var(model::StandardGP, x_buf::AbstractVector)
     var(model.gpx(x_buf))[1]
 end
 
