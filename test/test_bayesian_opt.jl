@@ -416,28 +416,15 @@ using Random
                     x_pred = [[0.5, -0.3], [-1.2, 0.8]]
 
                     # Get gradient predictions from both setups
-                    # pred1_grad_mean = posterior_grad_mean(bo1_grad_std.model, x_pred) .+
-                    #                   params1_grad[1]
-                    pred1_grad_mean = [posterior_grad_mean(bo1_grad_std.model, x) .+
-                                       params1_grad[1] for
-                                       x in x_pred]
-                    pred1_grad_var = [posterior_grad_var(bo1_grad_std.model, x)
-                                      for x in x_pred]
+                    pred1_grad_mean = posterior_grad_mean(bo1_grad_std.model, x_pred) +
+                                      repeat(params1_grad[1], inner = length(x_pred))
+                    pred1_grad_var = posterior_grad_var(bo1_grad_std.model, x_pred)
 
-                    pred2_grad_mean = [posterior_grad_mean(bo2_grad.model, x)
-                                       for x in x_pred]
-                    pred2_grad_var = [posterior_grad_var(bo2_grad.model, x) for x in x_pred]
+                    pred2_grad_mean = posterior_grad_mean(bo2_grad.model, x_pred)
+                    pred2_grad_var = posterior_grad_var(bo2_grad.model, x_pred)
 
-                    mean_diff_grad = maximum([maximum(abs.(m1 .- m2))
-                                              for
-                                              (m1, m2) in zip(
-                        pred1_grad_mean, pred2_grad_mean)])
-                    var_diff_grad = maximum([maximum(abs.(v1 .- v2))
-                                             for
-                                             (v1, v2) in zip(pred1_grad_var, pred2_grad_var)])
-
-                    @test mean_diff_grad < 1e-10
-                    @test var_diff_grad < 1e-10
+                    @test all(maximum.(abs.(pred1_grad_mean .- pred2_grad_mean)) .< 1e-10)
+                    @test all(maximum.(abs.(pred1_grad_var .- pred2_grad_var)) .< 1e-10)
                 end
             end
         end
@@ -680,7 +667,7 @@ using Random
             # Test 3: Predictions at training points should be close to observations
             pred_at_train = posterior_mean(updated_gp, x_train)
             for i in 1:length(x_train)
-                pred_at_train = posterior_grad_mean(updated_gp, x_train[i])
+                pred_at_train = posterior_grad_mean(updated_gp, x_train[i:i])
                 for j in 1:3
                     @test abs(pred_at_train[j] - y_train[i][j]) < 1e-4
                 end

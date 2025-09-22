@@ -179,7 +179,7 @@ using Random
             grad_ucb = GradientNormUCB(β)
 
             # Test evaluation
-            test_x = [0.25, 0.25]
+            test_x = [[0.25, 0.25]]
             ucb_val = grad_ucb(updated_gp, test_x)
 
             @test isa(ucb_val, Real)

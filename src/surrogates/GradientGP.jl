@@ -206,10 +206,10 @@ returns:
 """
 function nlml(
         model::GradientGP,
-        params::Vector{T},
-        xs::Vector{X},
-        ys::Vector{Y}
-) where {T, X, Y}
+        params::NTuple{2, T},
+        xs::AbstractVector,
+        ys::AbstractVector
+) where {T}
     log_ℓ, log_scale = params
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
@@ -242,11 +242,11 @@ Remark: This function is a helper function for the hyperparameter_optiomize func
 """
 function nlml_ls(
         model::GradientGP,
-        log_ℓ::T,
-        log_scale::Float64,
-        xs::Vector{X},
-        ys::Vector{Y}
-) where {T, X, Y}
+        log_ℓ,
+        log_scale,
+        xs::AbstractVector,
+        ys::AbstractVector
+)
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
 
@@ -276,7 +276,7 @@ returns:
 - `y_mean`: Empirical mean
 - `y_std`: Empirical standard deviation
 """
-function get_mean_std(model::GradientGP, y_train::Vector{Y}, choice::String) where {Y}
+function get_mean_std(model::GradientGP, y_train::AbstractVector, choice::String)
     y_mat = reduce(hcat, y_train)
 
     μ = vec(mean(y_mat; dims = 2))
@@ -346,8 +346,22 @@ get_scale(model::GradientGP) = model.gp.kernel.base_kernel.σ²
 
 get_kernel_constructor(model::GradientGP) = model.gp.kernel.base_kernel.kernel.kernel
 
-function prep_input(model::GradientGP, x::Vector{X}) where {X}
-    return KernelFunctions.MOInputIsotopicByOutputs(x, model.p)
+prep_input(model::GradientGP, xs) = _prep_input(xs, model.p)
+
+function _prep_input(x::AbstractVector{X}, p::Int) where {X}
+    return KernelFunctions.MOInputIsotopicByOutputs(x, p)
+end
+
+function _prep_input(x::AbstractVector{<:Tuple{X, Int}}, p::Int) where {X}
+    return x
+end
+
+function _prep_input(x::Tuple{X, Int}, p::Int) where {X}
+    return [x]
+end
+
+function _prep_input(x::X, p::Int) where {X <: Real}
+    return _prep_input([x], p)
 end
 
 function prep_output(model::GradientGP, y::Vector{Y}) where {Y}
@@ -355,39 +369,25 @@ function prep_output(model::GradientGP, y::Vector{Y}) where {Y}
     return vec(permutedims(reduce(hcat, y)))
 end
 
-# These functions is used when we need to query one point)
-function posterior_mean(model::GradientGP, x::X) where {X}
-    @warn "GradientGP posterior_mean weird"
-    mean(model.gpx([(x, 1)]))[1] # we do the function value only for now
+function posterior_grad_mean(model::GradientGP, x)
+    mean(model.gpx(_prep_input(x, model.p)))
 end
 
-function posterior_var(model::GradientGP, x::X) where {X}
-    @warn "GradientGP posterior_var weird"
-    var(model.gpx([(x, 1)]))[1] # we do the function value only for now
+function posterior_grad_var(model::GradientGP, x)
+    var(model.gpx(_prep_input(x, model.p)))
 end
 
-# These functions are used in a buffer way within the optimisation of the acquisition function
-function posterior_mean(model::GradientGP, x_buf::Vector{Tuple{Vector{Float64}, Int}})
-    @warn "GradientGP posterior_mean weird"
-    mean(model.gpx(x_buf))
+function posterior_grad_cov(model::GradientGP, x)
+    cov(model.gpx(_prep_input(x, model.p)))
 end
 
-function posterior_var(model::GradientGP, x_buf::Vector{Tuple{Vector{Float64}, Int}})
-    @warn "GradientGP posterior_var weird"
-    var(model.gpx(x_buf))
+function posterior_mean(model::GradientGP, x)
+    mean(model.gpx(_prep_input(x, 1)))
 end
 
-function posterior_grad_mean(model::GradientGP, x::AbstractVector)
-    mean(model.gpx(prep_input(model, [x])))
-end # the whole vector
-
-function posterior_grad_var(model::GradientGP, x::AbstractVector)
-    var(model.gpx(prep_input(model, [x])))
+function posterior_var(model::GradientGP, x)
+    var(model.gpx(_prep_input(x, 1)))
 end
-
-function posterior_grad_cov(model::GradientGP, x::AbstractVector)
-    cov(model.gpx(prep_input(model, [x])))
-end # the matrix itself
 
 """
 Compute the unstandardized mean and variance of the GP predictions at new input points.
