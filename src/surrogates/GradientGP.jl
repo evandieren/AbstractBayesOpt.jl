@@ -180,14 +180,13 @@ returns:
 - `GradientGP`: A new GradientGP model updated with the provided data.
 """
 function update(model::GradientGP, xs::AbstractVector, ys::AbstractVector)
-    x̃,
-    ỹ = KernelFunctions.MOInputIsotopicByOutputs(xs, size(ys[1])[1]),
-    vec(permutedims(reduce(hcat, ys)))
     # we could do something better for this, such as inserting the batch of new
     # points in xs and ys which are already MOInputIsotopicByOutputs elements.
+    x_tilde, y_tilde = prepare_isotopic_multi_output_data(xs, ColVecs(reduce(hcat, ys)))
 
-    gpx = model.gp(x̃, model.noise_var...)
-    updated_gpx = posterior(gpx, ỹ)
+    gpx = model.gp(x_tilde, model.noise_var...)
+    @show gpx
+    updated_gpx = posterior(gpx, y_tilde)
 
     return GradientGP(model.gp, model.noise_var, model.p, updated_gpx)
 end
