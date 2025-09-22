@@ -10,7 +10,7 @@ using AbstractGPs
 using ForwardDiff
 
 using Plots
-default(; legend = :outertopright, size = (700, 400))
+default(; legend=:outertopright, size=(700, 400))
 
 using Random
 Random.seed!(42)  # setting the seed for reproducibility of this notebook
@@ -20,21 +20,36 @@ Random.seed!(42)  # setting the seed for reproducibility of this notebook
 d = 2
 f(x) = (x[1]^2 + x[2] - 11)^2 + (x[1]+x[2]^2-7)^2
 
-
-min_f = 0.0 
+min_f = 0.0
 
 domain = ContinuousDomain([-6.0, -6.0], [6.0, 6.0]) #hide
 
 X = domain.lower[1]:0.01:domain.upper[1] #hide
 Y = domain.lower[2]:0.01:domain.upper[2] #hide
 
-p1 = contour(X, Y, (x,y) -> f([x,y]), fill = true, levels = 50, c = :viridis, title = "Target function : Himmelblau", xlabel = "x₁", ylabel = "x₂") # hide
+p1 = contour(
+    X,
+    Y,
+    (x, y) -> f([x, y]);
+    fill=true,
+    levels=50,
+    c=:viridis,
+    title="Target function : Himmelblau",
+    xlabel="x₁",
+    ylabel="x₂",
+) # hide
 
 x_mins = [[3.0, 2.0], [-2.805118, 3.131312], [-3.779310, -3.283186], [3.584428, -1.848126]] #hide
 
 # Scatter them on the contour plot
-scatter!([p[1] for p in x_mins], [p[2] for p in x_mins]; 
-         label="Minima", color=:red, markersize=5, legend=:bottomright)
+scatter!(
+    [p[1] for p in x_mins],
+    [p[2] for p in x_mins];
+    label="Minima",
+    color=:red,
+    markersize=5,
+    legend=:bottomright,
+)
 
 # ## Initialize the surrogate model
 # We'll use a standard Gaussian Process surrogate with a Matérn 5/2 kernel. We add a small jitter term for numerical stability of 1e-12.
@@ -43,8 +58,7 @@ surrogate = StandardGP(SqExponentialKernel(), noise_var)
 
 # Generate uniform random samples x_train
 n_train = 5
-x_train = [domain.lower .+ (domain.upper .- domain.lower) .* rand(d)
-                  for _ in 1:n_train]
+x_train = [domain.lower .+ (domain.upper .- domain.lower) .* rand(d) for _ in 1:n_train]
 
 y_train = f.(x_train)
 
@@ -64,7 +78,7 @@ bo_struct = BOStruct(
     x_train,
     y_train,
     50,  # number of iterations
-    0.0  # Actual noise level (0.0 for noiseless)
+    0.0,  # Actual noise level (0.0 for noiseless)
 )
 
 print_info(bo_struct)
@@ -74,9 +88,8 @@ surrogate = update(surrogate, x_train, y_train)
 acq(surrogate, [[0.0, 0.0]])
 
 @info "Starting Bayesian Optimization..."
-result, acq_list,
-standard_params = AbstractBayesOpt.optimize(
-    bo_struct; standardize = nothing
+result, acq_list, standard_params = AbstractBayesOpt.optimize(
+    bo_struct; standardize=nothing
 )
 
 # ## Results
@@ -93,14 +106,14 @@ running_min = accumulate(min, f.(xs))
 
 p = Plots.plot(
     n_train:length(running_min),
-    running_min[n_train:end] .- min_f,
-    yaxis = :log,
-    title = "Error w.r.t true minimum (2D BO)",
-    xlabel = "Function evaluations",
-    label = "BO",
-    xlims = (1, length(running_min))
+    running_min[n_train:end] .- min_f;
+    yaxis=:log,
+    title="Error w.r.t true minimum (2D BO)",
+    xlabel="Function evaluations",
+    label="BO",
+    xlims=(1, length(running_min)),
 )
-Plots.vspan!([1, n_train]; color = :blue, alpha = 0.2, label = "")
+Plots.vspan!([1, n_train]; color=:blue, alpha=0.2, label="")
 
 # ## Gradient-enhanced GPs
 # Now, let's see how to use gradient information to improve the optimization. We'll use the same function but now also provide its gradient.
@@ -125,7 +138,7 @@ bo_struct_grad = BOStruct(
     x_train,
     y_train_grad,
     50,  # number of iterations
-    0.0  # Actual noise level (0.0 for noiseless)
+    0.0,  # Actual noise level (0.0 for noiseless)
 )
 
 print_info(bo_struct_grad)
@@ -150,13 +163,13 @@ running_min_grad = collect(Iterators.flatten(fill(x, 2) for x in (running_min_gr
 p = Plots.plot(
     (2 * n_train):length(running_min_grad),
     running_min_grad[(2 * n_train):end] .- min_f;
-    yaxis = :log,
-    title = "Error w.r.t true minimum (2D GradBO)",
-    xlabel = "Function evaluations",
-    label = "gradBO",
-    xlims = (1, length(running_min_grad))
+    yaxis=:log,
+    title="Error w.r.t true minimum (2D GradBO)",
+    xlabel="Function evaluations",
+    label="gradBO",
+    xlims=(1, length(running_min_grad)),
 )
-Plots.vspan!([1, 2 * n_train]; color = :blue, alpha = 0.2, label = "")
+Plots.vspan!([1, 2 * n_train]; color=:blue, alpha=0.2, label="")
 
 # ## Plotting the surrogate model
 # We can visualize the surrogate model's mean and uncertainty along with the true function and the evaluated

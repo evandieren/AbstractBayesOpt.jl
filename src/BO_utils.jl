@@ -79,11 +79,11 @@ Returns:
 
 """
 function lengthscale_bounds(
-        x_train::AbstractMatrix,
-        domain_lower::AbstractVector,
-        domain_upper::AbstractVector;
-        min_frac::Float64 = 0.1,
-        max_frac::Float64 = 1.0
+    x_train::AbstractMatrix,
+    domain_lower::AbstractVector,
+    domain_upper::AbstractVector;
+    min_frac::Float64=0.1,
+    max_frac::Float64=1.0,
 )
     n, d = size(x_train)
     ℓ_lower = zeros(d)
@@ -132,14 +132,14 @@ Convenience overload accepting a vector-of-vectors of points and a `ContinuousDo
 Returns the same as the matrix method.
 """
 function lengthscale_bounds(
-        x_train::AbstractVector,
-        domain::ContinuousDomain;
-        min_frac::Float64 = 0.1,
-        max_frac::Float64 = 1.0
+    x_train::AbstractVector,
+    domain::ContinuousDomain;
+    min_frac::Float64=0.1,
+    max_frac::Float64=1.0,
 )
     X = permutedims(reduce(hcat, x_train)) # n × d
     return lengthscale_bounds(
-        X, domain.lower, domain.upper; min_frac = min_frac, max_frac = max_frac
+        X, domain.lower, domain.upper; min_frac=min_frac, max_frac=max_frac
     )
 end
 
@@ -165,5 +165,5 @@ function rescale_output(ys::AbstractVector, params::Tuple)
     end
 end
 
-_noise_like(y::AbstractFloat; σ = 1.0) = σ * randn()
-_noise_like(y::AbstractVector{T}; σ = 1.0) where {T <: AbstractFloat} = σ * randn(length(y))
+_noise_like(y::AbstractFloat; σ=1.0) = σ * randn()
+_noise_like(y::AbstractVector{T}; σ=1.0) where {T<:AbstractFloat} = σ * randn(length(y))

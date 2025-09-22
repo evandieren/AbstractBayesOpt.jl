@@ -45,7 +45,7 @@ returns:
 - `PI::ProbabilityImprovement`: Updated Probability of Improvement acquisition function
 """
 function update(
-        acq::ProbabilityImprovement, ys::AbstractVector, surrogate::AbstractSurrogate
+    acq::ProbabilityImprovement, ys::AbstractVector, surrogate::AbstractSurrogate
 )
     if isa(ys[1], Float64) # we are in 1d
         ProbabilityImprovement(acq.ξ, minimum(reduce(vcat, ys)))

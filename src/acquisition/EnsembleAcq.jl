@@ -11,7 +11,7 @@ struct EnsembleAcquisition <: AbstractAcquisition
     acquisitions::Vector{AbstractAcquisition}
 
     function EnsembleAcquisition(
-            weights::Vector{Float64}, acqs::Vector{AbstractAcquisition}
+        weights::Vector{Float64}, acqs::Vector{AbstractAcquisition}
     )
         @assert length(weights)==length(acqs) "weights and acquisitions must align"
         @assert all(w -> w >= 0, weights) "weights must be non-negative"
@@ -32,7 +32,8 @@ function (EA::EnsembleAcquisition)(surrogate::AbstractSurrogate, x::AbstractVect
 end
 
 function update(acq::EnsembleAcquisition, ys::AbstractVector, surrogate::AbstractSurrogate)
-    new_acqs = [update(acq.acquisitions[i], ys, surrogate)
-                for i in eachindex(acq.acquisitions)]
+    new_acqs = [
+        update(acq.acquisitions[i], ys, surrogate) for i in eachindex(acq.acquisitions)
+    ]
     return EnsembleAcquisition(acq.weights, new_acqs)
 end

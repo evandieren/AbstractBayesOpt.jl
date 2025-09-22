@@ -1,7 +1,5 @@
 # OUT OF DATE: need to rework with new implementation
 
-
-
 using AbstractGPs
 using KernelFunctions
 using Plots
@@ -32,9 +30,10 @@ domain = ContinuousDomain(lower, upper)
 # Generate initial training data
 n_train = 5
 
-x_train = [collect(col)
-           for
-           col in eachcol(QuasiMonteCarlo.sample(n_train, lower, upper, SobolSample()))]
+x_train = [
+    collect(col) for
+    col in eachcol(QuasiMonteCarlo.sample(n_train, lower, upper, SobolSample()))
+]
 
 # x_train = [lower .+ (upper .- lower) .* rand(d) for _ in 1:n_train]
 val_grad = f_val_grad.(x_train)
@@ -75,12 +74,12 @@ function setup_acquisition_functions(y_train)
         ("PI", pi_acq),
         ("UCB", ucb_acq),
         ("UCB+GradUCB", ensemble_ucb_grad),
-        ("EI+GradUCB", ensemble_ei_grad)
+        ("EI+GradUCB", ensemble_ei_grad),
     ]
 end
 
 # Run optimization for each acquisition function
-function run_comparison(n_iterations = 30)
+function run_comparison(n_iterations=30)
     results = Dict()
 
     for (name, acq_func) in setup_acquisition_functions(y_train)
@@ -95,13 +94,12 @@ function run_comparison(n_iterations = 30)
             copy(x_train),
             copy(y_train),
             n_iterations,
-            0.0
+            0.0,
         )
 
         # Run optimization
-        result, acqf_list,
-        standard_params = AbstractBayesOpt.optimize(
-            problem; hyper_params = "all"
+        result, acqf_list, standard_params = AbstractBayesOpt.optimize(
+            problem; hyper_params="all"
         )
 
         # Extract results - handle early termination
@@ -131,13 +129,13 @@ function run_comparison(n_iterations = 30)
         component_data = nothing
 
         results[name] = (
-            xs = xs,
-            ys = ys_values,
-            running_min = running_min,
-            optimal_point = optimal_point,
-            optimal_value = optimal_value,
-            error = abs(optimal_value - min_f),
-            component_data = component_data
+            xs=xs,
+            ys=ys_values,
+            running_min=running_min,
+            optimal_point=optimal_point,
+            optimal_value=optimal_value,
+            error=abs(optimal_value - min_f),
+            component_data=component_data,
         )
     end
 
@@ -151,12 +149,12 @@ results = run_comparison(30)  # Reduced iterations to avoid numerical issues
 # Plot convergence comparison
 function plot_convergence(results)
     p = plot(;
-        title = "Acquisition Function Comparison (1D GradBO)",
-        xlabel = "Function evaluations",
-        ylabel = L"|| f(x^*_n) - f^* ||",
-        yaxis = :log,
-        legend = :bottomleft,
-        linewidth = 2
+        title="Acquisition Function Comparison (1D GradBO)",
+        xlabel="Function evaluations",
+        ylabel=L"|| f(x^*_n) - f^* ||",
+        yaxis=:log,
+        legend=:bottomleft,
+        linewidth=2,
     )
 
     colors = [:blue, :red, :green, :orange, :purple]
@@ -172,14 +170,14 @@ function plot_convergence(results)
             p,
             (2 * n_train):length(errors),
             errors[(2 * n_train):end];
-            label = name,
-            color = colors[i],
-            alpha = 0.8
+            label=name,
+            color=colors[i],
+            alpha=0.8,
         )
     end
 
     # Add initial training data region
-    vspan!(p, [1, 2*n_train]; color = :gray, alpha = 0.2, label = "Initial data")
+    vspan!(p, [1, 2*n_train]; color=:gray, alpha=0.2, label="Initial data")
 
     return p
 end

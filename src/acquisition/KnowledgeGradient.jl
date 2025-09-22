@@ -16,7 +16,7 @@ struct KnowledgeGradient <: AbstractAcquisition
     best_μ::AbstractVector
 end
 
-function (KG::KnowledgeGradient)(surrogate::AbstractSurrogate, x::AbstractVector, J = 1_000)
+function (KG::KnowledgeGradient)(surrogate::AbstractSurrogate, x::AbstractVector, J=1_000)
     Δ = zeros(J)
     μ = posterior_mean(surrogate, x)
     σ² = posterior_var(surrogate, x)
@@ -27,7 +27,7 @@ function (KG::KnowledgeGradient)(surrogate::AbstractSurrogate, x::AbstractVector
             surrogate, [surrogate.gpx.data.x; x], [surrogate.gpx.data.δ; y[j]]
         )
 
-        μ_new = optimize_mean!(new_model, KG.domain; n_restarts = 3)[2]
+        μ_new = optimize_mean!(new_model, KG.domain; n_restarts=3)[2]
 
         Δ[j] = KG.best_μ[1] - μ_new[1]
     end

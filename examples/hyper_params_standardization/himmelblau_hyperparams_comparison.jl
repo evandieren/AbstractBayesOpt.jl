@@ -1,8 +1,5 @@
 # OUT OF DATE
 
-
-
-
 """
 Himmelblau Function Optimization with Gradient-Enhanced GP:
 Comparison of Hyperparameter Tuning Methods and Standardization
@@ -55,9 +52,10 @@ domain = ContinuousDomain(lower, upper)
 
 # Generate initial training data using Sobol sampling for better coverage
 n_train = 8
-x_train = [collect(col)
-           for
-           col in eachcol(QuasiMonteCarlo.sample(n_train, lower, upper, SobolSample()))]
+x_train = [
+    collect(col) for
+    col in eachcol(QuasiMonteCarlo.sample(n_train, lower, upper, SobolSample()))
+]
 
 # Evaluate function and gradients at training points
 val_grad = f_val_grad.(x_train)
@@ -83,11 +81,11 @@ test_configs = [
     ("HP:none + MeanScale", nothing, "mean_scale"),
     ("HP:none + ScaleOnly", nothing, "scale_only"),
     ("HP:none + MeanOnly", nothing, "mean_only"),
-    ("HP:none + NoStd", nothing, nothing)
+    ("HP:none + NoStd", nothing, nothing),
 ]
 
 # Run optimization comparison
-function run_himmelblau_comparison(n_iterations = 40)
+function run_himmelblau_comparison(n_iterations=40)
     results = Dict()
 
     for (config_name, hyper_params, standardize_mode) in test_configs
@@ -104,16 +102,15 @@ function run_himmelblau_comparison(n_iterations = 40)
             copy(x_train),
             copy(y_train),
             n_iterations,
-            0.0
+            0.0,
         )
 
         start_time = time()
 
         # Run optimization with specified configuration
         try
-            result, _,
-            standard_params = AbstractBayesOpt.optimize(
-                problem; hyper_params = hyper_params, standardize = standardize_mode
+            result, _, standard_params = AbstractBayesOpt.optimize(
+                problem; hyper_params=hyper_params, standardize=standardize_mode
             )
 
             # Record end time
@@ -145,29 +142,29 @@ function run_himmelblau_comparison(n_iterations = 40)
 
             # Store results
             results[config_name] = (
-                xs = xs,
-                ys_values = ys_values,
-                running_min = running_min,
-                errors = errors,
-                optimal_point = optimal_point,
-                optimal_value = optimal_value,
-                error_from_global = abs(optimal_value - global_min),
-                elapsed_time = elapsed_time,
-                hyper_params = hyper_params,
-                standardize = standardize_mode,
-                standard_params = standard_params,
-                n_evaluations = length(xs)
+                xs=xs,
+                ys_values=ys_values,
+                running_min=running_min,
+                errors=errors,
+                optimal_point=optimal_point,
+                optimal_value=optimal_value,
+                error_from_global=abs(optimal_value - global_min),
+                elapsed_time=elapsed_time,
+                hyper_params=hyper_params,
+                standardize=standardize_mode,
+                standard_params=standard_params,
+                n_evaluations=length(xs),
             )
 
         catch e
             println("ERROR in configuration $config_name: $e")
             # Store minimal error result
             results[config_name] = (
-                error_from_global = Inf,
-                elapsed_time = Inf,
-                hyper_params = hyper_params,
-                standardize = standardize_mode,
-                n_evaluations = 0
+                error_from_global=Inf,
+                elapsed_time=Inf,
+                hyper_params=hyper_params,
+                standardize=standardize_mode,
+                n_evaluations=0,
             )
         end
     end
@@ -182,13 +179,13 @@ results = run_himmelblau_comparison(40)
 # Analysis and visualization functions
 function plot_convergence_comparison(results)
     p = plot(;
-        title = "Himmelblau Optimization: Hyperparameter & Standardization Comparison",
-        xlabel = "Number of iterations",
-        ylabel = "Error from global minimum",
-        yaxis = :log,
-        legend = :topright,
-        linewidth = 2,
-        size = (1200, 800)
+        title="Himmelblau Optimization: Hyperparameter & Standardization Comparison",
+        xlabel="Number of iterations",
+        ylabel="Error from global minimum",
+        yaxis=:log,
+        legend=:topright,
+        linewidth=2,
+        size=(1200, 800),
     )
 
     # Define colors and line styles for different configurations
@@ -204,7 +201,7 @@ function plot_convergence_comparison(results)
         :green,
         :lightgreen,
         :yellow,
-        :purple
+        :purple,
     ]
     styles = [
         :solid,
@@ -218,7 +215,7 @@ function plot_convergence_comparison(results)
         :solid,
         :dash,
         :dot,
-        :dashdot
+        :dashdot,
     ]
 
     config_names = [
@@ -233,7 +230,7 @@ function plot_convergence_comparison(results)
         "HP:none + MeanScale",
         "HP:none + ScaleOnly",
         "HP:none + MeanOnly",
-        "HP:none + NoStd"
+        "HP:none + NoStd",
     ]
 
     for (i, config_name) in enumerate(config_names)
@@ -243,15 +240,15 @@ function plot_convergence_comparison(results)
                 p,
                 1:length(result.errors),
                 result.errors;
-                label = config_name,
-                color = colors[i],
-                linestyle = styles[i]
+                label=config_name,
+                color=colors[i],
+                linestyle=styles[i],
             )
         end
     end
 
     # Add initial training data region
-    vspan!(p, [1, n_train]; color = :gray, alpha = 0.2, label = "Initial data")
+    vspan!(p, [1, n_train]; color=:gray, alpha=0.2, label="Initial data")
 
     return p
 end

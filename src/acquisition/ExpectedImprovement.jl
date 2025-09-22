@@ -19,7 +19,6 @@ end
 Base.copy(EI::ExpectedImprovement) = ExpectedImprovement(EI.ξ, EI.best_y)
 
 function (EI::ExpectedImprovement)(surrogate::AbstractSurrogate, x::AbstractVector)
-
     μ = posterior_mean(surrogate, x)
     σ² = posterior_var(surrogate, x)
     Δ = (EI.best_y - EI.ξ) .- μ # we are substracting ξ because we are minimising.

@@ -100,8 +100,8 @@ using LinearAlgebra
             ys = [0.0, 0.25, 1.0]
 
             updated_gp = update(gp, xs, ys)
-            @test isapprox(mean_pred[1], true_mean_post, atol = 1e-10)
-            @test isapprox(var_pred[1], true_var_post, atol = 1e-10)
+            @test isapprox(mean_pred[1], true_mean_post, atol=1e-10)
+            @test isapprox(var_pred[1], true_var_post, atol=1e-10)
         end
 
         @testset "StandardGP Standardization output" begin
@@ -166,7 +166,7 @@ using LinearAlgebra
             constant_term = length(y) * log(2π)
             analytical_logpdf = -0.5 * (quadratic_form + logdet(K̃) + constant_term)
             true_nlml = -analytical_logpdf
-            @test isapprox(nlml_val, true_nlml, atol = 1e-10)
+            @test isapprox(nlml_val, true_nlml, atol=1e-10)
         end
     end
 
@@ -242,11 +242,11 @@ using LinearAlgebra
                 h1 -> ForwardDiff.derivative(
                     h2 -> kernel_base(
                         x .+ h1 .* (1:length(x) .== (px - 1)),
-                        y .+ h2 .* (1:length(y) .== (py - 1))
+                        y .+ h2 .* (1:length(y) .== (py - 1)),
                     ),
-                    0.0
+                    0.0,
                 ),
-                0.0
+                0.0,
             )
 
             grad_kernel = gradKernel(kernel_base)
@@ -257,34 +257,34 @@ using LinearAlgebra
             val_ff = grad_kernel((x, 1), (y, 1))
 
             true_val_ff = kernel_base(x, y)
-            @test isapprox(val_ff, true_val_ff, atol = 1e-10)
+            @test isapprox(val_ff, true_val_ff, atol=1e-10)
 
             # Test function-gradient evaluation (px=1, py>1)
             val_fg = [grad_kernel((x, 1), (y, 2)); grad_kernel((x, 1), (y, 3))]
             true_val_fg = ∇₂kernel(x, y)
-            @test isapprox(val_fg, true_val_fg, atol = 1e-10)
+            @test isapprox(val_fg, true_val_fg, atol=1e-10)
 
             # Test gradient-function evaluation (px>1, py=1)
             val_gf = [grad_kernel((x, 2), (y, 1)); grad_kernel((x, 3), (y, 1))]
             true_val_gf = ∇₁kernel(x, y)
-            @test isapprox(val_gf, true_val_gf, atol = 1e-10)
+            @test isapprox(val_gf, true_val_gf, atol=1e-10)
 
             # Test gradient-gradient evaluation (px>1, py>1)
             val_gg = grad_kernel((x, 2), (y, 2))
             true_val_gg = ∇₁₂kernel((x, 2), (y, 2))
-            @test isapprox(val_gg, true_val_gg, atol = 1e-10)
+            @test isapprox(val_gg, true_val_gg, atol=1e-10)
 
             val_gg_23 = grad_kernel((x, 2), (y, 3))
             true_val_gg_23 = ∇₁₂kernel((x, 2), (y, 3))
-            @test isapprox(val_gg_23, true_val_gg_23, atol = 1e-10)
+            @test isapprox(val_gg_23, true_val_gg_23, atol=1e-10)
 
             val_gg_32 = grad_kernel((x, 3), (y, 2))
             true_val_gg_32 = ∇₁₂kernel((x, 3), (y, 2))
-            @test isapprox(val_gg_32, true_val_gg_32, atol = 1e-10)
+            @test isapprox(val_gg_32, true_val_gg_32, atol=1e-10)
 
             val_gg_33 = grad_kernel((x, 3), (y, 3))
             true_val_gg_33 = ∇₁₂kernel((x, 3), (y, 3))
-            @test isapprox(val_gg_33, true_val_gg_33, atol = 1e-10)
+            @test isapprox(val_gg_33, true_val_gg_33, atol=1e-10)
 
             # Test symmetry for function-function case
             @test grad_kernel((x, 1), (y, 1)) ≈ grad_kernel((y, 1), (x, 1))
@@ -340,15 +340,15 @@ using LinearAlgebra
             ỹ = vec(permutedims(reduce(hcat, ys)))  # Convert to single vector with right ordering
 
             true_mean_post = reduce(vcat, permutedims.(k_xX)) * (K̃ \ ỹ)
-            @test isapprox(grad_mean_pred, true_mean_post, atol = 1e-10)
+            @test isapprox(grad_mean_pred, true_mean_post, atol=1e-10)
 
             # Covariance check
             # p x p matrix
             k_xx = grad_kernel.(permutedims(prepped_input), prepped_input)
-            true_cov_post = k_xx -
-                            reduce(vcat, permutedims.(k_xX)) * (K̃ \ reduce(hcat, k_xX))
+            true_cov_post =
+                k_xx - reduce(vcat, permutedims.(k_xX)) * (K̃ \ reduce(hcat, k_xX))
 
-            @test isapprox(grad_cov_pred, true_cov_post, atol = 1e-10)
+            @test isapprox(grad_cov_pred, true_cov_post, atol=1e-10)
         end
 
         @testset "GradientGP Utility Functions" begin

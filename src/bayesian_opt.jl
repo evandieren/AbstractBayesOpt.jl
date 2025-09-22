@@ -8,7 +8,8 @@ Parts of the code are inspired by:
 """
 
 mutable struct BOStruct{
-    F, M <: AbstractSurrogate, A <: AbstractAcquisition, D <: AbstractDomain, X, Y, T}
+    F,M<:AbstractSurrogate,A<:AbstractAcquisition,D<:AbstractDomain,X,Y,T
+}
 
     # Core components of Bayesian Optimization problem
     func::F
@@ -44,16 +45,7 @@ Arguments:
 returns:
 - `BOStruct`: An instance of the BOStruct containing all components for Bayesian Optimization.
 """
-function BOStruct(
-        func,
-        acq,
-        model,
-        domain,
-        x_train,
-        y_train,
-        max_iter,
-        noise
-)
+function BOStruct(func, acq, model, domain, x_train, y_train, max_iter, noise)
     return BOStruct(
         func,
         copy(acq),
@@ -65,7 +57,7 @@ function BOStruct(
         max_iter,
         0,
         noise,
-        false
+        false,
     )
 end
 
@@ -85,7 +77,7 @@ Remarks:
     This function handles potential ill-conditioning issues when updating the GP,
     by returning the previous state if an error occurs and setting a flag to stop the optimization loop.
 """
-function update(BO::BOStruct, x::X, y::Y, i::Int) where {X, Y}
+function update(BO::BOStruct, x::X, y::Y, i::Int) where {X,Y}
 
     #TODO make the copy only if we fail
     prev_gp = copy(BO.model)
@@ -144,15 +136,15 @@ returns:
 
 """
 function optimize_hyperparameters(
-        model::AbstractSurrogate,
-        x_train::Vector{X},
-        y_train::Vector{Y},
-        old_params::Vector{T};
-        scale_std::Float64 = 1.0,
-        length_scale_only::Bool = false,
-        num_restarts::Int = 1,
-        domain::Union{Nothing, AbstractDomain} = nothing
-) where {X, Y, T}
+    model::AbstractSurrogate,
+    x_train::Vector{X},
+    y_train::Vector{Y},
+    old_params::Vector{T};
+    scale_std::Float64=1.0,
+    length_scale_only::Bool=false,
+    num_restarts::Int=1,
+    domain::Union{Nothing,AbstractDomain}=nothing,
+) where {X,Y,T}
     best_nlml = Inf
     best_result = nothing
 
@@ -190,40 +182,35 @@ function optimize_hyperparameters(
         lower_bounds = log.([length_scale_lower, adjusted_scale_lower])
         upper_bounds = log.([length_scale_upper, adjusted_scale_upper])
     end
-    
+
     @debug "lower bounds (ℓ, scale)" exp.(lower_bounds)
     @debug "upper bounds (ℓ,scale)" exp.(upper_bounds)
 
     x_train_prepped = prep_input(model, x_train)
     y_train_prepped = prep_output(model, y_train)
 
-
     obj = nothing
     if length_scale_only
         # Only optimize lengthscale, keep scale fixed at original log value (second parameter)
-        obj = p -> nlml_ls(
-            model, p[1], old_params[2], x_train_prepped, y_train_prepped
-        )
+        obj = p -> nlml_ls(model, p[1], old_params[2], x_train_prepped, y_train_prepped)
     else
         # Optimize both lengthscale and scale (vector p)
-        obj = p -> nlml(
-            model, p, x_train_prepped, y_train_prepped
-        )
+        obj = p -> nlml(model, p, x_train_prepped, y_train_prepped)
     end
 
-    opts = Optim.Options(; g_tol = 1e-6, f_abstol = 2.2e-9)
+    opts = Optim.Options(; g_tol=1e-6, f_abstol=2.2e-9)
 
-    random_inits = [rand.(Uniform.(lower_bounds, upper_bounds))
-                    for _ in 1:(num_restarts - 1)]
+    random_inits = [
+        rand.(Uniform.(lower_bounds, upper_bounds)) for _ in 1:(num_restarts - 1)
+    ]
     if length_scale_only
         init_guesses = [[old_params[1]], random_inits...]
     else
         init_guesses = [collect(old_params), random_inits...]
     end
 
-    inner_optimizer = LBFGS(;
-        linesearch = Optim.LineSearches.HagerZhang(; linesearchmax = 20))
-    
+    inner_optimizer = LBFGS(; linesearch=Optim.LineSearches.HagerZhang(; linesearchmax=20))
+
     for i in 1:num_restarts
         try
             result = Optim.optimize(
@@ -233,7 +220,7 @@ function optimize_hyperparameters(
                 init_guesses[i],
                 Fminbox(inner_optimizer),
                 opts;
-                autodiff = :forward #AutoMooncake(),
+                autodiff=:forward, #AutoMooncake(),
             )
 
             @debug "Optimization result: " result
@@ -307,10 +294,10 @@ returns:
 - `standard_params::Tuple`: Tuple containing the mean and standard deviation used for standardization
 """
 function optimize(
-        BO::BOStruct;
-        standardize::Union{String, Nothing} = "mean_scale",
-        hyper_params::Union{String, Nothing} = "all",
-        num_restarts_HP::Int = 1
+    BO::BOStruct;
+    standardize::Union{String,Nothing}="mean_scale",
+    hyper_params::Union{String,Nothing}="all",
+    num_restarts_HP::Int=1,
 )
     @assert hyper_params in ["all", "length_scale_only", nothing] "hyper_params must be one of: 'all', 'length_scale_only', or nothing."
 
@@ -341,10 +328,10 @@ function optimize(
                     BO.xs,
                     BO.ys,
                     old_params;
-                    length_scale_only = true,
-                    scale_std = σ[1],
-                    num_restarts = num_restarts_HP,
-                    domain = BO.domain
+                    length_scale_only=true,
+                    scale_std=σ[1],
+                    num_restarts=num_restarts_HP,
+                    domain=BO.domain,
                 )
             elseif hyper_params == "all"
                 out = optimize_hyperparameters(
@@ -352,10 +339,10 @@ function optimize(
                     BO.xs,
                     BO.ys,
                     old_params;
-                    length_scale_only = false,
-                    scale_std = σ[1],
-                    num_restarts = num_restarts_HP,
-                    domain = BO.domain
+                    length_scale_only=false,
+                    scale_std=σ[1],
+                    num_restarts=num_restarts_HP,
+                    domain=BO.domain,
                 )
             else
                 out = nothing
@@ -378,7 +365,7 @@ function optimize(
         push!(acq_list, BO.acq(BO.model, [x_cand])[1])
 
         y_cand = BO.func(x_cand)
-        y_cand = y_cand + _noise_like(y_cand, σ = sqrt(BO.noise) / σ[1]) # Add noise to the observation
+        y_cand = y_cand + _noise_like(y_cand; σ=sqrt(BO.noise) / σ[1]) # Add noise to the observation
 
         push!(BO.ys_non_std, y_cand)
 

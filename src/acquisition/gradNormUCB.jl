@@ -19,7 +19,6 @@ end
 Base.copy(gradUCB::GradientNormUCB) = GradientNormUCB(gradUCB.β)
 
 function (gradUCB::GradientNormUCB)(surrogate::AbstractSurrogate, x::AbstractVector)
-
     m = posterior_grad_mean(surrogate, x)[2:end]      # Vector{Float64}
     Σ = posterior_grad_cov(surrogate, x)[2:end, 2:end]       # Matrix{Float64}
 

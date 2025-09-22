@@ -58,12 +58,7 @@ end
 
 debug_gradient(obj, [0.0, 0.0]) # This matches Zygote
 
-optimize_hyperparameters(surrogate,
-    x_train,
-    y_train,
-    [0.0; 0.0],
-    true,
-    domain = domain)
+optimize_hyperparameters(surrogate, x_train, y_train, [0.0; 0.0], true; domain=domain)
 
 # ## Choose an acquisition function
 # We'll use the Expected Improvement acquisition function with an exploration parameter ξ = 0.0.
@@ -81,7 +76,7 @@ bo_struct = BOStruct(
     x_train,
     y_train,
     10,  # number of iterations
-    0.0  # Actual noise level (0.0 for noiseless)
+    0.0,  # Actual noise level (0.0 for noiseless)
 )
 
 print_info(bo_struct)

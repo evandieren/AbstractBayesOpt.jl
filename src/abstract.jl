@@ -42,7 +42,7 @@ Concrete implementation should subtype this and implement the following methods:
 """
 abstract type AbstractAcquisition end
 
-function (acq::AbstractAcquisition)(surrogate::AbstractSurrogate, x::X) where {X <: Real}
+function (acq::AbstractAcquisition)(surrogate::AbstractSurrogate, x::X) where {X<:Real}
     acq(surrogate, [x])[1]
 end
 
