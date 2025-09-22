@@ -147,6 +147,7 @@ returns:
 """
 function GradientGP(
         kernel::Kernel, p::Int, noise_var::Float64; mean = gradConstMean(zeros(p)))
+
     inner, scale, lengthscale = extract_scale_and_lengthscale(kernel)
 
     # Decide defaults
