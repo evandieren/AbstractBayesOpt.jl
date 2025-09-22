@@ -18,7 +18,7 @@ Random.seed!(42)  # setting the seed for reproducibility of this notebook
 
 # ## Define the objective function
 # We will optimise a simple 1D function: ``f(x) = (x-2)^2 + \sin(3*x)``
-f(x) = sum(x - 2)^2 + sin(3x)
+f(x) = (x - 2)^2 + sin(3x)
 
 min_f = -0.8494048256167165
 

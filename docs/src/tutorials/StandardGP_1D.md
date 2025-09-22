@@ -25,7 +25,7 @@ nothing #hide
 We will optimise a simple 1D function: ``f(x) = (x-2)^2 + \sin(3*x)``
 
 ````@example StandardGP_1D
-f(x) = sum(x - 2)^2 + sin(3x)
+f(x) = (x - 2)^2 + sin(3x)
 
 min_f = -0.8494048256167165
 
