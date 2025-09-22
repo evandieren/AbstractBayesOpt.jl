@@ -178,12 +178,90 @@ using Random
             # Test GradientGP construction
             p = 3  # 2D problem + function value (1 + 2 gradients)
             noise_var = 0.1
-            gp = GradientGP(SqExponentialKernel(), p, noise_var)
+            gp = GradientGP(kernel_base, p, noise_var)
 
             @test gp.noise_var == noise_var
             @test gp.p == p
             @test gp.gpx === nothing
             @test isa(gp.gp, AbstractGPs.GP)
+
+            # Test the kernel with lengthscale and scale
+            ℓ = get_lengthscale(gp)[1]
+            scale = get_scale(gp)[1]
+            @test ℓ == 1.0
+            @test scale == 1.0
+
+            # Test with custom lengthscale and scale
+            custom_ℓ = 0.5
+            custom_scale = 2.0
+            custom_kernel = custom_scale * (with_lengthscale(kernel_base, custom_ℓ))
+            gp_custom = GradientGP(custom_kernel, p, noise_var)
+            @test get_lengthscale(gp_custom) == [custom_ℓ]
+            @test get_scale(gp_custom) == [custom_scale]
+            @test gp_custom.noise_var == noise_var
+            @test gp_custom.gpx === nothing
+            @test isa(gp_custom.gp, AbstractGPs.GP)
+
+            # Test with only lengthscale
+            custom_ℓ2 = 0.3
+            kernel_ls = with_lengthscale(kernel_base, custom_ℓ2)
+            gp_ls = GradientGP(kernel_ls, p, noise_var)
+            @test get_lengthscale(gp_ls) == [custom_ℓ2]
+            @test get_scale(gp_ls) == [1.0]  # default scale
+            @test gp_ls.noise_var == noise_var
+            @test gp_ls.gpx === nothing
+            @test isa(gp_ls.gp, AbstractGPs.GP)
+
+            # Test with only scale
+            custom_scale2 = 3.0
+            kernel_sc = custom_scale2 * kernel_base
+            gp_sc = GradientGP(kernel_sc, p, noise_var)
+            @test get_lengthscale(gp_sc) == [1.0]  # default length
+            @test get_scale(gp_sc) == [custom_scale2]
+            @test gp_sc.noise_var == noise_var
+            @test gp_sc.gpx === nothing
+            @test isa(gp_sc.gp, AbstractGPs.GP)
+
+        end
+
+        @testset "gradKernel Construction" begin 
+            base_kernel = SqExponentialKernel()
+            gk = gradKernel(base_kernel)
+            @test isa(gk, gradKernel)
+            @test gk.kernel === base_kernel
+
+            # Test the output values
+            #TODO check analytically with derivation of kernel
+        end
+        
+        @testset "gradKernel Functionality" begin
+            kernel_base = SqExponentialKernel()
+            grad_kernel = gradKernel(kernel_base)
+            x = [0.5, 0.5]
+            y = [0.6, 0.6]
+
+            # Test function-function evaluation (px=1, py=1)
+            val_ff = grad_kernel((x, 1), (y, 1))
+            @test isa(val_ff, Real)
+            @test isfinite(val_ff)
+
+            # Test function-gradient evaluation (px=1, py>1)
+            val_fg = grad_kernel((x, 1), (y, 2))
+            @test isa(val_fg, Real)
+            @test isfinite(val_fg)
+
+            # Test gradient-function evaluation (px>1, py=1)
+            val_gf = grad_kernel((x, 2), (y, 1))
+            @test isa(val_gf, Real)
+            @test isfinite(val_gf)
+
+            # Test gradient-gradient evaluation (px>1, py>1)
+            val_gg = grad_kernel((x, 2), (y, 2))
+            @test isa(val_gg, Real)
+            @test isfinite(val_gg)
+
+            # Test symmetry for function-function case
+            @test grad_kernel((x, 1), (y, 1)) ≈ grad_kernel((y, 1), (x, 1))
         end
 
         @testset "GradientGP Update" begin
@@ -209,16 +287,38 @@ using Random
             test_x = [0.25, 0.25]
             mean_pred = posterior_mean(updated_gp, test_x)
             var_pred = posterior_var(updated_gp, test_x)
-            grad_mean = posterior_grad_mean(updated_gp, test_x)
-            grad_var = posterior_grad_var(updated_gp, test_x)
+            grad_mean_pred = posterior_grad_mean(updated_gp, test_x)
+            grad_var_pred = posterior_grad_var(updated_gp, test_x)
+            grad_cov_pred = posterior_grad_cov(updated_gp, test_x)
 
             @test isa(mean_pred, Float64)
             @test isa(var_pred, Float64)
             @test var_pred >= 0.0
-            @test isa(grad_mean, AbstractVector)
-            @test isa(grad_var, AbstractVector)
-            @test length(grad_mean) == p  # function + gradients
-            @test length(grad_var) == p
+            @test isa(grad_mean_pred, AbstractVector)
+            @test isa(grad_var_pred, AbstractVector)
+            @test length(grad_mean_pred) == p  # function + gradients
+            @test length(grad_var_pred) == p
+
+            # Now checking compared to true values
+            prepped_input = prep_input(gp, [test_x])
+            prepped_input_train = prep_input(gp, xs)
+            grad_kernel = gradKernel(kernel_base)
+
+            # Mean check
+            # Creates Vector{Vector{Float64}} here
+            k_xX = [grad_kernel.(Ref(prepped_input[i]),prepped_input_train) for i in 1:p]
+            K̃ = kernelmatrix(grad_kernel, prepped_input_train) + noise_var * I
+            ỹ =  vec(permutedims(reduce(hcat, ys)))  # Convert to single vector with right ordering
+
+            true_mean_post = reduce(vcat, permutedims.(k_xX)) * (K̃ \ ỹ)
+            @test isapprox(grad_mean_pred, true_mean_post, atol=1e-10)
+
+            # Covariance check
+            # p x p matrix
+            k_xx = grad_kernel.(permutedims(prepped_input), prepped_input) 
+            true_cov_post = k_xx - reduce(vcat, permutedims.(k_xX)) * (K̃ \ reduce(hcat, k_xX))
+
+            @test isapprox(grad_cov_pred, true_cov_post, atol=1e-10)
         end
 
         @testset "GradientGP Utility Functions" begin
@@ -232,19 +332,6 @@ using Random
             prepped = prep_input(gp, x)
             @test isa(prepped, KernelFunctions.MOInputIsotopicByOutputs)
 
-            # Test with updated GP
-            xs = [[0.0, 0.0], [1.0, 1.0]]
-            ys = [[1.0, 0.1, 0.1], [0.0, -0.1, -0.1]]
-            updated_gp = update(gp, xs, ys)
-
-            # Test lengthscale and scale extraction - skip for now due to kernel structure
-            # lengthscale = get_lengthscale(updated_gp)
-            # scale = get_scale(updated_gp)
-
-            # @test isa(lengthscale, AbstractVector)
-            # @test isa(scale, Real)
-            # @test all(lengthscale .> 0)
-            # @test scale > 0
         end
 
         @testset "GradientGP Standardization" begin
@@ -297,34 +384,5 @@ using Random
             @test copied_gp.gpx !== updated_gp.gpx  # Should be different reference
         end
 
-        @testset "gradKernel Functionality" begin
-            kernel_base = SqExponentialKernel()
-            grad_kernel = gradKernel(kernel_base)
-            x = [0.5, 0.5]
-            y = [0.6, 0.6]
-
-            # Test function-function evaluation (px=1, py=1)
-            val_ff = grad_kernel((x, 1), (y, 1))
-            @test isa(val_ff, Real)
-            @test isfinite(val_ff)
-
-            # Test function-gradient evaluation (px=1, py>1)
-            val_fg = grad_kernel((x, 1), (y, 2))
-            @test isa(val_fg, Real)
-            @test isfinite(val_fg)
-
-            # Test gradient-function evaluation (px>1, py=1)
-            val_gf = grad_kernel((x, 2), (y, 1))
-            @test isa(val_gf, Real)
-            @test isfinite(val_gf)
-
-            # Test gradient-gradient evaluation (px>1, py>1)
-            val_gg = grad_kernel((x, 2), (y, 2))
-            @test isa(val_gg, Real)
-            @test isfinite(val_gg)
-
-            # Test symmetry for function-function case
-            @test grad_kernel((x, 1), (y, 1)) ≈ grad_kernel((y, 1), (x, 1))
-        end
     end
 end
