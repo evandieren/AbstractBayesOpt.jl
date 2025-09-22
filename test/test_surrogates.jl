@@ -224,41 +224,60 @@ using Random
 
         end
 
-        @testset "gradKernel Construction" begin 
-            base_kernel = SqExponentialKernel()
-            gk = gradKernel(base_kernel)
-            @test isa(gk, gradKernel)
-            @test gk.kernel === base_kernel
-
-            # Test the output values
-            #TODO check analytically with derivation of kernel
-        end
-        
         @testset "gradKernel Functionality" begin
             kernel_base = SqExponentialKernel()
+
+            ∇₁kernel(x, y) = ForwardDiff.gradient(t -> kernel_base(t, y), x)
+            ∇₂kernel(x, y) = ForwardDiff.gradient(t -> kernel_base(x, t), y)
+
+            ∇₁₂kernel((x, px), (y, py)) = ForwardDiff.derivative(
+                                                    h1 -> ForwardDiff.derivative(
+                                                        h2 -> kernel_base(
+                                                            x .+ h1 .* (1:length(x) .== (px-1)),
+                                                            y .+ h2 .* (1:length(y) .== (py-1)),
+                                                        ),
+                                                        0.0,
+                                                    ),
+                                                    0.0,
+                                                )
+
             grad_kernel = gradKernel(kernel_base)
             x = [0.5, 0.5]
             y = [0.6, 0.6]
 
             # Test function-function evaluation (px=1, py=1)
             val_ff = grad_kernel((x, 1), (y, 1))
-            @test isa(val_ff, Real)
-            @test isfinite(val_ff)
+
+            true_val_ff = kernel_base(x, y)
+            @test isapprox(val_ff, true_val_ff, atol=1e-10)
 
             # Test function-gradient evaluation (px=1, py>1)
-            val_fg = grad_kernel((x, 1), (y, 2))
-            @test isa(val_fg, Real)
-            @test isfinite(val_fg)
+            val_fg = [grad_kernel((x, 1), (y, 2)); grad_kernel((x, 1), (y, 3))]
+            true_val_fg = ∇₂kernel(x, y)
+            @test isapprox(val_fg, true_val_fg, atol=1e-10)
 
             # Test gradient-function evaluation (px>1, py=1)
-            val_gf = grad_kernel((x, 2), (y, 1))
-            @test isa(val_gf, Real)
-            @test isfinite(val_gf)
+            val_gf = [grad_kernel((x, 2), (y, 1)); grad_kernel((x, 3), (y, 1))]
+            true_val_gf = ∇₁kernel(x, y)
+            @test isapprox(val_gf, true_val_gf, atol=1e-10)
+
 
             # Test gradient-gradient evaluation (px>1, py>1)
             val_gg = grad_kernel((x, 2), (y, 2))
-            @test isa(val_gg, Real)
-            @test isfinite(val_gg)
+            true_val_gg = ∇₁₂kernel((x, 2), (y, 2))
+            @test isapprox(val_gg, true_val_gg, atol=1e-10)
+
+            val_gg_23 = grad_kernel((x, 2), (y, 3))
+            true_val_gg_23 = ∇₁₂kernel((x, 2), (y, 3))
+            @test isapprox(val_gg_23, true_val_gg_23, atol=1e-10)
+
+            val_gg_32 = grad_kernel((x, 3), (y, 2))
+            true_val_gg_32 = ∇₁₂kernel((x, 3), (y, 2))
+            @test isapprox(val_gg_32, true_val_gg_32, atol=1e-10)   
+
+            val_gg_33 = grad_kernel((x, 3), (y, 3)) 
+            true_val_gg_33 = ∇₁₂kernel((x, 3), (y, 3))
+            @test isapprox(val_gg_33, true_val_gg_33, atol=1e-10)
 
             # Test symmetry for function-function case
             @test grad_kernel((x, 1), (y, 1)) ≈ grad_kernel((y, 1), (x, 1))
@@ -331,7 +350,6 @@ using Random
             x = [[0.5, 1.0]]
             prepped = prep_input(gp, x)
             @test isa(prepped, KernelFunctions.MOInputIsotopicByOutputs)
-
         end
 
         @testset "GradientGP Standardization" begin
