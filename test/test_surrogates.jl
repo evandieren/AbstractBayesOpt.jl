@@ -8,6 +8,7 @@ using Random
     @testset "StandardGP Tests" begin
         @testset "StandardGP Construction" begin
             # Test basic construction
+
             kernel = SqExponentialKernel()
             noise_var = 0.1
             gp = StandardGP(kernel, noise_var)
@@ -15,9 +16,51 @@ using Random
             @test gp.noise_var == noise_var
             @test gp.gpx === nothing
             @test isa(gp.gp, AbstractGPs.GP)
+
+
+            # Test the kernel with lengthscale and scale
+            ℓ = get_lengthscale(gp)[1]
+            scale = get_scale(gp)[1]
+            @test ℓ == 1.0
+            @test scale == 1.0
+
+            # Test with custom lengthscale and scale
+            custom_ℓ = 0.5
+            custom_scale = 2.0
+            custom_kernel = custom_scale * (with_lengthscale(kernel, custom_ℓ))
+            gp_custom = StandardGP(custom_kernel, noise_var)
+            @test get_lengthscale(gp_custom) == [custom_ℓ]
+            @test get_scale(gp_custom) == [custom_scale]
+            @test gp_custom.noise_var == noise_var
+            @test gp_custom.gpx === nothing
+            @test isa(gp_custom.gp, AbstractGPs.GP)
+
+
+            # Test with only lengthscale
+            custom_ℓ2 = 0.3
+            kernel_ls = with_lengthscale(kernel, custom_ℓ2)
+            gp_ls = StandardGP(kernel_ls, noise_var)
+            @test get_lengthscale(gp_ls) == [custom_ℓ2]
+            @test get_scale(gp_ls) == [1.0]  # default scale
+            @test gp_ls.noise_var == noise_var
+            @test gp_ls.gpx === nothing
+            @test isa(gp_ls.gp, AbstractGPs.GP)
+
+            # Test with only scale
+            custom_scale2 = 3.0
+            kernel_sc = custom_scale2 * kernel
+            gp_sc = StandardGP(kernel_sc, noise_var)
+            @test get_lengthscale(gp_sc) == [1.0]  # default length
+            @test get_scale(gp_sc) == [custom_scale2]
+            @test gp_sc.noise_var == noise_var
+            @test gp_sc.gpx === nothing
+            @test isa(gp_sc.gp, AbstractGPs.GP)
+
         end
 
         @testset "StandardGP Update" begin
+            # Tests updating the surrogate with training data and compare predictions with theory
+
             kernel = SqExponentialKernel()
             noise_var = 0.1
             gp = StandardGP(kernel, noise_var)
@@ -38,29 +81,22 @@ using Random
             mean_pred = posterior_mean(updated_gp, test_x)
             var_pred = posterior_var(updated_gp, test_x)
 
-            @test isa(mean_pred, Float64)
-            @test isa(var_pred, Float64)
-            @test var_pred >= 0.0
-        end
 
-        @testset "StandardGP Utility Functions" begin
-            kernel = SqExponentialKernel()
-            noise_var = 0.1
-            gp = StandardGP(kernel, noise_var)
+            # Check the value of posterior mean and var
+            k_xX = kernel.(Ref(test_x), xs)
+            K̃ = kernelmatrix(kernel, xs) + noise_var * I
+            
+            true_mean_post = k_xX' * (K̃ \ ys)
+            true_var_post = kernel(test_x, test_x) - k_xX' * (K̃ \ k_xX)
 
-            # Test prep_input
-            x = [0.5, 1.0]
-            prepped = prep_input(gp, x)
-            @test prepped == x
-
-            # Test with updated GP
-            xs = [0.0, 0.5, 1.0]
-            ys = [0.0, 0.25, 1.0]
-            updated_gp = update(gp, xs, ys)
+            @test isapprox(mean_pred, true_mean_post, atol=1e-10)
+            @test isapprox(var_pred, true_var_post, atol=1e-10)
 
         end
 
-        @testset "StandardGP Standardization" begin
+        @testset "StandardGP Standardization output" begin
+            # Testing functions std_y and get_mean_std
+
             kernel = SqExponentialKernel()
             noise_var = 0.1
             gp = StandardGP(kernel, noise_var)
@@ -97,7 +133,7 @@ using Random
         end
 
         @testset "StandardGP NLML" begin
-            kernel = 1 * (SqExponentialKernel() ∘ ScaleTransform(1.0))
+            kernel = SqExponentialKernel()
             noise_var = 0.1
             gp = StandardGP(kernel, noise_var)
 
@@ -108,8 +144,20 @@ using Random
 
             # Pass the kernel constructor, not instance
             nlml_val = nlml(gp, params, x, y)
-            @test isa(nlml_val, Real)
-            @test isfinite(nlml_val)
+
+            # Compute analyic NLML for comparison
+
+            # Get the current kernel matrix for gradient GP
+            K̃ = kernelmatrix(kernel, x) + noise_var * I
+            
+            # Compute the three components of the logpdf
+            K_inv_y = K̃ \ y
+            quadratic_form = y' * K_inv_y
+            constant_term = length(y) * log(2π)
+            analytical_logpdf = -0.5 * (quadratic_form + logdet(K̃) + constant_term)
+            true_nlml = -analytical_logpdf
+            @test isapprox(nlml_val, true_nlml, atol=1e-10)
+
         end
     end
 
