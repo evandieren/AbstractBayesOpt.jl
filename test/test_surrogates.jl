@@ -23,8 +23,8 @@ using Random
             gp = StandardGP(kernel, noise_var)
 
             # Create training data
-            xs = [[0.0], [0.5], [1.0]]
-            ys = [[0.0], [0.25], [1.0]]
+            xs = [0.0, 0.5, 1.0]
+            ys = [0.0, 0.25, 1.0]
 
             # Update GP
             updated_gp = update(gp, xs, ys)
@@ -54,8 +54,8 @@ using Random
             @test prepped == x
 
             # Test with updated GP
-            xs = [[0.0], [0.5], [1.0]]
-            ys = [[0.0], [0.25], [1.0]]
+            xs = [0.0, 0.5, 1.0]
+            ys = [0.0, 0.25, 1.0]
             updated_gp = update(gp, xs, ys)
 
         end
@@ -66,7 +66,8 @@ using Random
             gp = StandardGP(kernel, noise_var)
 
             # Test standardization using the functions from bayesian_opt.jl
-            y_train = [[1.0], [2.0], [3.0], [4.0], [5.0]]
+            y_train = [1.0, 2.0, 3.0, 4.0, 5.0]
+
             μ, σ = get_mean_std(gp, y_train, "mean_scale")
             y_std = std_y(gp, y_train, μ, σ)
 
@@ -77,7 +78,7 @@ using Random
             # Check that rescaled data has different scale
             y_flat_std = reduce(vcat, y_std)
             y_flat_orig = reduce(vcat, y_train)
-            @test std(y_flat_std) ≈ 1.0 atol=1e-10
+            @test std(y_flat_std) ≈ 1.0 atol = 1e-10
         end
 
         @testset "StandardGP Copy" begin
@@ -85,8 +86,8 @@ using Random
             noise_var = 0.1
             gp = StandardGP(kernel, noise_var)
 
-            xs = [[0.0], [1.0]]
-            ys = [[0.0], [1.0]]
+            xs = [0.0, 1.0]
+            ys = [0.0, 1.0]
             updated_gp = update(gp, xs, ys)
 
             copied_gp = copy(updated_gp)
@@ -102,7 +103,7 @@ using Random
 
             # Test NLML computation with correct signature
             params = [log(1.0), log(1.0)]  # log lengthscale, log scale
-            x = [[0.0], [0.5], [1.0]]
+            x = [0.0, 0.5, 1.0]
             y = [0.0, 0.25, 1.0]
 
             # Pass the kernel constructor, not instance
@@ -225,9 +226,9 @@ using Random
 
             # Check that the standardized values match with the original standardization formula
             for (y_orig, y_s) in zip(y_train, y_std)
-                @test y_s[1] ≈ (y_orig[1] - μ[1]) / σ[1] atol=1e-8
-                @test y_s[2] ≈ (y_orig[2] - μ[2]) / σ[2] atol=1e-8
-                @test y_s[3] ≈ (y_orig[3] - μ[3]) / σ[3] atol=1e-8
+                @test y_s[1] ≈ (y_orig[1] - μ[1]) / σ[1] atol = 1e-8
+                @test y_s[2] ≈ (y_orig[2] - μ[2]) / σ[2] atol = 1e-8
+                @test y_s[3] ≈ (y_orig[3] - μ[3]) / σ[3] atol = 1e-8
             end
         end
 

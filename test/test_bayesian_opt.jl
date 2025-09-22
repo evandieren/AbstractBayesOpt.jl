@@ -360,7 +360,7 @@ using Random
 
                 # Get predictions from both setups (standardized)
                 pred1_mean = [
-                    posterior_mean(bo1_std.model, x) + params1[1][1]/params1[2][1] for
+                    posterior_mean(bo1_std.model, x) + params1[1][1] / params1[2][1] for
                     x in x_pred
                 ]
                 pred1_var = [posterior_var(bo1_std.model, x) for x in x_pred]
@@ -391,7 +391,7 @@ using Random
                 @testset "GradientGP mean_only equivalence" begin
                     # Setup 1: gradConstMean([0,0,0]) + mean_only
                     kernel = SqExponentialKernel()
-                    model1_grad = GradientGP(kernel, dim+1, 1e-12)
+                    model1_grad = GradientGP(kernel, dim + 1, 1e-12)
                     bo1_grad = BOStruct(
                         f_val_grad,
                         ExpectedImprovement(0.01, minimum(hcat(y_test_gradient...)[1, :])),
@@ -405,7 +405,7 @@ using Random
 
                     # Setup 2: gradConstMean([empirical_mean, 0, 0]) + no standardization
                     model2_grad = GradientGP(
-                        kernel, dim+1, 1e-12, mean=gradConstMean(prior_mean_vector)
+                        kernel, dim + 1, 1e-12, mean=gradConstMean(prior_mean_vector)
                     )
                     bo2_grad = BOStruct(
                         f_val_grad,
@@ -598,7 +598,7 @@ using Random
 
             # Should be non-increasing (monotonic improvement)
             for i in 2:length(best_values)
-                @test best_values[i] <= best_values[i - 1] + 1e-10
+                @test best_values[i] <= best_values[i-1] + 1e-10
             end
 
             # Test 2: Should get reasonably close to true optimum
@@ -622,14 +622,15 @@ using Random
 
             # Generate data from a GP with known hyperparameters
             true_kernel =
-                true_scale * (SqExponentialKernel() ∘ ScaleTransform(1/true_lengthscale))
+                true_scale * (SqExponentialKernel() ∘ ScaleTransform(1 / true_lengthscale))
 
             # Training points
             x_train = [[-1.0], [-0.5], [0.0], [0.5], [1.0]]
 
             # Generate y values that are consistent with the true kernel
             # (This is a simplified test - in practice, we'd sample from the GP)
-            y_train = [sin(2*x[1]) + 0.1*randn() for x in x_train]
+
+            y_train = [sin(2 * x[1]) + 0.1 * randn() for x in x_train]
 
             # Create GP with initial hyperparameters
             initial_kernel = 1.0 * (SqExponentialKernel() ∘ ScaleTransform(1.0))
@@ -674,7 +675,7 @@ using Random
             # Test mathematical properties specific to gradient-enhanced GPs
 
             f(x) = x[1]^2 + x[2]^2
-            ∇f(x) = [2*x[1], 2*x[2]]
+            ∇f(x) = [2 * x[1], 2 * x[2]]
             f_val_grad(x) = [f(x); ∇f(x)]
 
             # Training data
@@ -724,7 +725,7 @@ using Random
         @testset "Standardization Mathematical Correctness" begin
             # Test that standardization preserves mathematical relationships
 
-            f(x) = 3*x[1]^2 + 5.0  # Function with known mean and scale
+            f(x) = 3 * x[1]^2 + 5.0  # Function with known mean and scale
 
             # Generate training data
             x_train = [[-1.0], [-0.5], [0.0], [0.5], [1.0]]
@@ -805,7 +806,7 @@ using Random
                 pred_large = posterior_mean(updated_large, [0.5])
                 @test isfinite(pred_large)
 
-                # Very small lengthscale (wiggly function)  
+                # Very small lengthscale (wiggly function)
                 small_ls_kernel = 1.0 * (SqExponentialKernel() ∘ ScaleTransform(1e6))
                 gp_small = StandardGP(small_ls_kernel, 0.01)
                 updated_small = update(gp_small, x_train, y_train)
