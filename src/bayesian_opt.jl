@@ -9,6 +9,8 @@ Parts of the code are inspired by:
 
 mutable struct BOStruct{
     F, M <: AbstractSurrogate, A <: AbstractAcquisition, D <: AbstractDomain, X, Y, T}
+mutable struct BOStruct{
+    F, M <: AbstractSurrogate, A <: AbstractAcquisition, D <: AbstractDomain, X, Y, T}
 
     # Core components of Bayesian Optimization problem
     func::F
@@ -24,6 +26,7 @@ mutable struct BOStruct{
     # Optimization parameters
     max_iter::Int
     iter::Int
+    noise::T #TODO: should be Y but
     noise::T #TODO: should be Y but
     flag::Bool
 end
@@ -53,6 +56,14 @@ function BOStruct(
         y_train,
         max_iter,
         noise
+        func,
+        acq,
+        model,
+        domain,
+        x_train,
+        y_train,
+        max_iter,
+        noise
 )
     return BOStruct(
         func,
@@ -65,6 +76,7 @@ function BOStruct(
         max_iter,
         0,
         noise,
+        false
         false
     )
 end
@@ -81,6 +93,8 @@ Arguments:
 returns:
 - `BO::BOStruct`: The updated Bayesian Optimization structure.
 
+Remarks:
+    This function handles potential ill-conditioning issues when updating the GP,
 Remarks:
     This function handles potential ill-conditioning issues when updating the GP,
     by returning the previous state if an error occurs and setting a flag to stop the optimization loop.
@@ -135,7 +149,6 @@ Arguments:
 - `y_train::Vector{Y}`: A vector of corresponding output training values.
 - `old_params::Vector{Float64}`: A vector containing the current log lengthscale
     and log scale parameters.
-- `classic_bo::Bool`: Indicates if using classic Bayesian Optimization (true) or gradient-enhanced (false).
 - `length_scale_only::Bool`: If true, only optimize the lengthscale, keeping the scale fixed.
 - `mean::AbstractGPs.MeanFunction`: The mean function of the GP, defaults to ZeroMean().
 - `num_restarts::Int`: Number of random restarts for the optimization. If set to 1, uses the current parameters as the initial guess.
@@ -149,8 +162,7 @@ function optimize_hyperparameters(
         model::AbstractSurrogate,
         x_train::Vector{X},
         y_train::Vector{Y},
-        old_params::Vector{T},
-        classic_bo::Bool;
+        old_params::Vector{T};
         scale_std::Float64 = 1.0,
         length_scale_only::Bool = false,
         num_restarts::Int = 1,
@@ -185,6 +197,8 @@ function optimize_hyperparameters(
     # Adjust scale bounds for standardized space
     adjusted_scale_lower = scale_lower / (scale_std^2)
     adjusted_scale_upper = scale_upper / (scale_std^2)
+    adjusted_scale_lower = scale_lower / (scale_std^2)
+    adjusted_scale_upper = scale_upper / (scale_std^2)
 
     if length_scale_only
         lower_bounds = log.([length_scale_lower])
@@ -204,9 +218,13 @@ function optimize_hyperparameters(
     x_train_prepped = prep_input(model, x_train)
     y_train_prepped = prep_output(model, y_train)
 
+
     obj = nothing
     if length_scale_only
         # Only optimize lengthscale, keep scale fixed at original log value (second parameter)
+        obj = p -> nlml_ls(
+            model, p[1], old_params[2], x_train_prepped, y_train_prepped
+        )
         obj = p -> nlml_ls(
             model, p[1], old_params[2], x_train_prepped, y_train_prepped
         )
@@ -215,10 +233,16 @@ function optimize_hyperparameters(
         obj = p -> nlml(
             model, p, x_train_prepped, y_train_prepped
         )
+        obj = p -> nlml(
+            model, p, x_train_prepped, y_train_prepped
+        )
     end
 
     opts = Optim.Options(; g_tol = 1e-6, f_abstol = 2.2e-9)
+    opts = Optim.Options(; g_tol = 1e-6, f_abstol = 2.2e-9)
 
+    random_inits = [rand.(Uniform.(lower_bounds, upper_bounds))
+                    for _ in 1:(num_restarts - 1)]
     random_inits = [rand.(Uniform.(lower_bounds, upper_bounds))
                     for _ in 1:(num_restarts - 1)]
     if length_scale_only
@@ -227,6 +251,8 @@ function optimize_hyperparameters(
         init_guesses = [collect(old_params), random_inits...]
     end
 
+    inner_optimizer = LBFGS(;
+        linesearch = Optim.LineSearches.HagerZhang(; linesearchmax = 20))
     inner_optimizer = LBFGS(;
         linesearch = Optim.LineSearches.HagerZhang(; linesearchmax = 20))
     # println(obj([0.0,0.0]))
@@ -239,6 +265,7 @@ function optimize_hyperparameters(
                 init_guesses[i],
                 Fminbox(inner_optimizer),
                 opts;
+                autodiff = :forward #AutoMooncake(),
                 autodiff = :forward #AutoMooncake(),
             )
 
@@ -270,6 +297,7 @@ function optimize_hyperparameters(
     end
 
     ℓ = nothing
+    ℓ = nothing
     scale = nothing
     if length_scale_only
         ℓ = exp(best_result[1])
@@ -279,20 +307,16 @@ function optimize_hyperparameters(
     end
 
     kernel_constructor = get_kernel_constructor(model)
-
     k_opt = scale * with_lengthscale(kernel_constructor, ℓ)
 
-    if classic_bo
-        return StandardGP(k_opt, model.noise_var; mean = model.gp.mean)
-    else
-        return GradientGP(k_opt, model.p, model.noise_var; mean = model.gp.mean)
-    end
+    return _update_model_parameters(model, k_opt)
 end
 
 """
 This function implements the EGO framework:
     While some criterion is not met,
         (1) optimize the acquisition function to obtain the new best candidate,
+        (2) query the target function f,
         (2) query the target function f,
         (3) update the GP and the overall optimization state.
     returns best found solution.
@@ -321,26 +345,32 @@ function optimize(
         standardize::Union{String, Nothing} = "mean_scale",
         hyper_params::Union{String, Nothing} = "all",
         num_restarts_HP::Int = 1
+        BO::BOStruct;
+        standardize::Union{String, Nothing} = "mean_scale",
+        hyper_params::Union{String, Nothing} = "all",
+        num_restarts_HP::Int = 1
 )
     @assert hyper_params in ["all", "length_scale_only", nothing] "hyper_params must be one of: 'all', 'length_scale_only', or nothing."
 
     @assert standardize in ["mean_scale", "scale_only", "mean_only", nothing] "standardize must be one of: 'mean_scale', 'scale_only', 'mean_only', or nothing."
 
-    classic_bo = (length(BO.ys[1]) == 1)
+    d = length(BO.xs[1])
 
     μ = zero(BO.ys[1])
-
-    σ = ones(eltype(BO.ys[1]), size(BO.ys[1])) # default values if we do not standardize
+    σ = μ isa AbstractArray ? ones(eltype(μ), size(μ)) : one(μ)
     if isnothing(standardize)
         BO.model = update(BO.model, BO.xs, BO.ys) # because we might not to that before
     else
         BO, (μ, σ) = standardize_problem(BO, standardize)
+        BO, (μ, σ) = standardize_problem(BO, standardize)
     end
 
+    acq_list = Vector{Float64}(undef, 0)
     acq_list = Vector{Float64}(undef, 0)
 
     i = 0
     while !stop_criteria(BO) & !BO.flag
+        if !isnothing(hyper_params) && (i % 10 == 0)
         if !isnothing(hyper_params) && (i % 10 == 0)
             @info "Optimizing GP hyperparameters at iteration $i..."
             @debug "Former parameters: ℓ=$(get_lengthscale(BO.model)), variance =$(get_scale(BO.model))"
@@ -351,8 +381,7 @@ function optimize(
                     BO.model,
                     BO.xs,
                     BO.ys,
-                    old_params,
-                    classic_bo;
+                    old_params;
                     length_scale_only = true,
                     scale_std = σ[1],
                     num_restarts = num_restarts_HP,
@@ -363,8 +392,7 @@ function optimize(
                     BO.model,
                     BO.xs,
                     BO.ys,
-                    old_params,
-                    classic_bo;
+                    old_params;
                     length_scale_only = false,
                     scale_std = σ[1],
                     num_restarts = num_restarts_HP,
@@ -384,12 +412,17 @@ function optimize(
         end
 
         @info "Iteration #$(i+1), current min val: $(_get_minimum(BO.model, BO.ys_non_std))"
+        @info "Iteration #$(i+1), current min val: $(_get_minimum(BO.model, BO.ys_non_std))"
         x_cand = optimize_acquisition(BO.acq, BO.model, BO.domain)
 
+        x_cand = d == 1 ? first(x_cand) : x_cand
+
         @info "Acquisition optimized, new candidate point: $(x_cand)"
-        push!(acq_list, BO.acq(BO.model, x_cand)[1])
+        push!(acq_list, BO.acq(BO.model, [x_cand])[1])
 
         y_cand = BO.func(x_cand)
+        y_cand = y_cand + _noise_like(y_cand, σ = sqrt(BO.noise) / σ[1]) # Add noise to the observation
+
         y_cand = y_cand + _noise_like(y_cand, σ = sqrt(BO.noise) / σ[1]) # Add noise to the observation
 
         push!(BO.ys_non_std, y_cand)

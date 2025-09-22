@@ -7,6 +7,7 @@ struct StandardGP <: AbstractSurrogate
     gp::AbstractGPs.GP
     noise_var::Float64
     gpx::Union{Nothing, AbstractGPs.PosteriorGP}
+    gpx::Union{Nothing, AbstractGPs.PosteriorGP}
     # gpx is the posterior GP after conditioning on data, nothing if not conditioned yet
 end
 
@@ -23,6 +24,7 @@ Arguments:
 returns:
 - `StandardGP`: An instance of the StandardGP model.
 """
+function StandardGP(kernel::Kernel, noise_var::T; mean = nothing) where {T}
 function StandardGP(kernel::Kernel, noise_var::T; mean = nothing) where {T}
     if isnothing(mean)
         mean = ZeroMean()
@@ -60,7 +62,9 @@ returns:
 - `StandardGP`: A new StandardGP model updated with the provided data.
 """
 function update(model::StandardGP, xs::Vector{X}, ys::Vector{Y}) where {X, Y}
+function update(model::StandardGP, xs::Vector{X}, ys::Vector{Y}) where {X, Y}
     gpx = model.gp(xs, model.noise_var...) # This is a FiniteGP with Σy with noise_var on its diagonal.
+    updated_gpx = posterior(gpx, ys)
     updated_gpx = posterior(gpx, ys)
     return StandardGP(model.gp, model.noise_var, updated_gpx)
 end
@@ -73,11 +77,17 @@ Arguments:
 - `params::Tuple`: A tuple containing the log lengthscale and log scale parameters.
 - `xs::Vector{X}`: The input data points.
 - `ys::Vector{Y}`: The observed function values.
+- `xs::Vector{X}`: The input data points.
+- `ys::Vector{Y}`: The observed function values.
 
 returns:
 - nlml : The negative log marginal likelihood of the model.
 """
 function nlml(
+        model::StandardGP,
+        params::Vector{T},
+        xs::Vector{X},
+        ys::Vector{Y}
         model::StandardGP,
         params::Vector{T},
         xs::Vector{X},
@@ -91,6 +101,7 @@ function nlml(
 
     # Kernel with current parameters
     k = scale * with_lengthscale(kernel_constructor, ℓ)
+    gp = StandardGP(k, model.noise_var; mean = model.gp.mean) # Use fixed noise here, or optimize σ² too
     gp = StandardGP(k, model.noise_var; mean = model.gp.mean) # Use fixed noise here, or optimize σ² too
 
     # Evaluate GP at training points with noise, creates a FiniteGP
@@ -108,6 +119,8 @@ Arguments:
 - `log_scale::Float64`: The log scale parameter.
 - `xs::Vector{X}`: The input data points.
 - `ys::Vector{Y}`: The observed function values.
+- `xs::Vector{X}`: The input data points.
+- `ys::Vector{Y}`: The observed function values.
 
 returns:
 - nlml : The negative log marginal likelihood of the model.
@@ -115,6 +128,12 @@ returns:
 Remark: This function is useful for optimizing only the lengthscale and scale parameters while keeping other parameters fixed.
 """
 function nlml_ls(
+        model::StandardGP,
+        log_ℓ::T,
+        log_scale::Float64,
+        xs::Vector{X},
+        ys::Vector{Y}
+) where {T, X, Y}
         model::StandardGP,
         log_ℓ::T,
         log_scale::Float64,
@@ -129,10 +148,14 @@ function nlml_ls(
     # Kernel with current parameters
     k = scale * with_lengthscale(kernel_constructor, ℓ)
     gp = StandardGP(k, model.noise_var; mean = model.gp.mean) # Use fixed noise here, or optimize σ² too
+    k = scale * with_lengthscale(kernel_constructor, ℓ)
+    gp = StandardGP(k, model.noise_var; mean = model.gp.mean) # Use fixed noise here, or optimize σ² too
 
     # Evaluate GP at training points with thought noise, creates a FiniteGP
     gpx = gp.gp(xs, model.noise_var)
+    gpx = gp.gp(xs, model.noise_var)
 
+    return -AbstractGPs.logpdf(gpx, ys)
     return -AbstractGPs.logpdf(gpx, ys)
 end
 
@@ -156,7 +179,9 @@ function get_mean_std(model::StandardGP, y_train::Vector{Y}, choice::String) whe
     # Taking into account the choice of the user
     if choice == "scale_only"
         y_mean = zero(typeof(y_mean))
+        y_mean = zero(typeof(y_mean))
     elseif choice == "mean_only"
+        y_std = one(typeof(y_std))
         y_std = one(typeof(y_std))
     end
 
@@ -169,6 +194,7 @@ Standardize the output values of the training data
 
 Arguments:
 - `model::StandardGP`: The GP model.
+- `ys::Vector{Y}`: A vector of observed function values.
 - `ys::Vector{Y}`: A vector of observed function values.
 - `μ`: Empirical mean
 - `σ`: Empirical standard deviation
@@ -205,11 +231,17 @@ function rescale_model(model::StandardGP, σ)
         new_mean_val = model.gp.mean.c / σ # works for ConstMean
         model = StandardGP(
             new_kernel, model.noise_var / (σ^2); mean = ConstMean(new_mean_val)
+            new_kernel, model.noise_var / (σ^2); mean = ConstMean(new_mean_val)
         )
         return model
     end
 
     return StandardGP(new_kernel, model.noise_var / (σ^2); mean = model.gp.mean)
+end
+
+
+function _update_model_parameters(model::StandardGP, kernel::Kernel)
+    return StandardGP(kernel, model.noise_var; mean = model.gp.mean) # Use fixed noise here, or optimize σ² too
 end
 
 get_lengthscale(model::StandardGP) = 1 ./ model.gp.kernel.kernel.transform.s
@@ -219,7 +251,18 @@ get_scale(model::StandardGP) = model.gp.kernel.σ²
 get_kernel_constructor(model::StandardGP) = model.gp.kernel.kernel.kernel
 
 prep_input(model::StandardGP, xs::Vector{X}) where {X} = xs
+prep_input(model::StandardGP, xs::Vector{X}) where {X} = xs
 
+prep_output(model::StandardGP, ys::Vector{Y}) where {Y} = ys
+
+# One-point version just wraps into a buffer
+function posterior_mean(model::StandardGP, x::X) where {X <: Real}
+    posterior_mean(model, [x])
+end
+
+function posterior_var(model::StandardGP, x::X) where {X <: Real}
+    posterior_var(model, [x])
+end
 prep_output(model::StandardGP, ys::Vector{Y}) where {Y} = ys
 
 # One-point version just wraps into a buffer
@@ -234,7 +277,13 @@ end
 # Buffer version: Vector of Vectors
 function posterior_mean(model::StandardGP, x_buf::AbstractVector)
     mean(model.gpx(x_buf))
+# Buffer version: Vector of Vectors
+function posterior_mean(model::StandardGP, x_buf::AbstractVector)
+    mean(model.gpx(x_buf))
 end
+
+function posterior_var(model::StandardGP, x_buf::AbstractVector)
+    var(model.gpx(x_buf))
 
 function posterior_var(model::StandardGP, x_buf::AbstractVector)
     var(model.gpx(x_buf))
@@ -255,12 +304,18 @@ returns:
 function unstandardized_mean_and_var(
         model::StandardGP, xs::Vector{X}, params::Vector{T}) where {
         X, T}
+function unstandardized_mean_and_var(
+        model::StandardGP, xs::Vector{X}, params::Vector{T}) where {
+        X, T}
     μ, σ = params
+    m, v = mean_and_var(model.gpx(xs))
     m, v = mean_and_var(model.gpx(xs))
     # Un-standardize mean and variance
     m_unstd = (m .* σ) .+ μ
     v_unstd = v .* (σ^2)
     return m_unstd, v_unstd
 end
+
+_get_minimum(model::StandardGP, ys::Vector{Y}) where {Y} = minimum(ys)
 
 _get_minimum(model::StandardGP, ys::Vector{Y}) where {Y} = minimum(ys)

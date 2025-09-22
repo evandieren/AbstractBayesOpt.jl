@@ -10,6 +10,12 @@ function _get_box_optimizer()
     box_optimizer = Fminbox(inner_optimizer)
     return box_optimizer
 end
+function _get_box_optimizer()
+    inner_optimizer = LBFGS(;
+        linesearch = Optim.LineSearches.HagerZhang(; linesearchmax = 20))
+    box_optimizer = Fminbox(inner_optimizer)
+    return box_optimizer
+end
 
 """
 Optimize the acquisition function over the given domain.
@@ -30,8 +36,8 @@ function optimize_acquisition(
         acqf::AbstractAcquisition,
         surrogate::AbstractSurrogate,
         domain::AbstractDomain;
-        n_grid = 10000,
-        n_local = 100
+        n_grid::Int = 10000,
+        n_local::Int = 100
 )
     # We will use BFGS for now
     best_acq = -Inf
@@ -40,23 +46,29 @@ function optimize_acquisition(
     d = length(domain.bounds)
     grid_points = [domain.lower .+ rand(d) .* (domain.upper .- domain.lower)
                    for _ in 1:n_grid]
+    grid_points = [domain.lower .+ rand(d) .* (domain.upper .- domain.lower)
+                   for _ in 1:n_grid]
 
     # println("Grid points generated: ", grid_points[1:5])
     scores = acqf(surrogate, grid_points)
     indices_sorted = sortperm(scores; rev = true)
     top_points = grid_points[indices_sorted[1:min(n_local, length(indices_sorted))]]
 
+    
     # Loop over a number of random starting points
     for initial_x in top_points
         result = Optim.optimize(
-            x -> -acqf(surrogate, x)[1],
+            x -> -acqf(surrogate, [x])[1],
             domain.lower,
             domain.upper,
             initial_x,
             _get_box_optimizer(),
             Optim.Options(; g_tol = 1e-5, f_abstol = 2.2e-9, x_abstol = 1e-4)
+            _get_box_optimizer(),
+            Optim.Options(; g_tol = 1e-5, f_abstol = 2.2e-9, x_abstol = 1e-4)
         )
         # Check if the current run is better (lower negative acqf)
+        
         current_acq = -Optim.minimum(result)
         if current_acq > best_acq
             best_acq = current_acq
@@ -64,7 +76,8 @@ function optimize_acquisition(
         end
     end
     # not sure about below...
-    return first(best_x)
+    # Let's always return a vector and bring it back to Float potentially outside
+    return best_x
 end
 
 # function sample_gp_function(surrogate::AbstractSurrogate, domain::ContinuousDomain;n_points=50)
@@ -92,6 +105,7 @@ end
 #                                 domain.lower,
 #                                 domain.upper,
 #                                 initial_x,
+#                                 _get_box_optimizer(),
 #                                 _get_box_optimizer(),
 #                                 Optim.Options(g_tol = 1e-5, f_abstol = 2.2e-9)
 #                                 ; autodiff = :forward)
