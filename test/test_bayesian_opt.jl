@@ -622,6 +622,7 @@ using Random
 
             # Generate y values that are consistent with the true kernel
             # (This is a simplified test - in practice, we'd sample from the GP)
+
             y_train = [sin(2 * x[1]) + 0.1 * randn() for x in x_train]
 
             # Create GP with initial hyperparameters
