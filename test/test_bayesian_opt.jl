@@ -209,7 +209,7 @@ using Random
             gp = StandardGP(kernel, 0.01)
 
             # Create initial training data
-            x_train = [[-0.5], [0.0], [1.5]]
+            x_train = [-0.5, 0.0, 1.5]
             y_train = f.(x_train)
 
             # Create acquisition function
@@ -218,28 +218,21 @@ using Random
             # Create BOStruct with small number of iterations
             problem = BOStruct(f, acqf, gp, domain, x_train, y_train, 3, 0.01)
 
-            # Run optimization (should work without errors)
-            try
-                result, acqf_list,
-                std_params = AbstractBayesOpt.optimize(
-                    problem, standardize = nothing, hyper_params = nothing
-                )
+            # Run optimization
+            result, acqf_list,
+            std_params = AbstractBayesOpt.optimize(
+                problem, standardize = nothing, hyper_params = nothing
+            )
 
-                @test length(result.xs) >= length(x_train)
-                @test length(result.ys) >= length(y_train)
-                @test length(acqf_list) >= 0
-                @test result.iter > 0
+            @test length(result.xs) >= length(x_train)
+            @test length(result.ys) >= length(y_train)
+            @test length(acqf_list) >= 0
+            @test result.iter > 0
 
-                # Check that we found improvement
-                initial_best = minimum(reduce(vcat, y_train))
-                final_best = minimum(reduce(vcat, result.ys_non_std))
-                @test final_best <= initial_best  # Should not get worse
-
-            catch e
-                @warn "Optimization failed: $e"
-                # For now, just test that basic structure is correct
-                @test isa(problem, BOStruct)
-            end
+            # Check that we found improvement
+            initial_best = minimum(reduce(vcat, y_train))
+            final_best = minimum(reduce(vcat, result.ys_non_std))
+            @test final_best <= initial_best  # Should not get worse
         end
 
         @testset "Standardization Equivalence Tests" begin

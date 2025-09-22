@@ -58,13 +58,13 @@ Use gradConstMean([μ_f; zeros(d)]) to set a constant prior mean μ_f for the fu
 value and zero for the gradients.
 """
 
-struct gradConstMean
-    c::AbstractVector
-    function f_mean(vec_const, (x, px)::Tuple{Any, Int})
+struct gradConstMean{V}
+    c::V
+    function f_mean(vec_const, (x, px)::Tuple{AbstractVector, Int})
         return vec_const[px]
     end
 
-    function gradConstMean(c::AbstractVector)
+    function gradConstMean(c)
         return CustomMean(x -> f_mean(c, x))
     end
 end
@@ -86,7 +86,8 @@ mutable struct gradKernel{K} <: MOKernel
     base_kernel::K
 end
 
-function (κ::gradKernel)((x, px)::Tuple{Any, Int}, (y, py)::Tuple{Any, Int})
+function (κ::gradKernel)(
+        (x, px)::Tuple{AbstractVector, Int}, (y, py)::Tuple{AbstractVector, Int})
     """
     ```math
     k((\vec{x},p),(\vec{x}',p'))
@@ -144,11 +145,8 @@ Arguments:
 returns:
 - `GradientGP`: An instance of the GradientGP model.
 """
-function GradientGP(kernel::Kernel, p::Int, noise_var::Float64; mean = nothing)
-    if isnothing(mean)
-        mean = gradConstMean(zeros(p))
-    end
-
+function GradientGP(
+        kernel::Kernel, p::Int, noise_var::Float64; mean = gradConstMean(zeros(p)))
     inner, scale, lengthscale = extract_scale_and_lengthscale(kernel)
 
     # Decide defaults
