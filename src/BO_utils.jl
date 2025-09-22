@@ -132,7 +132,7 @@ Convenience overload accepting a vector-of-vectors of points and a `ContinuousDo
 Returns the same as the matrix method.
 """
 function lengthscale_bounds(
-        x_train::AbstractVector{<:AbstractVector},
+        x_train::AbstractVector,
         domain::ContinuousDomain;
         min_frac::Float64 = 0.1,
         max_frac::Float64 = 1.0

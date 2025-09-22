@@ -18,7 +18,7 @@ Random.seed!(42)  # setting the seed for reproducibility of this notebook
 
 # ## Define the objective function
 # We will optimise a simple 1D function: ``f(x) = (x-2)^2 + \sin(3*x)``
-f(x) = sum(x .- 2)^2 + sin(3*sum(x))
+f(x) = sum(x - 2)^2 + sin(3x)
 
 min_f = -0.8494048256167165
 
@@ -50,7 +50,8 @@ surrogate = StandardGP(SqExponentialKernel(), noise_var)
 
 # Generate uniform random samples x_train
 n_train = 5
-x_train = [domain.lower .+ (domain.upper .- domain.lower) .* rand(d) for _ in 1:n_train]
+x_train = first.([domain.lower .+ (domain.upper .- domain.lower) .* rand(d)
+                  for _ in 1:n_train])
 
 y_train = f.(x_train)
 
@@ -107,12 +108,12 @@ Plots.vspan!([1, n_train]; color = :blue, alpha = 0.2, label = "")
 # ## Gradient-enhanced GPs
 # Now, let's see how to use gradient information to improve the optimization. We'll use the same function but now also provide its gradient.
 # We define a new surrogate model that can handle gradient information, specifically a `GradientGP`.
-grad_surrogate = GradientGP(SqExponentialKernel(), d+1, noise_var)
+grad_surrogate = GradientGP(SqExponentialKernel(), d + 1, noise_var)
 
 ξ = 0.0
 acq = ExpectedImprovement(ξ, minimum(reduce(vcat, y_train)))
 
-∇f(x) = ForwardDiff.gradient(f, x)
+∇f(x) = ForwardDiff.derivative(f, x)
 f_val_grad(x) = [f(x); ∇f(x)]
 
 # Generate value and gradients at random samples
@@ -158,7 +159,7 @@ p = Plots.plot(
     label = "gradBO",
     xlims = (1, length(running_min_grad))
 )
-Plots.vspan!([1, 2*n_train]; color = :blue, alpha = 0.2, label = "")
+Plots.vspan!([1, 2 * n_train]; color = :blue, alpha = 0.2, label = "")
 
 # ## Plotting the surrogate model
 # We can visualize the surrogate model's mean and uncertainty along with the true function and the evaluated
@@ -172,8 +173,8 @@ post_var = unstandardized_mean_and_var(
     result_grad.model, plot_x, standard_params_grad
 )
 
-post_mean = reshape(post_mean, :, d+1)[:, 1] # This returns f(x) to match the StandardGP
-post_var = reshape(post_var, :, d+1)[:, 1]
+post_mean = reshape(post_mean, :, d + 1)[:, 1] # This returns f(x) to match the StandardGP
+post_var = reshape(post_var, :, d + 1)[:, 1]
 post_var[post_var .< 0] .= 0
 
 plot(

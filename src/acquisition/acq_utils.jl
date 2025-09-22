@@ -4,8 +4,12 @@ normcdf(μ, σ²) = 1 / 2 * (1 + SpecialFunctions.erf(μ / √(2σ²)))
 using Optim
 using Random
 
-inner_optimizer = LBFGS(; linesearch = Optim.LineSearches.HagerZhang(; linesearchmax = 20))
-box_optimizer = Fminbox(inner_optimizer)
+function _get_box_optimizer()
+    inner_optimizer = LBFGS(;
+        linesearch = Optim.LineSearches.HagerZhang(; linesearchmax = 20))
+    box_optimizer = Fminbox(inner_optimizer)
+    return box_optimizer
+end
 
 """
 Optimize the acquisition function over the given domain.
@@ -33,35 +37,23 @@ function optimize_acquisition(
     best_acq = -Inf
     best_x = nothing
 
-    x_buf = nothing
-    if surrogate isa GradientGP
-        # Preallocate buffer for GradientGP
-        x_buf = [(zeros(length(domain.bounds)), 1)]  # preallocate once
-    else
-        # Preallocate buffer for standard GP
-        x_buf = [zeros(length(domain.bounds))]
-    end
-
     d = length(domain.bounds)
     grid_points = [domain.lower .+ rand(d) .* (domain.upper .- domain.lower)
                    for _ in 1:n_grid]
 
     # println("Grid points generated: ", grid_points[1:5])
     scores = acqf(surrogate, grid_points)
-    evaluated = collect(zip(grid_points, scores)) # probably not memory efficient
-    # evaluated = [(x, acqf(surrogate, x, x_buf)) for x in grid_points]
-
-    sorted_points = sort(evaluated; by = x -> -x[2])  # higher EI is better
-    top_points = first.(sorted_points[1:min(n_local, length(sorted_points))])
+    indices_sorted = sortperm(scores; rev = true)
+    top_points = grid_points[indices_sorted[1:min(n_local, length(indices_sorted))]]
 
     # Loop over a number of random starting points
     for initial_x in top_points
         result = Optim.optimize(
-            x -> -acqf(surrogate, x, x_buf),
+            x -> -acqf(surrogate, x)[1],
             domain.lower,
             domain.upper,
             initial_x,
-            box_optimizer,
+            _get_box_optimizer(),
             Optim.Options(; g_tol = 1e-5, f_abstol = 2.2e-9, x_abstol = 1e-4)
         )
         # Check if the current run is better (lower negative acqf)
@@ -71,7 +63,8 @@ function optimize_acquisition(
             best_x = Optim.minimizer(result)
         end
     end
-    return best_x
+    # not sure about below...
+    return first(best_x)
 end
 
 # function sample_gp_function(surrogate::AbstractSurrogate, domain::ContinuousDomain;n_points=50)
@@ -99,7 +92,7 @@ end
 #                                 domain.lower,
 #                                 domain.upper,
 #                                 initial_x,
-#                                 box_optimizer,
+#                                 _get_box_optimizer(),
 #                                 Optim.Options(g_tol = 1e-5, f_abstol = 2.2e-9)
 #                                 ; autodiff = :forward)
 #         current_μ = Optim.minimum(result)

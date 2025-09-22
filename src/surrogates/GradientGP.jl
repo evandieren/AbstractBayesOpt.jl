@@ -360,12 +360,12 @@ end
 # These functions is used when we need to query one point)
 function posterior_mean(model::GradientGP, x::X) where {X}
     @warn "GradientGP posterior_mean weird"
-    mean(model.gpx([(x, 1)])) # we do the function value only for now
+    mean(model.gpx([(x, 1)]))[1] # we do the function value only for now
 end
 
 function posterior_var(model::GradientGP, x::X) where {X}
     @warn "GradientGP posterior_var weird"
-    var(model.gpx([(x, 1)])) # we do the function value only for now
+    var(model.gpx([(x, 1)]))[1] # we do the function value only for now
 end
 
 # These functions are used in a buffer way within the optimisation of the acquisition function

@@ -24,7 +24,7 @@ mutable struct BOStruct{
     # Optimization parameters
     max_iter::Int
     iter::Int
-    noise::T #TODO: should be Y but  
+    noise::T #TODO: should be Y but
     flag::Bool
 end
 
@@ -81,8 +81,8 @@ Arguments:
 returns:
 - `BO::BOStruct`: The updated Bayesian Optimization structure.
 
-Remarks: 
-    This function handles potential ill-conditioning issues when updating the GP, 
+Remarks:
+    This function handles potential ill-conditioning issues when updating the GP,
     by returning the previous state if an error occurs and setting a flag to stop the optimization loop.
 """
 function update(BO::BOStruct, x::X, y::Y, i::Int) where {X, Y}
@@ -183,8 +183,8 @@ function optimize_hyperparameters(
     scale_lower, scale_upper = 1e-3, 1e6
 
     # Adjust scale bounds for standardized space
-    adjusted_scale_lower = scale_lower/(scale_std^2)
-    adjusted_scale_upper = scale_upper/(scale_std^2)
+    adjusted_scale_lower = scale_lower / (scale_std^2)
+    adjusted_scale_upper = scale_upper / (scale_std^2)
 
     if length_scale_only
         lower_bounds = log.([length_scale_lower])
@@ -269,7 +269,7 @@ function optimize_hyperparameters(
         end
     end
 
-    ℓ = nothing;
+    ℓ = nothing
     scale = nothing
     if length_scale_only
         ℓ = exp(best_result[1])
@@ -293,7 +293,7 @@ end
 This function implements the EGO framework:
     While some criterion is not met,
         (1) optimize the acquisition function to obtain the new best candidate,
-        (2) query the target function f,            
+        (2) query the target function f,
         (3) update the GP and the overall optimization state.
     returns best found solution.
 
@@ -326,13 +326,11 @@ function optimize(
 
     @assert standardize in ["mean_scale", "scale_only", "mean_only", nothing] "standardize must be one of: 'mean_scale', 'scale_only', 'mean_only', or nothing."
 
-    n_train = length(BO.xs)
+    classic_bo = (length(BO.ys[1]) == 1)
 
-    classic_bo = (length(BO.ys[1])==1)
+    μ = zero(BO.ys[1])
 
-    μ=zero(BO.ys[1])
-    println(μ)
-    σ=ones(eltype(BO.ys[1]), size(BO.ys[1])) # default values if we do not standardize
+    σ = ones(eltype(BO.ys[1]), size(BO.ys[1])) # default values if we do not standardize
     if isnothing(standardize)
         BO.model = update(BO.model, BO.xs, BO.ys) # because we might not to that before
     else
@@ -343,7 +341,7 @@ function optimize(
 
     i = 0
     while !stop_criteria(BO) & !BO.flag
-        if !isnothing(hyper_params)&&(i%10==0)
+        if !isnothing(hyper_params) && (i % 10 == 0)
             @info "Optimizing GP hyperparameters at iteration $i..."
             @debug "Former parameters: ℓ=$(get_lengthscale(BO.model)), variance =$(get_scale(BO.model))"
             old_params = log.([get_lengthscale(BO.model)[1], get_scale(BO.model)[1]])
@@ -386,13 +384,13 @@ function optimize(
         end
 
         @info "Iteration #$(i+1), current min val: $(_get_minimum(BO.model, BO.ys_non_std))"
-
         x_cand = optimize_acquisition(BO.acq, BO.model, BO.domain)
 
-        push!(acq_list, BO.acq(BO.model, x_cand))
+        @info "Acquisition optimized, new candidate point: $(x_cand)"
+        push!(acq_list, BO.acq(BO.model, x_cand)[1])
 
         y_cand = BO.func(x_cand)
-        y_cand = y_cand + _noise_like(y_cand, σ = sqrt(BO.noise)/σ[1]) # Add noise to the observation
+        y_cand = y_cand + _noise_like(y_cand, σ = sqrt(BO.noise) / σ[1]) # Add noise to the observation
 
         push!(BO.ys_non_std, y_cand)
 
