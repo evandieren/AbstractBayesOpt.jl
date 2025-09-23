@@ -5,7 +5,7 @@
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/JuliaDiff/BlueStyle)
 
 AbstractBayesOpt.jl is a general framework for Bayesian Optimisation in Julia. It relies on abstract classes for surrogate models, acquisition functions and domain definitions.
-All the codebase is entirely written in Julia.
+The codebase is entirely written in Julia.
 
 The library is designed to solve **minimisation problems** of the form:
 
@@ -15,7 +15,7 @@ where $f: \mathcal{X} \to \mathbb{R}$ is the objective function, which can be ex
 
 The library uses **Bayesian Optimisation (BO)** to iteratively propose evaluation points $x$ in the domain by:
 
-1. Modeling the objective function $f$ with a **surrogate model** (e.g., Gaussian Process).  
+1. Modelling the objective function with a **surrogate model** (e.g., Gaussian Process).  
 2. Using an **acquisition function** to select the next query point that balances exploration and exploitation.  
 3. Updating the surrogate with new observations and repeating until a **stopping criterion** is met.
 
@@ -35,4 +35,4 @@ algorithms. To add a new surrogate model, acquisition function, or domain, imple
 the following interfaces.
 
 We refer to the [documentation] for an extensive description of the features of the library, including the different 
-subtypes we have implemented, some tutorials and the public API.
+subtypes we have implemented, as well as some tutorials and the public API.
