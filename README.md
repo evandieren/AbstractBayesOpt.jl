@@ -1,8 +1,9 @@
 # AbstractBayesOpt
-
+[![Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://evandieren.github.io/AbstractBayesOpt.jl/dev)
 [![Build Status](https://github.com/evandieren/AbstractBayesOpt.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/evandieren/AbstractBayesOpt.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/evandieren/AbstractBayesOpt.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/evandieren/AbstractBayesOpt.jl)
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/JuliaDiff/BlueStyle)
+[![ColPrac: Contributor's Guide on Collaborative Practices for Community Packages](https://img.shields.io/badge/ColPrac-Contributor's%20Guide-blueviolet)](https://github.com/SciML/ColPrac)
 
 AbstractBayesOpt.jl is a general framework for Bayesian Optimisation in Julia. It relies on abstract classes for surrogate models, acquisition functions and domain definitions.
 The codebase is entirely written in Julia.
@@ -21,6 +22,18 @@ The library uses **Bayesian Optimisation (BO)** to iteratively propose evaluatio
 
 ## Installation
 
+You can install AbstractBayesOpt.jl directly from this repository:
+
+```julia
+using Pkg
+Pkg.add(url="https://github.com/evandieren/AbstractBayesOpt.jl")
+```
+
+For development and contributions:
+```julia
+using Pkg
+Pkg.develop(url="https://github.com/evandieren/AbstractBayesOpt.jl")
+```
 
 ## What does it provide?
 
@@ -36,3 +49,7 @@ the following interfaces.
 
 We refer to the [documentation] for an extensive description of the features of the library, including the different 
 subtypes we have implemented, as well as some tutorials and the public API.
+
+## Issues and Contributing
+
+We follow the practices from ColPrac, and we warmly welcome any contribution to fix bugs, or implement new features. Please [submit an issue](https://github.com/evandieren/AbstractBayesOpt.jl/issues) to start working on AbstractBayesOpt.jl !
