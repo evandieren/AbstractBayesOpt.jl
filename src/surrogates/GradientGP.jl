@@ -365,6 +365,7 @@ function prep_output(model::GradientGP, y::Vector{Y}) where {Y}
 end
 
 function posterior_grad_mean(model::GradientGP, x)
+    # Be careful with the output order, it is (f(x1),f(x2),...,∂₁f(x1),∂₁f(x2),...)
     mean(model.gpx(_prep_input(x, model.p)))
 end
 

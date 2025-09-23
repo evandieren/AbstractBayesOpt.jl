@@ -26,11 +26,11 @@ function (PI::ProbabilityImprovement)(surrogate::AbstractSurrogate, x::AbstractV
 end
 
 function _single_input_pi(Δ, σ²)
-    if σ² <= 0
+    if σ² <= 1e-12
         return max(Δ, 0.0)
     end
     σ = sqrt(σ²)
-    return normcdf(Δ / σ, 1)
+    return cdf(Normal(0, 1), Δ / σ)
 end
 
 """
@@ -47,9 +47,5 @@ returns:
 function update(
     acq::ProbabilityImprovement, ys::AbstractVector, surrogate::AbstractSurrogate
 )
-    if isa(ys[1], Float64) # we are in 1d
-        ProbabilityImprovement(acq.ξ, minimum(reduce(vcat, ys)))
-    else
-        ProbabilityImprovement(acq.ξ, minimum(hcat(ys...)[1, :]))
-    end
+    return ProbabilityImprovement(acq.ξ, _get_minimum(surrogate, ys))
 end

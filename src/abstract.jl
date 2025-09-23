@@ -33,8 +33,9 @@ abstract type AbstractSurrogate end
 Abstract type for acquisition functions used in Bayesian optimization.
 
 Concrete implementation should subtype this and implement the following methods:
-- `(acq::AbstractAcquisition)(surrogate::AbstractSurrogate, x, x_buf=nothing)`:
-    Evaluate the acquisition function at point `x` using the surrogate model. Optionally, a buffer `x_buf` can be provided for caching purposes.
+- `(acq::AbstractAcquisition)(surrogate::AbstractSurrogate, x::AbstractVector)`:
+    Evaluate the acquisition function at point `x` using the surrogate model. 
+    This should also work for a single real input `x::Real` if working in 1D, in which case it is treated as a one-dimensional input vector. via the abstract method defined below.
 - `update(acq::AbstractAcquisition, ys::AbstractVector, model::AbstractSurrogate)`:
     Update the acquisition function with new observations `ys` and the current surrogate model.
 - `Base.copy(acq::AbstractAcquisition)`:

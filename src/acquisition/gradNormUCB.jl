@@ -19,15 +19,22 @@ end
 Base.copy(gradUCB::GradientNormUCB) = GradientNormUCB(gradUCB.β)
 
 function (gradUCB::GradientNormUCB)(surrogate::AbstractSurrogate, x::AbstractVector)
+
+    @argcheck typeof(surrogate) == GradientGP "GradientNormUCB acquisition function requires a GradientGP surrogate model."
+
+    return _single_input_gradUCB.(Ref(gradUCB), Ref(surrogate), x)
+end
+
+function _single_input_gradUCB(gradUCB::GradientNormUCB, surrogate::GradientGP, x)
+    
     m = posterior_grad_mean(surrogate, x)[2:end]      # Vector{Float64}
     Σ = posterior_grad_cov(surrogate, x)[2:end, 2:end]       # Matrix{Float64}
 
     μ_sqnorm = dot(m, m) + tr(Σ)  # mean of the squared norm of the gradient
     var_sqnorm = 4 * dot(m, Σ * m) + 2 * sum(Σ .^ 2)  # variance of the squared norm of the gradient
-
+    
     return -μ_sqnorm + gradUCB.β * sqrt(max(var_sqnorm, 1e-12))
 end
-
 """
 Update the GradientNormUCB acquisition function with new array of observations.
 

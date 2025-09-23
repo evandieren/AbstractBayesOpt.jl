@@ -46,9 +46,5 @@ returns:
 - `new_acqf::ExpectedImprovement`: Updated Expected Improvement acquisition function
 """
 function update(acq::ExpectedImprovement, ys::AbstractVector, surrogate::AbstractSurrogate)
-    if (length(ys[1]) == 1) # we are in 1d
-        ExpectedImprovement(acq.ξ, minimum(reduce(vcat, ys)))
-    else
-        ExpectedImprovement(acq.ξ, minimum(hcat(ys...)[1, :]))
-    end
+    ExpectedImprovement(acq.ξ, _get_minimum(surrogate, ys))
 end

@@ -11,6 +11,7 @@ using LinearAlgebra
 using Random
 using Distances
 using DifferentiationInterface
+using ArgCheck
 
 # Interface definitions
 include("abstract.jl")
