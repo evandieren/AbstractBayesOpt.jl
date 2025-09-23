@@ -42,9 +42,6 @@ returns:
 - `value::AbstractVector`: The evaluated acquisition values at the given points.
 """
 function (gradUCB::GradientNormUCB)(surrogate::AbstractSurrogate, x::AbstractVector)
-
-    @argcheck typeof(surrogate) == GradientGP "GradientNormUCB acquisition function requires a GradientGP surrogate model."
-
     return _single_input_gradUCB.(Ref(gradUCB), Ref(surrogate), x)
 end
 

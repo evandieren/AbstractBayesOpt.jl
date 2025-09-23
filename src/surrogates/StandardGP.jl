@@ -3,9 +3,9 @@ Implementation of the Abstract structures for the standard GP.
 
 Remark: this is a simple wrapper around AbstractGPs.jl that implements the AbstractSurrogate abstract type
 """
-struct StandardGP <: AbstractSurrogate
+struct StandardGP{T} <: AbstractSurrogate
     gp::AbstractGPs.GP
-    noise_var::Float64
+    noise_var::T
     gpx::Union{Nothing,AbstractGPs.PosteriorGP}
     # gpx is the posterior GP after conditioning on data, nothing if not conditioned yet
 end

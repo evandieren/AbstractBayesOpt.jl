@@ -176,7 +176,6 @@ using Random
             test_x = [[0.25, 0.25]]
             ucb_val = grad_ucb(updated_gp, test_x)[1]
 
-            println(ucb_val)  # Debug print to check value
             @test isa(ucb_val, Real)
             @test isfinite(ucb_val)
         end

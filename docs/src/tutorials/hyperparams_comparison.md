@@ -141,7 +141,7 @@ We will run Bayesian optimisation with each configuration and collect performanc
 
 ````@example hyperparams_comparison
 function run_comparison(n_iterations) # hide
-    results = Dict{String, Any}() # hide
+    results = Dict{String, NamedTuple}() # hide
 
     for (config_name, hyper_params, standardise_mode) in test_configs # hide
         model = deepcopy(base_model) # hide
