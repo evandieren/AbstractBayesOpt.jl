@@ -60,17 +60,23 @@ export GradientGP,
 
 # Acquisition functions
 include("acquisition/acq_utils.jl")
-export normcdf, normpdf, optimize_acquisition
+export optimize_acquisition
+
 include("acquisition/ExpectedImprovement.jl")
 export ExpectedImprovement
+
 include("acquisition/UpperConfidenceBound.jl")
 export UpperConfidenceBound
+
 include("acquisition/gradNormUCB.jl")
 export GradientNormUCB
+
 include("acquisition/ProbabilityImprovement.jl")
 export ProbabilityImprovement
+
 #include("acquisition/KnowledgeGradient.jl")
 # export KnowledgeGradient, KG
+
 include("acquisition/EnsembleAcq.jl")
 export EnsembleAcquisition
 
@@ -79,11 +85,11 @@ export EnsembleAcquisition
 
 # Core Bayesian Optimization framework
 include("bayesian_opt.jl")
-export optimize, update, BOStruct, stop_criteria, optimize_hyperparameters
+export optimize, update, BOStruct, optimize_hyperparameters
 
 # Utility functions
 include("BO_utils.jl")
-export print_info, rescale_output, standardize_problem, lengthscale_bounds
+export print_info, rescale_output, standardize_problem
 
 # include("plotting.jl")
 # export plot_state
