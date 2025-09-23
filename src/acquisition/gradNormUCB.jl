@@ -1,9 +1,10 @@
 """
+    GradientNormUCB{Y}(β::Y) <: AbstractAcquisition
+
 Acquisition function implementing the Squared 2-norm of the gradient with Upper Confidence Bound (UCB) exploration strategy.
 
-
 Arguments:
-- `β::Float64`: Exploration-exploitation balance parameter
+- `β::Y`: Exploration-exploitation balance parameter
 
 returns:
 - `gradUCB::GradientNormUCB`: GradientNormUCB acquisition function instance
@@ -12,12 +13,34 @@ References:
     Derived by Van Dieren, E. but open to previous references if existing.
     Originally proposed by [Makrygiorgos et al., 2023](https://www.sciencedirect.com/science/article/pii/S2405896323020487) but adapted to the squared 2-norm of the gradient.
 """
-struct GradientNormUCB <: AbstractAcquisition
-    β::Float64  # exploration-exploitation balance parameter
+struct GradientNormUCB{Y} <: AbstractAcquisition
+    β::Y # exploration-exploitation balance parameter
 end
 
+
+"""
+    Base.copy(gradUCB::GradientNormUCB)
+
+Creates a copy of the GradientNormUCB instance.
+
+returns:
+- `new_gradUCB::GradientNormUCB`: A new instance of GradientNormUCB
+"""
 Base.copy(gradUCB::GradientNormUCB) = GradientNormUCB(gradUCB.β)
 
+
+"""
+    (gradUCB::GradientNormUCB)(surrogate::AbstractSurrogate, x::AbstractVector)
+
+Evaluate the GradientNormUCB acquisition function at a given set of points.
+
+Arguments:
+- `surrogate::AbstractSurrogate`: The surrogate model used by the acquisition function. Must be a GradientGP.
+- `x::AbstractVector`: Vector of input points where the acquisition function is evaluated.
+
+returns:
+- `value::AbstractVector`: The evaluated acquisition values at the given points.
+"""
 function (gradUCB::GradientNormUCB)(surrogate::AbstractSurrogate, x::AbstractVector)
 
     @argcheck typeof(surrogate) == GradientGP "GradientNormUCB acquisition function requires a GradientGP surrogate model."
@@ -35,7 +58,10 @@ function _single_input_gradUCB(gradUCB::GradientNormUCB, surrogate::GradientGP, 
     
     return -μ_sqnorm + gradUCB.β * sqrt(max(var_sqnorm, 1e-12))
 end
+
 """
+    update(acqf::GradientNormUCB, ys::AbstractVector, surrogate::AbstractSurrogate)
+
 Update the GradientNormUCB acquisition function with new array of observations.
 
 Arguments:

@@ -1,9 +1,14 @@
-normpdf(μ, σ²) = 1 / √(2π * σ²) * exp(-μ^2 / (2 * σ²))
-normcdf(μ, σ²) = 1 / 2 * (1 + SpecialFunctions.erf(μ / √(2σ²)))
-
 using Optim
 using Random
 
+"""
+    _get_box_optimizer()
+
+Helper function to create a box-constrained optimizer using L-BFGS.
+
+returns:
+- `box_optimizer::Fminbox`: Box-constrained optimizer instance
+"""
 function _get_box_optimizer()
     inner_optimizer = LBFGS(; linesearch=Optim.LineSearches.HagerZhang(; linesearchmax=20))
     box_optimizer = Fminbox(inner_optimizer)
@@ -11,6 +16,9 @@ function _get_box_optimizer()
 end
 
 """
+    optimize_acquisition(acqf::AbstractAcquisition, surrogate::AbstractSurrogate, 
+                         domain::AbstractDomain; n_grid::Int=10000, n_local::Int=100)
+
 Optimize the acquisition function over the given domain.
 
 
@@ -64,8 +72,6 @@ function optimize_acquisition(
             best_x = Optim.minimizer(result)
         end
     end
-    # not sure about below...
-    # Let's always return a vector and bring it back to Float potentially outside
     return best_x
 end
 
