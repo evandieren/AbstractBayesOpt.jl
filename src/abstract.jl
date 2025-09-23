@@ -22,8 +22,13 @@ Concrete implementation should subtype this and implement the following methods:
 - `nlml(surrogate::AbstractSurrogate, params::AbstractVector, xs::AbstractVector, ys::AbstractVector)`:
     Compute the negative log marginal likelihood of the surrogate model given hyperparameters `params`, input data `xs`, and observations `ys`.
 
+If you wish to standardize the outputs, you can also implement:
+- `std_y(model::AbstractSurrogate)`:
+    Get the standard deviation used for standardizing the outputs in the surrogate model.
+- `get_mean_std(model::AbstractSurrogate)`:
+    Get the mean and standard deviation used for standardizing the outputs in the surrogate model.
 
-Other methods can be added as needed depending on the use case.
+Other methods can be added as needed depending on the use case, and we refer to the impelementations of [`StandardGP`](@ref) and [`GradientGP`](@ref) for examples.
 """
 abstract type AbstractSurrogate end
 
@@ -43,6 +48,22 @@ Concrete implementation should subtype this and implement the following methods:
 """
 abstract type AbstractAcquisition end
 
+"""
+    (acq::AbstractAcquisition)(surrogate::AbstractSurrogate, x::AbstractVector)
+
+Evaluate the acquisition function at a given input point if Real using the surrogate model. 
+
+
+This is a wrapper to allow for 1D optimization where the input is a single real number.
+
+Arguments:
+- `acq::AbstractAcquisition`: The acquisition function to be evaluated.
+- `surrogate::AbstractSurrogate`: The surrogate model used in the acquisition function.
+- `x::AbstractVector`: The input point where the acquisition function is to be evaluated.
+
+returns:
+- `Real`: The value of the acquisition function at the input point.
+"""
 function (acq::AbstractAcquisition)(surrogate::AbstractSurrogate, x::X) where {X<:Real}
     acq(surrogate, [x])[1]
 end

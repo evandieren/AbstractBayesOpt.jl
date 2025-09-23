@@ -2,7 +2,9 @@
 
 ## BOStruct and related functions
 """
-    Prints information about the BOStruct
+    print_info(BO::BOStruct)
+
+Prints information about the BOStruct
 
 Arguments:
 - `BO::BOStruct`: The BOStruct instance to print information about.
@@ -26,7 +28,7 @@ end
 ## Standardization functions
 
 """
-    standardize_problem(BO::BOStruct; choice="mean_scale")
+    standardize_problem(BO::BOStruct, choice::String)
 
 Standardize the output values of the BOStruct and update the GP and acquisition function accordingly.
 
@@ -42,13 +44,13 @@ returns:
 - `params::Tuple`: A tuple containing the mean and standard deviation used for standardization (vectors matching the output dimension).
 """
 function standardize_problem(BO::BOStruct, choice::String)
-    @assert choice in ["mean_scale", "scale_only", "mean_only"] "choice must be one of: 'mean_scale', 'scale_only', 'mean_only'"
+    @argcheck choice in ["mean_scale", "scale_only", "mean_only"] "choice must be one of: 'mean_scale', 'scale_only', 'mean_only'"
 
     # Attention: here it is the standard deviation, need to square for kernel scaling
     μ, σ = get_mean_std(BO.model, BO.ys_non_std, choice) # μ should be the type of Y
 
-    println("Standardization choice: $choice")
-    println("Standardization parameters: μ=$μ, σ=$σ")
+    @info "Standardization choice: $choice"
+    @info "Standardization parameters: μ=$μ, σ=$σ"
 
     # Need to update original kernel scale if scale_only or mean_scale
     if choice in ["scale_only", "mean_scale"]
@@ -64,7 +66,15 @@ function standardize_problem(BO::BOStruct, choice::String)
 end
 
 """
-Compute sensible per-dimension lower and upper bounds for GP kernel lengthscales using
+    lengthscale_bounds(
+        x_train::AbstractMatrix,
+        domain_lower::AbstractVector,
+        domain_upper::AbstractVector;
+        min_frac::Float64=0.1,
+        max_frac::Float64=1.0,
+    )
+
+Computes sensible per-dimension lower and upper bounds for GP kernel lengthscales using
 nearest-neighbor fill distances and domain extents.
 
 Arguments:
@@ -76,7 +86,6 @@ Arguments:
 
 Returns:
 - `(ℓ_lower, ℓ_upper)` vectors of length d suitable for setting log-space bounds.
-
 """
 function lengthscale_bounds(
     x_train::AbstractMatrix,
@@ -165,5 +174,44 @@ function rescale_output(ys::AbstractVector, params::Tuple)
     end
 end
 
+"""
+    _noise_like(y::AbstractFloat; σ=1.0)
+
+Generate Gaussian noise with standard deviation `σ` for a single float output.
+
+Arguments:
+- `y::AbstractFloat`: A single float output value.
+- `σ::Float64`: Standard deviation of the noise (default is 1.0).
+
+returns:
+- `noise::Float64`: A random noise value drawn from a normal distribution with mean.
+"""
 _noise_like(y::AbstractFloat; σ=1.0) = σ * randn()
+
+"""
+    _noise_like(y::AbstractVector{T}; σ=1.0) where {T<:AbstractFloat}
+
+Generate Gaussian noise with standard deviation `σ` for a vector of float outputs.
+
+Arguments:
+- `y::AbstractVector{T}`: A vector of float output values.
+- `σ::Float64`: Standard deviation of the noise (default is 1.0
+
+returns:
+- `noise::Vector{T}`: A vector of random noise values drawn from a normal distribution with mean.
+"""
 _noise_like(y::AbstractVector{T}; σ=1.0) where {T<:AbstractFloat} = σ * randn(length(y))
+
+"""
+    _noise_like(y::AbstractVector{T}; σ::AbstractVector{T}) where {T}
+
+Generate Gaussian noise with per-dimension standard deviations for a single float output.
+
+Arguments:
+- `y::AbstractVector{T}`: One output (vector of type T). 
+- `σ::AbstractVector{T}`: A vector of standard deviations for each dimension. (size must match output dimension)
+
+returns:
+- `noise::Vector{T}`: A vector of random noise values drawn from a normal distribution with mean.
+"""
+_noise_like(y::AbstractVector{T}; σ::AbstractVector{T}) where {T} = σ .* randn(length(y))

@@ -3,11 +3,8 @@
 
 Upper Confidence Bound (UCB) acquisition function.
 
-Arguments:
+Attributes:
 - `β::Y`: Exploration-exploitation balance parameter
-
-returns:
-- `UCB::UpperConfidenceBound`: Upper Confidence Bound acquisition function instance
 
 References:
 [Srinivas et al., 2012](https://ieeexplore.ieee.org/document/6138914)

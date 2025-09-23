@@ -3,12 +3,9 @@
 
 Expected Improvement acquisition function.
 
-Arguments:
+Attributes:
 - `ξ::Y`: Exploration parameter
 - `best_y::Y`: Best observed objective value
-
-returns:
-- `EI::ExpectedImprovement`: Expected Improvement acquisition function instance
 
 References:
 [Jones et al., 1998](https://link.springer.com/article/10.1023/A:1008306431147)

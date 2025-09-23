@@ -1,12 +1,41 @@
+# This module contains the structures and functions for the Bayesian Optimization framework.
+
+# Parts of the code are inspired by:
+# - BayesianOptimization (python package) (optimization of acquisition functions)
+# - GradientGPs.jl (internal package) of MatMat group at EPFL (BOStruct, and update routines)
+
+
 """
-This module contains the structures and functions for the Bayesian Optimization framework.
+    BOStruct{F,M<:AbstractSurrogate,A<:AbstractAcquisition,D<:AbstractDomain,X,Y,T}(
+        func::F,
+        acq::A,
+        model::M,
+        domain::D,
+        xs::Vector{X},
+        ys::Vector{Y},
+        ys_non_std::Vector{Y},
+        max_iter::Int,
+        iter::Int,
+        noise::T,
+        flag::Bool,
+    )
 
+A structure to hold all components of the Bayesian Optimization problem.
 
-Parts of the code are inspired by:
-- BayesianOptimization (python package) (optimization acq functions)
-- GradientGPs.jl (internal package) of MatMat group at EPFL (BOStruct, and update routines)
+Attributes:
+- `func::F`: The target function to be optimized.
+- `acq::A`: The acquisition function guiding the optimization.
+- `model::M`: The surrogate model (e.g., Gaussian Process).
+- `domain::D`: The domain over which to optimize.
+- `xs::Vector{X}`: A vector of input training points.
+- `ys::Vector{Y}`: A vector of corresponding output training values.
+- `ys_non_std::Vector{Y}`: A vector of output training values before standardization.
+- `max_iter::Int`: Maximum number of iterations for the optimization.
+- `iter::Int`: Current iteration number.
+- `noise::T`: Noise level in the observations.
+- `flag::Bool`: A flag to indicate if the optimization should stop due to issues like
+    ill-conditioning.
 """
-
 mutable struct BOStruct{
     F,M<:AbstractSurrogate,A<:AbstractAcquisition,D<:AbstractDomain,X,Y,T
 }
@@ -30,7 +59,9 @@ mutable struct BOStruct{
 end
 
 """
-Initialize the Bayesian Optimization problem.
+    BOStruct(func, acq, model, domain, x_train, y_train, max_iter, noise)
+
+Initializes the Bayesian Optimization problem.
 
 Arguments:
 - `func`: The target function to be optimized.
@@ -114,19 +145,40 @@ function update(BO::BOStruct, x::X, y::Y, i::Int) where {X,Y}
     return BO
 end
 
+"""
+    stop_criteria(p::BOStruct)
+
+Check if the stopping criteria for the Bayesian Optimization loop is met.
+
+Arguments:
+- `p::BOStruct`: The current Bayesian Optimization structure.
+
+returns:
+- `Bool`: True if the maximum number of iterations has been reached, False otherwise.
+"""
 function stop_criteria(p::BOStruct)
     return p.iter > p.max_iter
 end
 
 """
-Optimize the hyperparameters of the Gaussian Process model using Maximum Likelihood Estimation (MLE).
+    optimize_hyperparameters(
+        model::AbstractSurrogate,
+        x_train::Vector{X},
+        y_train::Vector{Y},
+        old_params::Vector{T};
+        scale_std::Float64=1.0,
+        length_scale_only::Bool=false,
+        num_restarts::Int=1,
+        domain::Union{Nothing,AbstractDomain}=nothing,
+    ) where {X,Y,T}
+
+Optimizes the hyperparameters of the surrogate model using Maximum Likelihood Estimation (MLE).
 
 Arguments:
 - `model::AbstractSurrogate`: Surrogate model.
 - `x_train::Vector{X}`: A vector of input training points.
 - `y_train::Vector{Y}`: A vector of corresponding output training values.
-- `old_params::Vector{Float64}`: A vector containing the current log lengthscale
-    and log scale parameters.
+- `old_params::Vector{T}`: A vector containing the current parameters.
 - `length_scale_only::Bool`: If true, only optimize the lengthscale, keeping the scale fixed.
 - `mean::AbstractGPs.MeanFunction`: The mean function of the GP, defaults to ZeroMean().
 - `num_restarts::Int`: Number of random restarts for the optimization. If set to 1, uses the current parameters as the initial guess.
@@ -134,6 +186,8 @@ Arguments:
 returns:
 - `model::AbstractSurrogate`: The updated surrogate model with optimized hyperparameters.
 
+#TODO: 1) remove explicit dependecy on lengthscale and scale, make it more general for a set of params.
+2) allow for personalised bounds on the hyperparameters.
 """
 function optimize_hyperparameters(
     model::AbstractSurrogate,
@@ -148,7 +202,7 @@ function optimize_hyperparameters(
     best_nlml = Inf
     best_result = nothing
 
-    #TODO ask the user for the bounds of the hyperparameters, so this below should dissapear
+    #TODO ask the user for the bounds of the hyperparameters, so this below should disappear
 
     # Adjust scale bounds by 1/σ² to account for standardization
     # This ensures bounds in original space remain 1e-3 to 1e4 regardless of standardization
@@ -267,6 +321,13 @@ function optimize_hyperparameters(
 end
 
 """
+    optimize(
+        BO::BOStruct;
+        standardize::Union{String,Nothing}="mean_scale",
+        hyper_params::Union{String,Nothing}="all",
+        num_restarts_HP::Int=1,
+    )
+
 This function implements the EGO framework:
     While some criterion is not met,
         (1) optimize the acquisition function to obtain the new best candidate,
@@ -277,12 +338,12 @@ This function implements the EGO framework:
 
 Arguments:
 - `BO::BOStruct`: The Bayesian Optimization structure.
-- `standardize::String`: Specifies how to standardize the outputs.
+- `standardize`: Specifies how to standardize the outputs.
     - If "mean_scale", standardize by removing mean and scaling by std.
     - If "scale_only", only scale the outputs without centering (in case we set a non-zero mean function with empirical mean).
     - If "mean_only", only remove the mean without scaling.
     - If nothing, do not standardize the outputs.
-- `hyper_params::String`: Specifies how to handle hyperparameters.
+- `hyper_params`: Specifies how to handle hyperparameters.
     - If "all", re-optimize hyperparameters every 10 iterations.
     - If "length_scale_only", only optimize the lengthscale.
     - If nothing, do not re-optimize hyperparameters.
@@ -299,9 +360,9 @@ function optimize(
     hyper_params::Union{String,Nothing}="all",
     num_restarts_HP::Int=1,
 )
-    @assert hyper_params in ["all", "length_scale_only", nothing] "hyper_params must be one of: 'all', 'length_scale_only', or nothing."
+    @argcheck hyper_params in ["all", "length_scale_only", nothing] "hyper_params must be one of: 'all', 'length_scale_only', or nothing."
 
-    @assert standardize in ["mean_scale", "scale_only", "mean_only", nothing] "standardize must be one of: 'mean_scale', 'scale_only', 'mean_only', or nothing."
+    @argcheck standardize in ["mean_scale", "scale_only", "mean_only", nothing] "standardize must be one of: 'mean_scale', 'scale_only', 'mean_only', or nothing."
 
     d = length(BO.xs[1])
 

@@ -4,6 +4,12 @@
 Implementation of the Abstract structures for the gradient-enhanced GP.
 
 This relies on MOGP from AbstractGPs.jl and KernelFunctions.jl.
+
+Attributes:
+- `gp::AbstractGPs.GP`: The underlying Gaussian Process model.
+- `noise_var::T`: The noise variance of the observations.
+- `p::Int`: The number of outputs (1 for function value + d for gradients).
+- `gpx::Union{Nothing,AbstractGPs.PosteriorGP}`: The posterior GP after conditioning on data, `nothing` if not conditioned yet.
 """
 struct GradientGP{T} <: AbstractSurrogate
     gp::AbstractGPs.GP
@@ -32,11 +38,8 @@ Base.copy(s::GradientGP) = GradientGP(s.gp, s.noise_var, s.p, copy(s.gpx))
 
 Approximate Matern 5/2 kernel using a second-order Taylor expansion around d=0.
 
-Arguments:
+Attributes:
 - `metric`: The distance metric to be used, defaults to squared Euclidean distance.
-
-returns:
-- `ApproxMatern52Kernel`: An instance of the approximate Matern 5/2 kernel.
 """
 struct ApproxMatern52Kernel{M} <: KernelFunctions.SimpleKernel
     metric::M
@@ -120,11 +123,8 @@ to the function value, the following ones to the gradient outputs.
 Use gradConstMean([μ_f; zeros(d)]) to set a constant prior mean μ_f for the function
 value and zero for the gradients.
 
-Arguments:
+Attributes:
 - `c::V`: A vector of constants for each output (function value + gradients).
-
-returns:
-- `gradConstMean`: An instance of the custom mean function.
 """
 struct gradConstMean{V}
     c::V
@@ -132,6 +132,7 @@ struct gradConstMean{V}
         return vec_const[px]
     end
 
+    # Constructor
     function gradConstMean(c)
         return CustomMean(x -> f_mean(c, x))
     end
@@ -168,20 +169,20 @@ mutable struct gradKernel{K} <: MOKernel
     base_kernel::K
 end
 
-"""
-    KernelFunctions.kappa(κ::gradKernel, (x, px)::Tuple{X,Int}, (y, py)::Tuple{Y,Int}) where {X,Y}
+raw"""
+    (κ::gradKernel)((x, px)::Tuple{X,Int}, (y, py)::Tuple{Y,Int}) where {X,Y}
 
 Compute the kernel value for given inputs and output indices using the gradKernel.
 
 ```math
-    k((\vec{x},p),(\vec{x}',p'))
+k((\mathbf{x}, p), (\mathbf{x}', p')) =
+\begin{cases}
+  k(\mathbf{x}, \mathbf{x}') & p = 1,\; p' = 1 \\
+  (\nabla_{\mathbf{x}'} k(\mathbf{x}, \mathbf{x}'))_{p'} & p = 1,\; p' \neq 1 \\
+  (\nabla_{\mathbf{x}} k(\mathbf{x}, \mathbf{x}'))_{p}   & p \neq 1,\; p' = 1 \\
+  (\nabla_{\mathbf{x}} \nabla_{\mathbf{x}'} k(\mathbf{x}, \mathbf{x}'))_{(p,p')} & p \neq 1,\; p' \neq 1
+\end{cases}
 ```
-where if ``p = p' = 1`` returns ``k(\vec{x},\vec{x}')``,
-        if ``p = 1, p' \neq 1`` returns ``(\nabla_{\vec{x}'} k(\vec{x},\vec{x}'))_{p'}``,
-        if ``p \neq 1, p' = 1`` returns ``(\nabla_{\vec{x}} k(\vec{x},\vec{x}'))_{p}``,
-        and if ``p \neq 1, p' \neq 1``, returns ``(\nabla_{\vec{x}} \nabla_{\vec{x}'} k(\vec{x},\vec{x}')_{(p,p')}``
-
-Some snippets kindly provided by Niklas Schmitz, MatMat group, EPFL.
 
 Arguments:
 - `κ::gradKernel`: The kernel instance.
@@ -190,6 +191,8 @@ Arguments:
 
 returns:
 - `value::Float64`: The computed kernel value.
+
+Some snippets kindly provided by [N. Schmitz](https://github.com/niklasschmitz), MatMat group, EPFL.
 """
 function (κ::gradKernel)((x, px)::Tuple{X,Int}, (y, py)::Tuple{Y,Int}) where {X,Y}
 

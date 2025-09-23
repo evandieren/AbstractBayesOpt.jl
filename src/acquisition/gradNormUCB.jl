@@ -3,11 +3,8 @@
 
 Acquisition function implementing the Squared 2-norm of the gradient with Upper Confidence Bound (UCB) exploration strategy.
 
-Arguments:
+Attributes:
 - `β::Y`: Exploration-exploitation balance parameter
-
-returns:
-- `gradUCB::GradientNormUCB`: GradientNormUCB acquisition function instance
 
 References:
     Derived by Van Dieren, E. but open to previous references if existing.

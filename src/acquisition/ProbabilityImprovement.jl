@@ -1,12 +1,9 @@
 """
     ProbabilityImprovement{Y}(ξ::Y, best_y::Y) <: AbstractAcquisition
 
-Arguments:
+Attributes:
 - `ξ::Y`: Exploration parameter
 - `best_y::Y`: Best observed objective value
-
-returns:
-- `PI::ProbabilityImprovement`: Probability of Improvement acquisition function instance
 
 References:
 [Kushner, 1964](https://asmedigitalcollection.asme.org/fluidsengineering/article/86/1/97/392213/A-New-Method-of-Locating-the-Maximum-Point-of-an)

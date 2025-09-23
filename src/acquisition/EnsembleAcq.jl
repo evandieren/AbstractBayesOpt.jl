@@ -3,7 +3,11 @@
 
 An ensemble acquisition function combines multiple acquisition functions, each weighted by a specified factor,
 
-All weights must be non-negative.
+Attributes:
+- `weights::Vector{Float64}`: A vector of non-negative weights for each acquisition function. The weights are normalized to sum to 1.
+- `acquisitions::Vector{AbstractAcquisition}`: A vector of acquisition functions to be combined.
+
+Remark: All weights must be non-negative.
 """
 struct EnsembleAcquisition <: AbstractAcquisition
     weights::Vector{Float64}

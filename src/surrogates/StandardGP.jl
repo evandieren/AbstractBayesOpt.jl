@@ -3,7 +3,10 @@
 
 Implementation of the Abstract structures for the standard GP.
 
-Remark: this is a simple wrapper around AbstractGPs.jl that implements the AbstractSurrogate abstract type
+Attributes:
+- `gp::AbstractGPs.GP`: The underlying Gaussian Process model.
+- `noise_var::T`: The noise variance of the observations.
+- `gpx::Union{Nothing,AbstractGPs.PosteriorGP}`: The posterior GP after conditioning on data, `nothing` if not conditioned yet.
 """
 struct StandardGP{T} <: AbstractSurrogate
     gp::AbstractGPs.GP

@@ -6,11 +6,12 @@ The library is designed to solve **minimisation problems** of the form:
 
 $$\min_{x \in \mathcal{X}} f(x)$$
 
-where $f: \mathcal{X} \to \mathbb{R}$ is the objective function, which can be expensive to evaluate, non-differentiable, or noisy. The optimisation domain $\mathcal{X} \subseteq \mathbb{R}^d$ can be continuous, bounded, and possibly multi-dimensional.  
+where $f: \mathcal{X} \to \mathbb{R}$ is the objective function, which can be expensive to evaluate, non-differentiable, or noisy. 
+The optimisation domain $\mathcal{X} \subseteq \mathbb{R}^d$ can be continuous, bounded, and possibly multi-dimensional.  
 
-The library uses **Bayesian Optimisation (BO)** to iteratively propose evaluation points \( x \) in the domain by:
+The library uses **Bayesian Optimisation (BO)** to iteratively propose evaluation points $x$ in the domain by:
 
-1. Modeling the objective function \( f \) with a **surrogate model** (e.g., Gaussian Process).  
+1. Modeling the objective function with a **surrogate model** (e.g., Gaussian Process).  
 2. Using an **acquisition function** to select the next query point that balances exploration and exploitation.  
 3. Updating the surrogate with new observations and repeating until a **stopping criterion** is met.
 
