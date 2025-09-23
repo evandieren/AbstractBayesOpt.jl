@@ -2,7 +2,7 @@
 EditURL = "../../literate/tutorials/1D_BO.jl"
 ```
 
-# AbstractBayesOpt Tutorial: Basic 1D Optimization
+# AbstractBayesOpt Tutorial: 1D Bayesian Optimisation
 
 ## Setup
 
@@ -12,27 +12,22 @@ Loading the necessary packages.
 using AbstractBayesOpt
 using AbstractGPs
 using ForwardDiff
-
 using Plots
-default(; legend = :outertopright, size = (700, 400))
-default(; legend = :outertopright, size = (700, 400))
+default(; legend=:outertopright, size=(700, 400)) # hide
 
-using Random
-Random.seed!(42)  # setting the seed for reproducibility of this notebook
-nothing #hide
+using Random # hide
+Random.seed!(42) # hide
+nothing # hide
 ````
 
 ## Define the objective function
-We will optimise a simple 1D function: ``f(x) = (x-2)^2 + \sin(3*x)``
+We will optimise a simple 1D function: ``f(x) = (x-2)^2 + \sin(3x)``
 
 ````@example 1D_BO
 f(x) = (x - 2)^2 + sin(3x)
-
-min_f = -0.8494048256167165
-
+min_f = -0.8494048256167165 # hide
 d = 1
-
-domain = ContinuousDomain([0.0], [5.0]) #hide
+domain = ContinuousDomain([0.0], [5.0])
 
 plot_domain = domain.lower[1]:0.01:domain.upper[1] #hide
 ys = f.(plot_domain) #hide
@@ -40,45 +35,37 @@ ys = f.(plot_domain) #hide
 plot(                                           #hide
     plot_domain,                                #hide
     ys;                                          #hide
-    xlim = (domain.lower[1], domain.upper[1]),    #hide
-    label = "f(x)",               #hide
-    xlabel = "x",                 #hide
-    ylabel = "f(x)",             #hide
-    legend = :outertopright              #hide
-    xlim = (domain.lower[1], domain.upper[1]),    #hide
-    label = "f(x)",               #hide
-    xlabel = "x",                 #hide
-    ylabel = "f(x)",             #hide
-    legend = :outertopright              #hide
+    xlim=(domain.lower[1], domain.upper[1]),    #hide
+    label="f(x)",               #hide
+    xlabel="x",                 #hide
+    ylabel="f(x)",             #hide
+    legend=:outertopright,              #hide
 ) #hide
 
 x_min = plot_domain[argmin(ys)] #hide
-
-scatter!([x_min], [minimum(ys)]; label = "Minimum", color = :red, markersize = 5) #hide
-scatter!([x_min], [minimum(ys)]; label = "Minimum", color = :red, markersize = 5) #hide
+scatter!([x_min], [minimum(ys)]; label="Minimum", color=:red, markersize=5) #hide
 ````
 
-## Initialize the surrogate model
-We'll use a standard Gaussian Process surrogate with a Matérn 5/2 kernel. We add a small jitter term for numerical stability of 1e-12.
+## Standard GPs
+We'll use a standard Gaussian Process surrogate with a Matérn 5/2 kernel. We add a small jitter term for numerical stability of ``10^{-12}``.
 
 ````@example 1D_BO
-noise_var = 1e-9
-surrogate = StandardGP(SqExponentialKernel(), noise_var)
+noise_var = 1e-12
+surrogate = StandardGP(Matern52Kernel(), noise_var)
 ````
 
-Generate uniform random samples x_train
+Generate uniform random samples `x_train` and evaluate the function at these points to get `y_train`.
 
 ````@example 1D_BO
 n_train = 5
-x_train = first.([domain.lower .+ (domain.upper .- domain.lower) .* rand(d)
-                  for _ in 1:n_train])
-x_train = first.([domain.lower .+ (domain.upper .- domain.lower) .* rand(d)
-                  for _ in 1:n_train])
+x_train = first.([
+    domain.lower .+ (domain.upper .- domain.lower) .* rand(d) for _ in 1:n_train
+])
 
 y_train = f.(x_train)
 ````
 
-## Choose an acquisition function
+### Choose an acquisition function
 We'll use the Expected Improvement acquisition function with an exploration parameter ξ = 0.0.
 
 ````@example 1D_BO
@@ -86,9 +73,9 @@ We'll use the Expected Improvement acquisition function with an exploration para
 acq = ExpectedImprovement(ξ, minimum(y_train))
 ````
 
-## Set up the Bayesian Optimization structure
-We use BOStruct to bundle all components needed for the optimization. Here, we set the number of iterations to 5 and the actual noise level to 0.0 (since our function is noiseless).
-We then run the optimize function to perform the Bayesian Optimization.
+### Set up the Bayesian Optimisation structure
+We use BOStruct to bundle all components needed for the optimisation. Here, we set the number of iterations to 5 and the actual noise level to 0.0 (since our function is noiseless).
+We then run the optimize function to perform the Bayesian optimisation.
 
 ````@example 1D_BO
 bo_struct = BOStruct(
@@ -98,198 +85,158 @@ bo_struct = BOStruct(
     domain,
     x_train,
     y_train,
-    10,  # number of iterations
-    0.0  # Actual noise level (0.0 for noiseless)
-    0.0  # Actual noise level (0.0 for noiseless)
+    30,  # number of iterations
+    0.0,  # Actual noise level (0.0 for noiseless)
 )
 
-print_info(bo_struct)
-
-@info "Starting Bayesian Optimization..."
-result, acq_list,
-standard_params = AbstractBayesOpt.optimize(
-    bo_struct; standardize = nothing
-result, acq_list,
-standard_params = AbstractBayesOpt.optimize(
-    bo_struct; standardize = nothing
-)
+@info "Starting Bayesian ..."
+result, acq_list, standard_params = AbstractBayesOpt.optimize(
+    bo_struct; standardize="mean_only"
+);
+nothing #hide
 ````
 
-## Results
-The optimization result is stored in `result`. We can print the best found input and its corresponding function value.
+### Results
+The  result is stored in `result`. We can print the best found input and its corresponding function value.
 
 ````@example 1D_BO
-xs = reduce(vcat, result.xs)
-ys = result.ys_non_std
-ys = result.ys_non_std
+xs = result.xs # hide
+ys = result.ys_non_std # hide
 
-println("Optimal point: ", xs[argmin(ys)])
-println("Optimal value: ", minimum(ys))
+println("Optimal point: ", xs[argmin(ys)]) # hide
+println("Optimal value: ", minimum(ys)) # hide
 ````
 
-## Plotting of running minimum over iterations
+### Plotting of running minimum over iterations
 The running minimum is the best function value found up to each iteration.
 
 ````@example 1D_BO
-running_min = accumulate(min, f.(xs))
+running_min = accumulate(min, f.(xs)) # hide
 
 p = Plots.plot(
     n_train:length(running_min),
-    running_min[n_train:end] .- min_f,
-    yaxis = :log,
-    title = "Error w.r.t true minimum (1D BO)",
-    xlabel = "Function evaluations",
-    label = "BO",
-    xlims = (1, length(running_min))
-    running_min[n_train:end] .- min_f,
-    yaxis = :log,
-    title = "Error w.r.t true minimum (1D BO)",
-    xlabel = "Function evaluations",
-    label = "BO",
-    xlims = (1, length(running_min))
-)
-Plots.vspan!([1, n_train]; color = :blue, alpha = 0.2, label = "")
-Plots.vspan!([1, n_train]; color = :blue, alpha = 0.2, label = "")
+    running_min[n_train:end] .- min_f;
+    yaxis=:log,
+    title="Error w.r.t true minimum (1D BO)",
+    xlabel="Function evaluations",
+    label="BO",
+    xlims=(1, length(running_min)),
+) # hide
+Plots.vspan!([1, n_train]; color=:blue, alpha=0.2, label="training GP") # hide
 ````
 
 ## Gradient-enhanced GPs
-Now, let's see how to use gradient information to improve the optimization. We'll use the same function but now also provide its gradient.
-We define a new surrogate model that can handle gradient information, specifically a `GradientGP`.
+Now, let's see how to use gradient information to improve the optimisation. We'll use the same function but now also provide its gradient.
+We define a new surrogate model that can handle gradient information, specifically a [`GradientGP`](@ref).
 
 ````@example 1D_BO
-grad_surrogate = GradientGP(SqExponentialKernel(), d + 1, noise_var)
+grad_surrogate = GradientGP(ApproxMatern52Kernel(), d + 1, noise_var)
 
 ξ = 0.0
 acq = ExpectedImprovement(ξ, minimum(y_train))
 
-∇f(x) = ForwardDiff.derivative(f, x)
-∇f(x) = ForwardDiff.derivative(f, x)
-f_val_grad(x) = [f(x); ∇f(x)]
+∂f(x) = ForwardDiff.derivative(f, x)
+f_∂f(x) = [f(x); ∂f(x)];
+nothing #hide
 ````
 
 Generate value and gradients at random samples
 
 ````@example 1D_BO
-y_train_grad = f_val_grad.(x_train)
+y_train_grad = f_∂f.(x_train)
 ````
 
-Set up the Bayesian Optimization structure
+Set up the Bayesian Optimisation structure
 
 ````@example 1D_BO
 bo_struct_grad = BOStruct(
-    f_val_grad,
+    f_∂f,
     acq,
     grad_surrogate,
     domain,
     x_train,
     y_train_grad,
     10,  # number of iterations
-    0.0  # Actual noise level (0.0 for noiseless)
-    0.0  # Actual noise level (0.0 for noiseless)
+    0.0,  # Actual noise level (0.0 for noiseless)
 )
 
-print_info(bo_struct_grad)
-
-@info "Starting Bayesian Optimization..."
-result_grad, acq_list_grad, standard_params_grad = AbstractBayesOpt.optimize(bo_struct_grad)
+@info "Starting Bayesian Optimisation..." # hide
+result_grad, acq_list_grad, standard_params_grad = AbstractBayesOpt.optimize(
+    bo_struct_grad; standardize="mean_only"
+);
+nothing #hide
 ````
 
-## Results
-The optimization result is stored in `result`. We can print the best found input and its corresponding function value.
+### Results
+The  result is stored in `result_grad`. We can print the best found input and its corresponding function value.
 
 ````@example 1D_BO
-xs_grad = reduce(vcat, result_grad.xs)
-ys_grad = hcat(result_grad.ys_non_std...)[1, :]
+xs_grad = reduce(vcat, result_grad.xs) # hide
+ys_grad = hcat(result_grad.ys_non_std...)[1, :] # hide
 
-println("Optimal point (GradBO): ", xs_grad[argmin(ys_grad)])
-println("Optimal value (GradBO): ", minimum(ys_grad))
+println("Optimal point (GradBO): ", xs_grad[argmin(ys_grad)]) # hide
+println("Optimal value (GradBO): ", minimum(ys_grad)) # hide
 ````
 
-## Plotting of running minimum over iterations
+### Plotting of running minimum over iterations
 The running minimum is the best function value found up to each iteration.
+Since each evaluation provides both a function value and a 1D gradient, we duplicate the running minimum values to reflect the number of function evaluations.
 
 ````@example 1D_BO
-running_min_grad = accumulate(min, f.(xs_grad))
+running_min_grad = accumulate(min, f.(xs_grad)) # hide
+running_min_grad = collect(Iterators.flatten(fill(x, 2) for x in (running_min_grad))) # hide
+
+p = Plots.plot( # hide
+    (2 * n_train):length(running_min_grad), # hide
+    running_min_grad[(2 * n_train):end] .- min_f; # hide
+    yaxis=:log, # hide
+    title="Error w.r.t true minimum (1D GradBO)", # hide
+    xlabel="Function evaluations", # hide
+    label="gradBO", # hide
+    xlims=(1, length(running_min_grad)), # hide
+) # hide
+Plots.vspan!([1, 2 * n_train]; color=:blue, alpha=0.2, label="") # hide
 ````
 
-Double function evaluations due to gradients
-
-````@example 1D_BO
-running_min_grad = collect(Iterators.flatten(fill(x, 2) for x in (running_min_grad)))
-
-p = Plots.plot(
-    (2 * n_train):length(running_min_grad),
-    running_min_grad[(2 * n_train):end] .- min_f;
-    yaxis = :log,
-    title = "Error w.r.t true minimum (1D GradBO)",
-    xlabel = "Function evaluations",
-    label = "gradBO",
-    xlims = (1, length(running_min_grad))
-    yaxis = :log,
-    title = "Error w.r.t true minimum (1D GradBO)",
-    xlabel = "Function evaluations",
-    label = "gradBO",
-    xlims = (1, length(running_min_grad))
-)
-Plots.vspan!([1, 2 * n_train]; color = :blue, alpha = 0.2, label = "")
-Plots.vspan!([1, 2 * n_train]; color = :blue, alpha = 0.2, label = "")
-````
-
-## Plotting the surrogate model
+### Plotting the surrogate model
 We can visualize the surrogate model's mean and uncertainty along with the true function and the evaluated
 
 ````@example 1D_BO
-plot_domain = collect(domain.lower[1]:0.01:domain.upper[1])
+plot_domain = collect(domain.lower[1]:0.01:domain.upper[1]) # hide
 
-plot_x = map(x -> [x], plot_domain)
-plot_x = prep_input(grad_surrogate, plot_x)
-post_mean,
-post_var = unstandardized_mean_and_var(
-post_mean,
-post_var = unstandardized_mean_and_var(
-    result_grad.model, plot_x, standard_params_grad
-)
+plot_x = map(x -> [x], plot_domain) # hide
+plot_x = prep_input(grad_surrogate, plot_x) # hide
+post_mean, post_var = unstandardized_mean_and_var( # hide
+    result_grad.model,
+    plot_x,
+    standard_params_grad, # hide
+) # hide
 
-post_mean = reshape(post_mean, :, d + 1)[:, 1] # This returns f(x) to match the StandardGP
-post_var = reshape(post_var, :, d + 1)[:, 1]
-post_mean = reshape(post_mean, :, d + 1)[:, 1] # This returns f(x) to match the StandardGP
-post_var = reshape(post_var, :, d + 1)[:, 1]
-post_var[post_var .< 0] .= 0
+post_mean = reshape(post_mean, :, d + 1)[:, 1] # hide
+post_var = reshape(post_var, :, d + 1)[:, 1] # hide
+post_var[post_var .< 0] .= 0 # hide
 
 plot(
-    plot_domain,
-    f.(plot_domain);
-    label = "target function",
-    xlim = (domain.lower[1], domain.upper[1]),
-    xlabel = "x",
-    ylabel = "y",
-    title = "AbstractBayesOpt",
-    legend = :outertopright
-    label = "target function",
-    xlim = (domain.lower[1], domain.upper[1]),
-    xlabel = "x",
-    ylabel = "y",
-    title = "AbstractBayesOpt",
-    legend = :outertopright
-)
+    plot_domain, # hide
+    f.(plot_domain); # hide
+    label="target function", # hide
+    xlim=(domain.lower[1], domain.upper[1]), # hide
+    xlabel="x", # hide
+    ylabel="y", # hide
+    title="AbstractBayesOpt", # hide
+    legend=:outertopright, # hide
+) # hide
 plot!(
-    plot_domain,
-    post_mean;
-    label = "gradGP",
-    ribbon = sqrt.(post_var),
-    ribbon_scale = 2,
-    color = "green"
-    label = "gradGP",
-    ribbon = sqrt.(post_var),
-    ribbon_scale = 2,
-    color = "green"
-)
-scatter!(xs_grad[1:n_train], ys_grad[1:n_train]; label = "Train Data")
-scatter!(xs_grad[(n_train + 1):end], ys_grad[(n_train + 1):end]; label = "Candidates")
-scatter!([xs_grad[argmin(ys_grad)]], [minimum(ys_grad)]; label = "Best candidate")
-scatter!(xs_grad[1:n_train], ys_grad[1:n_train]; label = "Train Data")
-scatter!(xs_grad[(n_train + 1):end], ys_grad[(n_train + 1):end]; label = "Candidates")
-scatter!([xs_grad[argmin(ys_grad)]], [minimum(ys_grad)]; label = "Best candidate")
+    plot_domain, # hide
+    post_mean; # hide
+    label="gradGP", # hide
+    ribbon=sqrt.(post_var), # hide
+    ribbon_scale=2, # hide
+    color="green", # hide
+) # hide
+scatter!(xs_grad[1:n_train], ys_grad[1:n_train]; label="Train Data") # hide
+scatter!(xs_grad[(n_train + 1):end], ys_grad[(n_train + 1):end]; label="Candidates") # hide
+scatter!([xs_grad[argmin(ys_grad)]], [minimum(ys_grad)]; label="Best candidate") # hide
 ````
 
 ---

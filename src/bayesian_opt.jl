@@ -318,7 +318,7 @@ function optimize(
     i = 0
     while !stop_criteria(BO) & !BO.flag
         if !isnothing(hyper_params) && (i % 10 == 0)
-            @info "Optimizing GP hyperparameters at iteration $i..."
+            @info "Optimizing GP hyperparameters at iteration $(i+1)..."
             @debug "Former parameters: ℓ=$(get_lengthscale(BO.model)), variance =$(get_scale(BO.model))"
             old_params = log.([get_lengthscale(BO.model)[1], get_scale(BO.model)[1]])
             out = nothing
@@ -358,9 +358,9 @@ function optimize(
         end
 
         @info "Iteration #$(i+1), current min val: $(_get_minimum(BO.model, BO.ys_non_std))"
+
         x_cand = optimize_acquisition(BO.acq, BO.model, BO.domain)
         x_cand = d == 1 ? first(x_cand) : x_cand
-
         @info "Acquisition optimized, new candidate point: $(x_cand)"
         push!(acq_list, BO.acq(BO.model, [x_cand])[1])
 

@@ -398,7 +398,8 @@ returns:
 """
 function unstandardized_mean_and_var(gp::GradientGP, X, params::Tuple)
     μ, σ = params[1], params[2][1]
-    m, v = mean_and_var(gp.gpx(X))
+    m = posterior_grad_mean(gp, X)
+    v = posterior_grad_var(gp, X)
     # Un-standardize mean and variance
     m = reshape(m, :, gp.p)
     m_unstd = (m .* σ) .+ μ'
