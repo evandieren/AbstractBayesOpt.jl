@@ -18,7 +18,7 @@ include("abstract.jl")
 export AbstractAcquisition, AbstractSurrogate, AbstractDomain
 
 # Domain implementations
-include("domains.jl")
+include("domains/ContinuousDomain.jl")
 export ContinuousDomain
 
 # Surrogate models
@@ -59,29 +59,23 @@ export GradientGP,
     rescale_model
 
 # Acquisition functions
-include("acquisition/acq_utils.jl")
+include("acquisition_functions/acq_utils.jl")
 export optimize_acquisition
 
-include("acquisition/ExpectedImprovement.jl")
+include("acquisition_functions/ExpectedImprovement.jl")
 export ExpectedImprovement
 
-include("acquisition/UpperConfidenceBound.jl")
+include("acquisition_functions/UpperConfidenceBound.jl")
 export UpperConfidenceBound
 
-include("acquisition/gradNormUCB.jl")
+include("acquisition_functions/gradNormUCB.jl")
 export GradientNormUCB
 
-include("acquisition/ProbabilityImprovement.jl")
+include("acquisition_functions/ProbabilityImprovement.jl")
 export ProbabilityImprovement
 
-#include("acquisition/KnowledgeGradient.jl")
-# export KnowledgeGradient, KG
-
-include("acquisition/EnsembleAcq.jl")
+include("acquisition_functions/EnsembleAcq.jl")
 export EnsembleAcquisition
-
-# include("acquisition/ThompsonSampling.jl")
-# export ThompsonSampling, TS
 
 # Core Bayesian Optimization framework
 include("bayesian_opt.jl")
@@ -90,8 +84,5 @@ export optimize, update, BOStruct, optimize_hyperparameters
 # Utility functions
 include("BO_utils.jl")
 export print_info, rescale_output, standardize_problem
-
-# include("plotting.jl")
-# export plot_state
 
 end

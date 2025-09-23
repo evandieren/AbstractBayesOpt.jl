@@ -39,7 +39,7 @@ Private = false
 ### Expected Improvement
 ```@autodocs
 Modules = [AbstractBayesOpt]
-Pages = ["acquisition/ExpectedImprovement.jl"]
+Pages = ["acquisition_functions/ExpectedImprovement.jl"]
 Private = false
 ```
 
