@@ -1,13 +1,19 @@
 using AbstractBayesOpt
+
+using AbstractBayesOpt:
+    update,
+    optimize_hyperparameters,
+    get_lengthscale,
+    get_scale,
+    std_y,
+    standardize_problem,
+    get_mean_std,
+    print_info,
+    rescale_output
+
 using Test
-using AbstractGPs, KernelFunctions
+using AbstractGPs
 using ForwardDiff
-using Optim
-using FillArrays
-using Statistics
-using SpecialFunctions
-using Distributions
-using LinearAlgebra
 using Random
 
 # Set random seed for reproducible tests

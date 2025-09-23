@@ -478,7 +478,7 @@ using Random
             gp = StandardGP(kernel, 0.01)
             x_train = [-1.0, 0.0, 1.0]
             y_train = [1.0, 0.25, 1.0]
-            updated_gp = update(gp, x_train, y_train)
+            updated_gp = AbstractBayesOpt.update(gp, x_train, y_train)
 
             # Test Expected Improvement
             best_y = minimum(y_train)
@@ -492,7 +492,7 @@ using Random
             # Test 2: EI should be zero where posterior mean equals best observed value
             # and posterior variance is zero (at training points with no noise)
             noiseless_gp = StandardGP(kernel, 1e-12)
-            noiseless_updated = update(noiseless_gp, x_train, y_train)
+            noiseless_updated = AbstractBayesOpt.update(noiseless_gp, x_train, y_train)
 
             # At the point with minimum observed value, EI should be very small
             min_idx = argmin(y_train)

@@ -1,5 +1,5 @@
 """
-    GradientGP{T}(gp::AbstractGps.GP, noise_var::T, p::Int; gpx=nothing) <: AbstractSurrogate
+    GradientGP{T}(gp::AbstractGps.GP, noise_var::T, p::Int, gpx::Union{Nothing,AbstractGPs.PosteriorGP}) <: AbstractSurrogate
 
 Implementation of the Abstract structures for the gradient-enhanced GP.
 
@@ -120,7 +120,7 @@ Custom mean function for the GradientGP model. Returns a constant per-output
 mean across MO inputs (function value + gradients). The first element corresponds
 to the function value, the following ones to the gradient outputs.
 
-Use gradConstMean([μ_f; zeros(d)]) to set a constant prior mean μ_f for the function
+Use `gradConstMean([μ; zeros(d)])` to set a constant prior mean `μ` for the function
 value and zero for the gradients.
 
 Attributes:
@@ -556,7 +556,7 @@ Arguments:
 - `x`: A vector of new input points where predictions are to be made.
 
 returns:
-- `mean::Vector{Float64}`: The mean predictions 
+- `mean::Vector`: The mean predictions
 """
 function posterior_grad_mean(model::GradientGP, x)
     # Be careful with the output order, it is (f(x1),f(x2),...,∂₁f(x1),∂₁f(x2),...)
@@ -573,7 +573,7 @@ Arguments:
 - `x`: A vector of new input points where predictions are to be made.
 
 returns:
-- `var::Vector{Float64}`: The variance predictions
+- `var::Vector`: The variance predictions
 """
 function posterior_grad_var(model::GradientGP, x)
     var(model.gpx(_prep_input(x, model.p)))
@@ -589,7 +589,7 @@ Arguments:
 - `x`: A vector of new input points where predictions are to be made.
 
 returns:
-- `cov::Matrix{Float64}`: The covariance matrix of the predictions
+- `cov::Matrix`: The covariance matrix of the predictions
 """
 function posterior_grad_cov(model::GradientGP, x)
     cov(model.gpx(_prep_input(x, model.p)))
@@ -605,7 +605,7 @@ Arguments:
 - `x`: A vector of new input points where predictions are to be made.
 
 returns:
-- `mean::Vector{Float64}`: The mean predictions (function value only)
+- `mean::Vector`: The mean predictions (function value only)
 """
 function posterior_mean(model::GradientGP, x)
     mean(model.gpx(_prep_input(x, 1)))
@@ -621,7 +621,7 @@ Arguments:
 - `x`: A vector of new input points where predictions are to be made.
 
 returns:
-- `var::Vector{Float64}`: The variance predictions (function value only)
+- `var::Vector`: The variance predictions (function value only)
 """
 function posterior_var(model::GradientGP, x)
     var(model.gpx(_prep_input(x, 1)))
@@ -664,6 +664,6 @@ Arguments:
 - `ys::Vector{Y}`: A vector of observed function values.
 
 returns:
-- `min_y::Float64`: The minimum function value from the outputs.
+- `min_y::Y`: The minimum function value from the outputs.
 """
 _get_minimum(gp::GradientGP, ys::Vector{Y}) where {Y} = minimum(hcat(ys...)[1, :])[1]

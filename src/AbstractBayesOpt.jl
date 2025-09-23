@@ -17,72 +17,52 @@ using ArgCheck
 include("abstract.jl")
 export AbstractAcquisition, AbstractSurrogate, AbstractDomain
 
-# Domain implementations
+# Surrogate models
+include("surrogates/StandardGP.jl")
+include("surrogates/GradientGP.jl")
+include("surrogates/surrogates_utils.jl")
+
+## Models
+export StandardGP, GradientGP 
+
+## Methods
+export posterior_mean, posterior_var, nlml
+export posterior_grad_mean, posterior_grad_var, posterior_grad_cov # gradient-enhanced GP methods
+
+## Safe AD Matern 5/2
+export ApproxMatern52Kernel
+
+## Gradient kernel and mean functions
+export gradConstMean, gradKernel
+
+## Surrogate utils
+export prep_input, unstandardized_mean_and_var
+
+# Acquisition functions
+include("acquisition_functions/ExpectedImprovement.jl")
+include("acquisition_functions/UpperConfidenceBound.jl")
+include("acquisition_functions/ProbabilityImprovement.jl")
+include("acquisition_functions/gradNormUCB.jl")
+include("acquisition_functions/EnsembleAcq.jl")
+include("acquisition_functions/acq_utils.jl")
+
+export ExpectedImprovement,
+    UpperConfidenceBound,
+    ProbabilityImprovement,
+    GradientNormUCB,
+    EnsembleAcquisition,
+    optimize_acquisition
+
+# Domain definitions
 include("domains/ContinuousDomain.jl")
 export ContinuousDomain
 
-# Surrogate models
-include("surrogates/surrogates_utils.jl")
-include("surrogates/StandardGP.jl")
-export StandardGP,
-    prep_input,
-    posterior_mean,
-    posterior_var,
-    nlml,
-    nlml_ls,
-    get_mean_std,
-    std_y,
-    unstandardized_mean_and_var,
-    get_lengthscale,
-    get_scale,
-    get_kernel_constructor,
-    rescale_model
-
-include("surrogates/GradientGP.jl")
-export GradientGP,
-    ApproxMatern52Kernel,
-    gradConstMean,
-    gradKernel,
-    prep_input,
-    posterior_mean,
-    posterior_var,
-    posterior_grad_mean,
-    posterior_grad_cov,
-    posterior_grad_var,
-    nlml,
-    get_mean_std,
-    std_y,
-    unstandardized_mean_and_var,
-    get_lengthscale,
-    get_scale,
-    get_kernel_constructor,
-    rescale_model
-
-# Acquisition functions
-include("acquisition_functions/acq_utils.jl")
-export optimize_acquisition
-
-include("acquisition_functions/ExpectedImprovement.jl")
-export ExpectedImprovement
-
-include("acquisition_functions/UpperConfidenceBound.jl")
-export UpperConfidenceBound
-
-include("acquisition_functions/gradNormUCB.jl")
-export GradientNormUCB
-
-include("acquisition_functions/ProbabilityImprovement.jl")
-export ProbabilityImprovement
-
-include("acquisition_functions/EnsembleAcq.jl")
-export EnsembleAcquisition
-
 # Core Bayesian Optimization framework
 include("bayesian_opt.jl")
-export optimize, update, BOStruct, optimize_hyperparameters
+export BOStruct
+export optimize 
 
 # Utility functions
 include("BO_utils.jl")
-export print_info, rescale_output, standardize_problem
 
 end

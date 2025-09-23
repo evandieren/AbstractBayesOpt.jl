@@ -134,7 +134,7 @@ function compute_nlml_landscape( # hide
         for (j, log_scale) in enumerate(log_scale_range) # hide
             try # hide
                 params = [log_ls, log_scale] # hide
-                nlml_val = nlml(model, params, x_data, y_data) # hide
+                nlml_val = AbstractBayesOpt.nlml(model, params, x_data, y_data) # hide
                 nlml_values[i, j] = nlml_val # hide
 
                 if !isfinite(nlml_val) || nlml_val > 1e9 # hide

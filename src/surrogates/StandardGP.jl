@@ -83,22 +83,22 @@ function update(model::StandardGP, xs::Vector{X}, ys::Vector{Y}) where {X,Y}
 end
 
 """
-    nlml(model::StandardGP, params::Vector{T}, xs::Vector{X}, ys::Vector{Y}) where {T,X,Y}
+    nlml(model::StandardGP, params, xs::AbstractVector, ys::AbstractVector)
 
 Compute the negative log marginal likelihood (NLML) of the GP model given hyperparameters.
 
 Arguments:
 - `model::StandardGP`: The GP model.
-- `params::Vector{T}`: A vector containing the log lengthscale and log scale parameters.
-- `xs::Vector{X}`: The input data points.
-- `ys::Vector{Y}`: The observed function values.
+- `params`: A vector containing the log lengthscale and log scale parameters.
+- `xs::AbstractVector`: The input data points.
+- `ys::AbstractVector`: The observed function values.
 
 returns:
-- nlml : The negative log marginal likelihood of the model.
+- nlml::Float64: The negative log marginal likelihood of the model.
 """
 function nlml(
-    model::StandardGP, params::Vector{T}, xs::Vector{X}, ys::Vector{Y}
-) where {T,X,Y}
+    model::StandardGP, params, xs::AbstractVector, ys::AbstractVector
+)
     log_ℓ, log_scale = params
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
@@ -116,16 +116,16 @@ function nlml(
 end
 
 """
-    nlml_ls(model::StandardGP, log_ℓ::T, log_scale::Float64, xs::Vector{X}, ys::Vector{Y}) where {T,X,Y}
+    nlml_ls(model::StandardGP, log_ℓ, log_scale::Float64, xs::AbstractVector, ys::AbstractVector)
 
 Compute the negative log marginal likelihood (NLML) of the GP model given log lengthscale and log scale parameters.
 
 Arguments:
 - `model::StandardGP`: The GP model.
-- `log_ℓ::T`: The log lengthscale parameter.
+- `log_ℓ`: The log lengthscale parameter.
 - `log_scale::Float64`: The log scale parameter.
-- `xs::Vector{X}`: The input data points.
-- `ys::Vector{Y}`: The observed function values.
+- `xs::AbstractVector`: The input data points.
+- `ys::AbstractVector`: The observed function values.
 
 returns:
 - nlml : The negative log marginal likelihood of the model.
@@ -133,8 +133,8 @@ returns:
 Remark: This function is useful for optimizing only the lengthscale and scale parameters while keeping other parameters fixed.
 """
 function nlml_ls(
-    model::StandardGP, log_ℓ::T, log_scale::Float64, xs::Vector{X}, ys::Vector{Y}
-) where {T,X,Y}
+    model::StandardGP, log_ℓ, log_scale::Float64, xs::AbstractVector, ys::AbstractVector
+)
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)
 
@@ -349,35 +349,35 @@ function posterior_var(model::StandardGP, x::X) where {X<:Real}
 end
 
 """
-    posterior_mean(model::StandardGP, x_buf::AbstractVector)
+    posterior_mean(model::StandardGP, x::AbstractVector)
 
 Compute the posterior mean of the GP at set of new input points.
 
 Arguments:
 - `model::StandardGP`: The GP model.
-- `xs::AbstractVector`: A vector of new input points where predictions are to be made.
+- `x::AbstractVector`: A vector of new input points where predictions are to be made.
 
 returns:
 - `mean`: The posterior mean predictions at the input points.
 """
-function posterior_mean(model::StandardGP, xs::AbstractVector)
-    mean(model.gpx(xs))
+function posterior_mean(model::StandardGP, x::AbstractVector)
+    mean(model.gpx(x))
 end
 
 """
-    posterior_var(model::StandardGP, x_buf::AbstractVector)
+    posterior_var(model::StandardGP, x::AbstractVector)
 
 Compute the posterior variance of the GP at set of new input points.
 
 Arguments:
 - `model::StandardGP`: The GP model.
-- `xs::AbstractVector`: A vector of new input points where predictions are to be made
+- `x::AbstractVector`: A vector of new input points where predictions are to be made
 
 returns:
 - `var`: The posterior variance predictions at the input points.
 """
-function posterior_var(model::StandardGP, xs::AbstractVector)
-    var(model.gpx(xs))
+function posterior_var(model::StandardGP, x::AbstractVector)
+    var(model.gpx(x))
 end
 
 """

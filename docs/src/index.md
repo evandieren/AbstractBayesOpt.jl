@@ -29,36 +29,19 @@ In short, AbstractBayesOpt.jl acts as a general "glue" layer, unifying the Julia
 We currently have three main abstract interfaces that work with our BO loop:
 
 - [`AbstractAcquisition`](@ref): Interface to implement for an acquisition function to be used in AbstractBayesOpt.
-- [`AbstractSurrogate`](@ref): Interface to implement for a surrogate to be used in AbstractBayesOpt.
 - [`AbstractDomain`](@ref): Interface to implement for the optimisation domain to be used in AbstractBayesOpt.
+- [`AbstractSurrogate`](@ref): Interface to implement for a surrogate to be used in AbstractBayesOpt.
 
 AbstractBayesOpt.jl defines the core abstractions for building Bayesian optimization
 algorithms. To add a new surrogate model, acquisition function, or domain, implement
 the following interfaces.
 
-### Surrogates
-
-Subtype [`AbstractSurrogate`](@ref) and implement:
-
-- `update(model::AbstractSurrogate, xs::AbstractVector, ys::AbstractVector)`:  
-  Update the surrogate with new data `(xs, ys)`.
-
-- `posterior_mean(model::AbstractSurrogate, x::AbstractVector)`:  
-  Return the posterior mean at point `x`.
-
-- `posterior_var(model::AbstractSurrogate, x::AbstractVector)`:  
-  Return the posterior variance at point `x`.
-
-- `nlml(model::AbstractSurrogate, params::AbstractVector, xs::AbstractVector, ys::AbstractVector)`:  
-  Compute the negative log marginal likelihood given hyperparameters and data.
-
 ### Acquisition Functions
 
 Subtype [`AbstractAcquisition`](@ref) and implement:
 
-- `(acq::AbstractAcquisition)(model::AbstractSurrogate, x, x_buf=nothing)`:  
-  Evaluate the acquisition function at `x`.  
-  Optionally use a buffer `x_buf` for caching.
+- `(acq::AbstractAcquisition)(model::AbstractSurrogate, x::AbstractVector)`:  
+  Evaluate the acquisition function at `x`. We view `x` as a set of observations, and hence return a vector when we query `acq`.  
 
 - `update(acq::AbstractAcquisition, ys::AbstractVector, model::AbstractSurrogate)`:  
   Update acquisition state given new observations.
@@ -76,11 +59,26 @@ Concrete implementations should subtype this and define the necessary properties
 
 as well as creating its constructor.
 
-
 Concrete implementations may add additional methods as needed, but these are the
 minimum required for compatibility with the BO loop. We note that we are using Optim.jl to solve the acquisition function
 maximisation problem for now, and hence the lower and upper bounds must be compatible with their optimisation interface, which might limit
 quite a lot the type of usable domains.
+
+### Surrogates
+
+Subtype [`AbstractSurrogate`](@ref) and implement:
+
+- `update(model::AbstractSurrogate, xs::AbstractVector, ys::AbstractVector)`:  
+  Update the surrogate with new data `(xs, ys)`.
+
+- `posterior_mean(model::AbstractSurrogate, x)`:  
+  Return the posterior mean at points `x`.
+
+- `posterior_var(model::AbstractSurrogate, x)`:  
+  Return the posterior variance at points `x`.
+
+- `nlml(model::AbstractSurrogate, params, xs::AbstractVector, ys::AbstractVector)`:  
+  Compute the negative log marginal likelihood given hyperparameters and data.
 
 ## What is currently implemented?
 We list below the abstract subtypes currently implemented in AbstractBayesOpt.

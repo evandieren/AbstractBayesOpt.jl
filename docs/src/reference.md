@@ -1,74 +1,62 @@
 # Reference (Public API)
 
-This section documents the exported functions, types, and macros from **AbstractBayesOpt.jl**.
+```@meta
+CollapsedDocStrings = true
+```
+
+This section documents the exported functions, types, etc from **AbstractBayesOpt.jl**.
 
 ---
+## Bayesian Optimisation loop
+```@docs
+BOStruct
+optimize
+```
 
 ## Abstract Interface
 
-```@autodocs
-Modules = [AbstractBayesOpt]
-Pages = ["abstract.jl"]
-Private = false
+```@docs
+AbstractAcquisition
+AbstractDomain
+AbstractSurrogate
 ```
+
 ## Surrogates
 
-### StandardGP
-```@autodocs
-Modules = [AbstractBayesOpt]
-Pages = ["surrogates/StandardGP.jl"]
-Private = false
+```@docs
+StandardGP
+GradientGP
+posterior_mean
+posterior_var
+nlml
 ```
 
-### GradientGP
-```@autodocs
-Modules = [AbstractBayesOpt]
-Pages = ["surrogates/GradientGP.jl"]
-Private = false
+### Kernels
+```@docs
+ApproxMatern52Kernel
+```
+
+### GradientGP-related functions
+```@docs
+gradConstMean
+gradKernel
+posterior_grad_mean
+posterior_grad_var
+posterior_grad_cov
 ```
 
 ## Acquisition Functions
-
-### Upper Confidence Bound
-```@autodocs
-Modules = [AbstractBayesOpt]
-Pages = ["acquisition/UpperConfidenceBound.jl"]
-Private = false
-```
-
-### Expected Improvement
-```@autodocs
-Modules = [AbstractBayesOpt]
-Pages = ["acquisition_functions/ExpectedImprovement.jl"]
-Private = false
-```
-
-### Probability of Improvement
-```@autodocs
-Modules = [AbstractBayesOpt]
-Pages = ["acquisition/ProbabilityImprovement.jl"]
-Private = false
-```
-
-### gradient norm UCB
-```@autodocs
-Modules = [AbstractBayesOpt]
-Pages = ["acquisition/gradNormUCB.jl"]
-Private = false
-```
-
-### Ensemble of Acquisitions
-```@autodocs
-Modules = [AbstractBayesOpt]
-Pages = ["acquisition/EnsembleAcq.jl"]
-Private = false
+```@docs
+EnsembleAcquisition
+ExpectedImprovement
+GradientNormUCB
+ProbabilityImprovement
+UpperConfidenceBound
 ```
 
 ## Domains
 
 ### Continuous domain
-```@autodocs
-Modules = [AbstractBayesOpt]
-Pages = ["domains.jl"]
-Private = false
+```@docs
+ContinuousDomain
 ```
