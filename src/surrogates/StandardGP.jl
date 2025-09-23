@@ -1,4 +1,6 @@
 """
+    StandardGP{T}(gp::AbstractGPs.GP, noise_var::T, gpx::Union{Nothing,AbstractGPs.PosteriorGP}) <: AbstractSurrogate
+
 Implementation of the Abstract structures for the standard GP.
 
 Remark: this is a simple wrapper around AbstractGPs.jl that implements the AbstractSurrogate abstract type
@@ -10,14 +12,24 @@ struct StandardGP{T} <: AbstractSurrogate
     # gpx is the posterior GP after conditioning on data, nothing if not conditioned yet
 end
 
+"""
+    Base.copy(s::StandardGP)
+
+Create a copy of the StandardGP model.
+
+returns:
+- `StandardGP`: A new instance of StandardGP with copied fields.
+"""
 Base.copy(s::StandardGP) = StandardGP(s.gp, s.noise_var, copy(s.gpx))
 
 """
+    StandardGP(kernel::Kernel, noise_var::T; mean=nothing) where {T}
+
 StandardGP constructor with the specified kernel and noise variance.
 
 Arguments:
 - `kernel::Kernel`: The kernel function to be used in the GP.
-- `noise_var::Float64`: The noise variance of the observations.
+- `noise_var::T`: The noise variance of the observations.
 - `mean`: (optional) The mean function of the GP, defaults to nothing (creates a ZeroMean() if not provided).
 
 returns:
@@ -49,6 +61,8 @@ function StandardGP(kernel::Kernel, noise_var::T; mean=nothing) where {T}
 end
 
 """
+    update(model::StandardGP, xs::AbstractVector, ys::AbstractVector)
+
 Update the GP model with new data points (xs, ys).
 
 Arguments:
@@ -66,6 +80,8 @@ function update(model::StandardGP, xs::Vector{X}, ys::Vector{Y}) where {X,Y}
 end
 
 """
+    nlml(model::StandardGP, params::Vector{T}, xs::Vector{X}, ys::Vector{Y}) where {T,X,Y}
+
 Compute the negative log marginal likelihood (NLML) of the GP model given hyperparameters.
 
 Arguments:
@@ -97,6 +113,8 @@ function nlml(
 end
 
 """
+    nlml_ls(model::StandardGP, log_ℓ::T, log_scale::Float64, xs::Vector{X}, ys::Vector{Y}) where {T,X,Y}
+
 Compute the negative log marginal likelihood (NLML) of the GP model given log lengthscale and log scale parameters.
 
 Arguments:
@@ -130,6 +148,8 @@ function nlml_ls(
 end
 
 """
+    get_mean_std(model::StandardGP, y_train::Vector{Y}, choice::String) where {Y}
+
 Gets the empirical mean and std of y_train (Vector of Vector of Float64)
 
 Arguments:
@@ -158,6 +178,8 @@ function get_mean_std(model::StandardGP, y_train::Vector{Y}, choice::String) whe
 end
 
 """
+    std_y(model::StandardGP, ys::Vector{Y}, μ, σ) where {Y}
+
 Standardize the output values of the training data
 
 Arguments:
@@ -176,6 +198,8 @@ function std_y(model::StandardGP, ys::Vector{Y}, μ, σ) where {Y}
 end
 
 """
+    rescale_model(model::StandardGP, σ)
+
 Update the kernel scale of the GP model.
 
 Arguments:
@@ -206,39 +230,156 @@ function rescale_model(model::StandardGP, σ)
     return StandardGP(new_kernel, model.noise_var / (σ^2); mean=model.gp.mean)
 end
 
+"""
+    _update_model_parameters(model::StandardGP, kernel::Kernel)
+
+Update the GP model with a new kernel.
+
+Arguments:
+- `model::StandardGP`: The current GP model.
+- `kernel::Kernel`: The new kernel function to be used in the GP.
+
+returns:
+- `StandardGP`: A new StandardGP model with the updated kernel.
+"""
 function _update_model_parameters(model::StandardGP, kernel::Kernel)
     return StandardGP(kernel, model.noise_var; mean=model.gp.mean) # Use fixed noise here, or optimize σ² too
 end
 
+"""
+    get_lengthscale(model::StandardGP)
+
+Get the lengthscale of the GP model.
+
+Arguments:
+- `model::StandardGP`: The GP model.
+
+returns:
+- `lengthscale::Vector`: The lengthscale of the kernel.
+"""
 get_lengthscale(model::StandardGP) = 1 ./ model.gp.kernel.kernel.transform.s
 
+"""
+    get_scale(model::StandardGP)
+
+Get the scale of the GP model.
+
+Arguments:
+- `model::StandardGP`: The GP model.
+
+returns:
+- `scale::Vector`: The scale of the kernel.
+"""
 get_scale(model::StandardGP) = model.gp.kernel.σ²
 
+"""
+    get_kernel_constructor(model::StandardGP)
+
+Get the kernel constructor of the GP model.
+
+Arguments:
+- `model::StandardGP`: The GP model.
+
+returns:
+- `kernel_constructor::Kernel`: The kernel constructor of the GP model.
+"""
 get_kernel_constructor(model::StandardGP) = model.gp.kernel.kernel.kernel
 
+"""
+    prep_input(model::StandardGP, xs::Vector{X}) where {X}
+
+Prepare the input data for the GP model.
+
+Arguments:
+- `model::StandardGP`: The GP model.
+- `xs::Vector{X}`: A vector of input points.
+
+returns:
+- `prepared_xs`: The prepared input data.
+"""
 prep_input(model::StandardGP, xs::Vector{X}) where {X} = xs
 
+"""
+    prep_output(model::StandardGP, ys::Vector{Y}) where {Y}
+
+Prepare the output data for the GP model.
+
+Arguments:
+- `model::StandardGP`: The GP model.
+- `ys::Vector{Y}`: A vector of observed function values.
+
+returns:
+- `prepared_ys`: The prepared output data.
+"""
 prep_output(model::StandardGP, ys::Vector{Y}) where {Y} = ys
 
-# One-point version just wraps into a buffer
+"""
+    posterior_mean(model::StandardGP, x::X) where {X}
+
+Compute the posterior mean of the GP at a new input point.
+
+Arguments:
+- `model::StandardGP`: The GP model.
+- `x::X`: A new input point where the prediction is to be made.
+
+returns:
+- `mean`: The posterior mean prediction at the input point.
+"""
 function posterior_mean(model::StandardGP, x::X) where {X<:Real}
     posterior_mean(model, [x])
 end
 
+"""
+    posterior_var(model::StandardGP, x::X) where {X}
+
+Compute the posterior variance of the GP at a new input point.
+
+Arguments:
+- `model::StandardGP`: The GP model.
+- `x::X`: A new input point where the prediction is to be made.
+
+returns:
+- `var`: The posterior variance prediction at the input point.
+"""
 function posterior_var(model::StandardGP, x::X) where {X<:Real}
     posterior_var(model, [x])
 end
 
-# Buffer version: Vector of Vectors
-function posterior_mean(model::StandardGP, x_buf::AbstractVector)
-    mean(model.gpx(x_buf))
-end
+"""
+    posterior_mean(model::StandardGP, x_buf::AbstractVector)
 
-function posterior_var(model::StandardGP, x_buf::AbstractVector)
-    var(model.gpx(x_buf))
+Compute the posterior mean of the GP at set of new input points.
+
+Arguments:
+- `model::StandardGP`: The GP model.
+- `xs::AbstractVector`: A vector of new input points where predictions are to be made.
+
+returns:
+- `mean`: The posterior mean predictions at the input points.
+"""
+function posterior_mean(model::StandardGP, xs::AbstractVector)
+    mean(model.gpx(xs))
 end
 
 """
+    posterior_var(model::StandardGP, x_buf::AbstractVector)
+
+Compute the posterior variance of the GP at set of new input points.
+
+Arguments:
+- `model::StandardGP`: The GP model.
+- `xs::AbstractVector`: A vector of new input points where predictions are to be made
+
+returns:
+- `var`: The posterior variance predictions at the input points.
+"""
+function posterior_var(model::StandardGP, xs::AbstractVector)
+    var(model.gpx(xs))
+end
+
+"""
+    unstandardized_mean_and_var(model::StandardGP, X, params::Tuple)
+
 Compute the unstandardized mean and variance of the GP predictions at new input points.
 
 Arguments:
@@ -261,4 +402,16 @@ function unstandardized_mean_and_var(
     return m_unstd, v_unstd
 end
 
+"""
+    _get_minimum(model::StandardGP, ys::Vector{Y}) where {Y}
+
+Get the minimum value from the observed function values.
+
+Arguments:
+- `model::StandardGP`: The GP model.
+- `ys::Vector{Y}`: A vector of observed function values.
+
+returns:
+- `min_value`: The minimum observed function value.
+"""
 _get_minimum(model::StandardGP, ys::Vector{Y}) where {Y} = minimum(ys)

@@ -466,7 +466,7 @@ Arguments:
 - `model::GradientGP`: The GP model.
 
 returns:
-- `lengthscale::Vector{Float64}`: The lengthscale of the GP model.
+- `lengthscale::Vector`: The lengthscale of the GP model.
 """
 get_lengthscale(model::GradientGP) = 1 ./ model.gp.kernel.base_kernel.kernel.transform.s
 
@@ -479,7 +479,7 @@ Arguments:
 - `model::GradientGP`: The GP model.
 
 returns:
-- `scale::Vector{Float64}`: The scale of the GP model.
+- `scale::Vector`: The scale of the GP model.
 """
 get_scale(model::GradientGP) = model.gp.kernel.base_kernel.σ²
 
