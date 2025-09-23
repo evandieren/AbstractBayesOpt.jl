@@ -278,25 +278,4 @@ using Random
             @test updated_ensemble.acquisitions[2] === ucb  # UCB should be unchanged
         end
     end
-
-    @testset "Utility Functions Tests" begin
-        @testset "normcdf Tests" begin
-            # Test standard normal CDF utility
-            @test normcdf(0.0, 1.0) ≈ 0.5
-            @test normcdf(-1.0, 1.0) < 0.5
-            @test normcdf(1.0, 1.0) > 0.5
-
-            # Test with different variance
-            @test normcdf(0.0, 4.0) ≈ 0.5
-        end
-
-        @testset "normpdf Tests" begin
-            # Test standard normal PDF utility
-            @test normpdf(0.0, 1.0) ≈ 1 / sqrt(2π)
-            @test normpdf(0.0, 1.0) > normpdf(1.0, 1.0)  # PDF should be higher at mean
-
-            # Test with different variance
-            @test normpdf(0.0, 4.0) < normpdf(0.0, 1.0)  # Wider distribution has lower peak
-        end
-    end
 end

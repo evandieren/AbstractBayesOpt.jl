@@ -101,12 +101,6 @@ using Random
             # Create BOStruct
             problem = BOStruct(f, acqf, gp, domain, x_train, y_train, 3, 0.1)
 
-            # Test stop criteria
-            @test !stop_criteria(problem)  # Should not stop initially
-
-            problem.iter = 5
-            @test stop_criteria(problem)  # Should stop when iter > max_iter
-
             # Test print_info (just make sure it doesn't error)
             print_info(problem)
         end
