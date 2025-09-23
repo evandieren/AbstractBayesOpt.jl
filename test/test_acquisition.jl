@@ -88,7 +88,7 @@ using Random
 
             # Test evaluation
             test_x = 0.25
-            ucb_val = ucb(updated_gp, test_x)
+            ucb_val = ucb(updated_gp, test_x)[1]
 
             @test isa(ucb_val, Real)
             @test isfinite(ucb_val)
@@ -139,9 +139,9 @@ using Random
             best_y = 0.5
             pi = ProbabilityImprovement(ξ, best_y)
 
-            # Test evaluation - skip for now due to implementation bugs
+            # Test evaluation 
             test_x = 0.25
-            pi_val = pi(updated_gp, test_x)
+            pi_val = pi(updated_gp, test_x)[1]
             @test isa(pi_val, Real)
             @test isfinite(pi_val)
             @test 0.0 <= pi_val <= 1.0  # PI should be a probability
