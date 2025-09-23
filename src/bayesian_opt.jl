@@ -255,7 +255,7 @@ function optimize_hyperparameters(
     scale = nothing
     if length_scale_only
         ℓ = exp(best_result[1])
-        scale = original_scale
+        scale = get_scale(model)[1]
     else
         ℓ, scale = exp.(best_result)
     end

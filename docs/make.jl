@@ -30,6 +30,9 @@ makedocs(;
         "Tutorials" => [
             "1D Bayesian Optimisation" => "tutorials/1D_BO.md",
             "2D Bayesian Optimisation" => "tutorials/2D_BO.md",
+            "1D Acquisition Function Comparison" => "tutorials/acq_funcs_comparison.md",
+            "Hyperparameter & Standardisation Comparison" => "tutorials/hyperparams_comparison.md",
+            "Log Likelihood Landscape Visualisation" => "tutorials/nlml_landscape_visualization.md",
         ],
     ],
     format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true"),
