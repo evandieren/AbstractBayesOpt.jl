@@ -1,28 +1,26 @@
 ## Utility functions for Bayesian Optimization
 
 ## BOStruct and related functions
-"""
-    print_info(BO::BOStruct)
 
-Prints information about the BOStruct
+function _make_info(BO::BOStruct)
+    info = "== BOStruct Information ==\n"
+    info *= "Target function: $(BO.func)\n"
+    info *= "Domain: $(BO.domain)\n"
+    info *= "Number of data points: $(length(BO.xs))\n"
+    info *= "Surrogate model: $(BO.model)\n"
+    info *= "Acquisition function: $(BO.acq)\n"
+    info *= "Max iterations: $(BO.max_iter)\n"
+    info *= "Noise level: $(BO.noise)\n"
+    info *= "========================="
+    return info
+end
 
-Arguments:
-- `BO::BOStruct`: The BOStruct instance to print information about.
-
-returns:
-- Nothing, just prints to the console.
-"""
 function print_info(BO::BOStruct)
-    println("== Printing information about the BOStruct ==")
-    println("Target function: ", BO.func)
-    println("Domain: ", BO.domain)
-    println("xs: ", BO.xs)
-    println("ys: ", BO.ys)
-    println("Surrogate: ", BO.model)
-    println("ACQ: ", BO.acq)
-    println("max_iter: ", BO.max_iter)
-    println("noise: ", BO.noise)
-    println("=============================================")
+    return println(_make_info(BO))
+end
+
+function Base.show(io::IO, BO::BOStruct)
+    return print(io, _make_info(BO))
 end
 
 ## Standardization functions
@@ -208,7 +206,7 @@ _noise_like(y::AbstractVector{T}; σ=1.0) where {T<:AbstractFloat} = σ * randn(
 Generate Gaussian noise with per-dimension standard deviations for a single float output.
 
 Arguments:
-- `y::AbstractVector{T}`: One output (vector of type T). 
+- `y::AbstractVector{T}`: One output (vector of type T).
 - `σ::AbstractVector{T}`: A vector of standard deviations for each dimension. (size must match output dimension)
 
 returns:
