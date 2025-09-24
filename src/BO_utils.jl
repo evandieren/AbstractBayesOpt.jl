@@ -7,7 +7,7 @@ function _make_info(BO::BOStruct)
     info *= "Target function: $(BO.func)\n"
     info *= "Domain: $(BO.domain)\n"
     info *= "Number of data points: $(length(BO.xs))\n"
-    info *= "Surrogate model: $(BO.model)\n"
+    # info *= "Surrogate model: $(BO.model)\n"
     info *= "Acquisition function: $(BO.acq)\n"
     info *= "Max iterations: $(BO.max_iter)\n"
     info *= "Noise level: $(BO.noise)\n"
