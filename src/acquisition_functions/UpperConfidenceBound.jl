@@ -13,7 +13,6 @@ struct UpperConfidenceBound{Y} <: AbstractAcquisition
     β::Y  # exploration-exploitation balance parameter
 end
 
-
 """
     Base.copy(UCB::UpperConfidenceBound)
 
@@ -23,7 +22,6 @@ returns:
 - `new_UCB::UpperConfidenceBound`: A new instance of UpperConfidenceBound.
 """
 Base.copy(UCB::UpperConfidenceBound) = UpperConfidenceBound(UCB.β)
-
 
 """
     (UCB::UpperConfidenceBound)(surrogate::AbstractSurrogate, x::AbstractVector)

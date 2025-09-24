@@ -25,7 +25,6 @@ returns:
 """
 Base.copy(EI::ExpectedImprovement) = ExpectedImprovement(EI.ξ, EI.best_y)
 
-
 """
     (EI::ExpectedImprovement)(surrogate::AbstractSurrogate, x::AbstractVector)
 
@@ -44,7 +43,6 @@ function (EI::ExpectedImprovement)(surrogate::AbstractSurrogate, x::AbstractVect
     Δ = (EI.best_y - EI.ξ) .- μ # we are substracting ξ because we are minimising.
     return _single_input_ei.(Δ, σ²)
 end
-
 
 """
     _single_input_ei(Δ, σ²)

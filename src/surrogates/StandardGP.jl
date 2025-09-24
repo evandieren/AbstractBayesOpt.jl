@@ -96,9 +96,7 @@ Arguments:
 returns:
 - nlml::Float64: The negative log marginal likelihood of the model.
 """
-function nlml(
-    model::StandardGP, params, xs::AbstractVector, ys::AbstractVector
-)
+function nlml(model::StandardGP, params, xs::AbstractVector, ys::AbstractVector)
     log_ℓ, log_scale = params
     ℓ = exp(log_ℓ)
     scale = exp(log_scale)

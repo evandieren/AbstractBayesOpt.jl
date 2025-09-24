@@ -14,7 +14,6 @@ function Base.copy(gp::AbstractGPs.PosteriorGP)
 end
 Base.copy(s::Nothing) = nothing
 
-
 """
     extract_scale_and_lengthscale(kernel::Kernel)
 

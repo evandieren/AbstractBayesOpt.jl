@@ -157,21 +157,19 @@ Plots.vspan!([1, 2 * n_train]; color=:blue, alpha=0.2, label="") # hide
 # ### Plotting the surrogate model
 # We can visualize the surrogate model's mean and uncertainty along with the true function and the evaluated
 
-plot_domain = collect(domain.lower[1]:0.01:domain.upper[1]) # hide
+plot_domain = collect(domain.lower[1]:0.01:domain.upper[1])
 
-plot_x = map(x -> [x], plot_domain) # hide
-plot_x = prep_input(grad_surrogate, plot_x) # hide
-post_mean, post_var = unstandardized_mean_and_var( # hide
-    result_grad.model,
-    plot_x,
-    standard_params_grad, # hide
-) # hide
+plot_x = map(x -> [x], plot_domain)
+plot_x = prep_input(grad_surrogate, plot_x)
+post_mean, post_var = unstandardized_mean_and_var(
+    result_grad.model, plot_x, standard_params_grad
+)
 
-post_mean = reshape(post_mean, :, d + 1)[:, 1] # hide
-post_var = reshape(post_var, :, d + 1)[:, 1] # hide
-post_var[post_var .< 0] .= 0 # hide
+post_mean = reshape(post_mean, :, d + 1)[:, 1]
+post_var = reshape(post_var, :, d + 1)[:, 1]
+post_var[post_var .< 0] .= 0
 
-plot(
+plot( #hide
     plot_domain, # hide
     f.(plot_domain); # hide
     label="target function", # hide
@@ -181,7 +179,7 @@ plot(
     title="AbstractBayesOpt", # hide
     legend=:outertopright, # hide
 ) # hide
-plot!(
+plot!( #hide
     plot_domain, # hide
     post_mean; # hide
     label="gradGP", # hide

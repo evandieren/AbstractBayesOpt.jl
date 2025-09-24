@@ -4,10 +4,13 @@
 CollapsedDocStrings = true
 ```
 
-This section documents the exported functions, types, etc from **AbstractBayesOpt.jl**.
+This section documents the exported functions, types, etc from
+**AbstractBayesOpt.jl**.
 
 ---
+
 ## Bayesian Optimisation loop
+
 ```@docs
 BOStruct
 optimize
@@ -32,11 +35,13 @@ nlml
 ```
 
 ### Kernels
+
 ```@docs
 ApproxMatern52Kernel
 ```
 
 ### GradientGP-related functions
+
 ```@docs
 gradConstMean
 gradKernel
@@ -46,6 +51,7 @@ posterior_grad_cov
 ```
 
 ## Acquisition Functions
+
 ```@docs
 EnsembleAcquisition
 ExpectedImprovement
@@ -57,6 +63,7 @@ UpperConfidenceBound
 ## Domains
 
 ### Continuous domain
+
 ```@docs
 ContinuousDomain
 ```

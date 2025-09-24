@@ -57,7 +57,7 @@ scatter!([approx_min], [f_min]; label="Global minima", color=:red, markersize=5)
 
 # Generate initial training data using Sobol sampling for better space coverage
 n_train = 5
-x_train = vec(QuasiMonteCarlo.sample(n_train, lower, upper, SobolSample())) 
+x_train = vec(QuasiMonteCarlo.sample(n_train, lower, upper, SobolSample()))
 y_train = f_∂f.(x_train)
 
 # Setup the gradient-enhanced GP model, using in-house [`ApproxMatern52Kernel`](@ref) for AD compatibility.
@@ -108,7 +108,7 @@ end
 #
 # Now we will run Bayesian optimisation with each acquisition function and compare their performance.
 function run_comparison(n_iterations=30)
-    results = Dict{String, Any}()
+    results = Dict{String,Any}()
 
     for (name, acq_func) in setup_acquisition_functions(y_train)
         @info "\n=== Running optimisation with $name ==="
@@ -174,7 +174,7 @@ function plot_convergence(results) # hide
 
     for (i, (name, result)) in enumerate(results) # hide
         running_min_extended = collect( # hide
-            Iterators.flatten(fill(x, 2) for x in result.running_min) # hide
+            Iterators.flatten(fill(x, 2) for x in result.running_min), # hide
         ) # hide
         errors = max.(running_min_extended .- min_f, 1e-16)  # Avoid log(0) # hide
 

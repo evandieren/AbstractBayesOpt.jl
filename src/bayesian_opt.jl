@@ -4,7 +4,6 @@
 # - BayesianOptimization (python package) (optimization of acquisition functions)
 # - GradientGPs.jl (internal package) of MatMat group at EPFL (BOStruct, and update routines)
 
-
 """
     BOStruct{F,M<:AbstractSurrogate,A<:AbstractAcquisition,D<:AbstractDomain,X,Y,T}(
         func::F,

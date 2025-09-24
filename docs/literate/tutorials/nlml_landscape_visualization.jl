@@ -9,7 +9,6 @@
 # - Understanding why some configurations converge faster than others
 # - Identifying potential issues like local minima or ill-conditioned regions
 
-
 # ## Setup
 #
 # Loading the necessary packages.
@@ -37,7 +36,7 @@ d = 2
 lower = [-4.0, -4.0]
 upper = [4.0, 4.0]
 domain = ContinuousDomain(lower, upper)
-σ² = 1e-6  
+σ² = 1e-6
 
 # Generate training data using Sobol sampling for better coverage
 n_train = 75
@@ -91,7 +90,12 @@ println( # hide
 ) # hide
 
 function compute_nlml_landscape( # hide
-    model, x_data, y_data, log_ls_range, log_scale_range, model_name # hide
+    model,
+    x_data,
+    y_data,
+    log_ls_range,
+    log_scale_range,
+    model_name, # hide
 ) # hide
     @info "Computing NLML landscape for $model_name..." # hide
 
@@ -197,7 +201,11 @@ println( # hide
 println("  NLML: $(round(opt_gradient.nlml, digits=3))") # hide
 
 function create_contour_plot( # hide
-    nlml_values, log_ls_range, log_scale_range, title_str, optimal_params=nothing # hide
+    nlml_values,
+    log_ls_range,
+    log_scale_range,
+    title_str,
+    optimal_params=nothing, # hide
 ) # hide
     p = contourf( # hide
         log_scale_range, # hide
@@ -222,7 +230,8 @@ function create_contour_plot( # hide
             markersize=8, # hide
             markershape=:star, # hide
             label="Optimal", # hide
-            legend=:bottomright) # hide
+            legend=:bottomright,
+        ) # hide
     end # hide
 
     return p # hide

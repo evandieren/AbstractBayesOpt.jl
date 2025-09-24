@@ -9,7 +9,7 @@
 #
 # Loading the necessary packages.
 using AbstractBayesOpt
-using AbstractGPs 
+using AbstractGPs
 using Plots
 using ForwardDiff
 using QuasiMonteCarlo
@@ -53,7 +53,6 @@ p1 = contour( # hide
     xlabel="x₁", # hide
     ylabel="x₂", # hide
 ) # hide
-
 
 scatter!( # hide
     [p[1] for p in x_mins], # hide
@@ -116,7 +115,7 @@ test_configs = [ # hide
 #
 # We will run Bayesian optimisation with each configuration and collect performance metrics.
 function run_comparison(n_iterations) # hide 
-    results = Dict{String, NamedTuple}() # hide 
+    results = Dict{String,NamedTuple}() # hide 
 
     for (config_name, hyper_params, standardise_mode) in test_configs # hide
         model = deepcopy(base_model) # hide
@@ -139,7 +138,9 @@ function run_comparison(n_iterations) # hide
 
         try # hide
             result, _, standard_params = AbstractBayesOpt.optimize( # hide
-                problem; hyper_params=hyper_params, standardize=standardise_mode # hide 
+                problem;
+                hyper_params=hyper_params,
+                standardize=standardise_mode, # hide 
             ) # hide
 
             end_time = time() # hide
@@ -151,7 +152,7 @@ function run_comparison(n_iterations) # hide
             optimal_idx = argmin(ys_values) # hide
             optimal_point = xs[optimal_idx] # hide
             optimal_value = minimum(ys_values) # hide
-            
+
             all_evals = himmelblau.(xs) # hide
             running_min = accumulate(min, all_evals) # hide
 

@@ -19,7 +19,6 @@ struct GradientGP{T} <: AbstractSurrogate
     # gpx is the posterior GP after conditioning on data, nothing if not conditioned yet
 end
 
-
 """
     Base.copy(s::GradientGP)
 
@@ -195,7 +194,6 @@ returns:
 Some snippets kindly provided by [N. Schmitz](https://github.com/niklasschmitz), MatMat group, EPFL.
 """
 function (κ::gradKernel)((x, px)::Tuple{X,Int}, (y, py)::Tuple{Y,Int}) where {X,Y}
-
     (px > length(x) + 1 || py > length(y) + 1 || px < 1 || py < 1) &&
         error("`px` and `py` must be within the range of the number of outputs")
 

@@ -23,7 +23,6 @@ returns:
 """
 Base.copy(PI::ProbabilityImprovement) = ProbabilityImprovement(PI.ξ, PI.best_y)
 
-
 """
     (PI::ProbabilityImprovement)(surrogate::AbstractSurrogate, x::AbstractVector)
 

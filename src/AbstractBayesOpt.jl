@@ -23,7 +23,7 @@ include("surrogates/GradientGP.jl")
 include("surrogates/surrogates_utils.jl")
 
 ## Models
-export StandardGP, GradientGP 
+export StandardGP, GradientGP
 
 ## Methods
 export posterior_mean, posterior_var, nlml
@@ -60,7 +60,7 @@ export ContinuousDomain
 # Core Bayesian Optimization framework
 include("bayesian_opt.jl")
 export BOStruct
-export optimize 
+export optimize
 
 # Utility functions
 include("BO_utils.jl")
