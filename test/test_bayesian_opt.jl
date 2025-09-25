@@ -551,7 +551,7 @@ using Random
 
             # Should be non-increasing (monotonic improvement)
             for i in 2:length(best_values)
-                @test best_values[i] <= best_values[i - 1] 
+                @test best_values[i] <= best_values[i - 1]
             end
         end
 

@@ -41,9 +41,11 @@ function optimize_acquisition(
     best_acq = -Inf
     best_x = nothing
 
-    grid_points = QuasiMonteCarlo.sample(n_grid, domain.lower, domain.upper, LatinHypercubeSample())
+    grid_points = QuasiMonteCarlo.sample(
+        n_grid, domain.lower, domain.upper, LatinHypercubeSample()
+    )
     grid_points = [collect(grid_points[:, i]) for i in axes(grid_points, 2)]
-    
+
     # println("Grid points generated: ", grid_points[1:5])
     scores = acqf(surrogate, grid_points)
     indices_sorted = sortperm(scores; rev=true)
