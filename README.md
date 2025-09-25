@@ -1,5 +1,5 @@
 # AbstractBayesOpt
-[![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://evandieren.github.io/AbstractBayesOpt.jl/stable)
+[![Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://evandieren.github.io/AbstractBayesOpt.jl/dev)
 [![Build Status](https://github.com/evandieren/AbstractBayesOpt.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/evandieren/AbstractBayesOpt.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![codecov](https://codecov.io/gh/evandieren/AbstractBayesOpt.jl/graph/badge.svg?token=ZU1TJCHT4O)](https://codecov.io/gh/evandieren/AbstractBayesOpt.jl)
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/JuliaDiff/BlueStyle)
@@ -49,7 +49,7 @@ AbstractBayesOpt.jl defines the core abstractions for building Bayesian optimisa
 algorithms. To add a new surrogate model, acquisition function, or domain, implement
 the following interfaces.
 
-We refer to the [documentation] for an extensive description of the features of the library, including the different 
+We refer to the [documentation](https://evandieren.github.io/AbstractBayesOpt.jl/) for an extensive description of the features of the library, including the different 
 subtypes we have implemented, as well as some tutorials and the public API.
 
 ## Issues and Contributing

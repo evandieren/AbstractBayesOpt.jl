@@ -1,6 +1,6 @@
 # AbstractBayesOpt.jl
 
-`AbstractBayesOpt` is a Julia library for Bayesian Optimisation (BO), which
+`AbstractBayesOpt.jl` is a Julia library for Bayesian Optimisation (BO), which
 relies on abstract classes for surrogate models, acquisition functions and
 domain definitions.
 
@@ -33,18 +33,19 @@ users to plug in any surrogate model, acquisition function, or search space.
 
 Unlike traditional BO libraries that rely on a specific surrogate
 implementation (e.g.
-[BayesianOptimization.jl](https://github.com/jbrea/BayesianOptimization.jl)
-using [GaussianProcesses.jl](https://github.com/STOR-i/GaussianProcesses.jl)),
-AbstractBayesOpt.jl is fully flexible. Users are free to use packages such as
-[AbstractGPs.jl](https://github.com/JuliaGaussianProcesses/AbstractGPs.jl) or
-[GaussianProcesses.jl](https://github.com/STOR-i/GaussianProcesses.jl); in
+[`BayesianOptimization.jl`](https://github.com/jbrea/BayesianOptimization.jl)
+using [`GaussianProcesses.jl`](https://github.com/STOR-i/GaussianProcesses.jl)),
+`AbstractBayesOpt.jl` is fully flexible. Users are free to use packages such as
+[`AbstractGPs.jl`](https://github.com/JuliaGaussianProcesses/AbstractGPs.jl) or
+[`GaussianProcesses.jl`](https://github.com/STOR-i/GaussianProcesses.jl); in
 fact, our standard and gradient-enhanced GP implementations leverage
-[AbstractGPs.jl](https://github.com/JuliaGaussianProcesses/AbstractGPs.jl) and
-[KernelFunctions.jl](https://github.com/JuliaGaussianProcesses/KernelFunctions.jl).
-We also mention the [Surrogates.jl](https://github.com/SciML/Surrogates.jl)
-package, that implements a high level of BO using AbstractGPs.jl.
+[`AbstractGPs.jl`](https://github.com/JuliaGaussianProcesses/AbstractGPs.jl) and
+[`KernelFunctions.jl`](https://github.com/JuliaGaussianProcesses/KernelFunctions.jl).
+We also mention the [`Surrogates.jl`](https://github.com/SciML/Surrogates.jl)
+package, that implements a high level of BO using implemented surrogates (Kriging,
+Gradient-Enhanced Kriging, GPs from `AbstractGPs.jl`) 
 
-In short, AbstractBayesOpt.jl acts as a general "glue" layer, unifying the
+In short, `AbstractBayesOpt.jl` acts as a general "glue" layer, unifying the
 Julia BO ecosystem under a simple and extensible interface.
 
 ## Abstract Interfaces
@@ -52,14 +53,14 @@ Julia BO ecosystem under a simple and extensible interface.
 We currently have three main abstract interfaces that work with our BO loop:
 
 - [`AbstractAcquisition`](@ref): Interface to implement for an acquisition
-  function to be used in AbstractBayesOpt.
+  function to be used in `AbstractBayesOpt.jl`.
 - [`AbstractDomain`](@ref): Interface to implement for the optimisation domain
-  to be used in AbstractBayesOpt.
+  to be used in `AbstractBayesOpt.jl`.
 - [`AbstractSurrogate`](@ref): Interface to implement for a surrogate to be
-  used in AbstractBayesOpt.
+  used in `AbstractBayesOpt.jl`.
 
-AbstractBayesOpt.jl defines the core abstractions for building Bayesian
-optimization algorithms. To add a new surrogate model, acquisition function, or
+`AbstractBayesOpt.jl` defines the core abstractions for building Bayesian
+optimisation algorithms. To add a new surrogate model, acquisition function, or
 domain, implement the following interfaces.
 
 ### Acquisition Functions
@@ -90,9 +91,10 @@ as well as creating its constructor.
 
 Concrete implementations may add additional methods as needed, but these are
 the minimum required for compatibility with the BO loop. We note that we are
-using Optim.jl to solve the acquisition function maximisation problem for now,
-and hence the lower and upper bounds must be compatible with their optimisation
-interface, which might limit quite a lot the type of usable domains.
+using [`Optim.jl`](https://github.com/JuliaNLSolvers/Optim.jl) to solve the 
+acquisition function maximisation problem for now,and hence the lower and 
+upper bounds must be compatible with their optimisation interface, which might 
+limit quite a lot the type of usable domains.
 
 ### Surrogates
 
@@ -112,7 +114,7 @@ Subtype [`AbstractSurrogate`](@ref) and implement:
 
 ## What is currently implemented?
 
-We list below the abstract subtypes currently implemented in AbstractBayesOpt.
+We list below the abstract subtypes currently implemented in `AbstractBayesOpt.jl`.
 
 ### Surrogates
 
