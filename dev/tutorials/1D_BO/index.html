@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>1D Bayesian Optimisation · AbstractBayesOpt.jl</title><meta name="title" content="1D Bayesian Optimisation · AbstractBayesOpt.jl"/><meta property="og:title" content="1D Bayesian Optimisation · AbstractBayesOpt.jl"/><meta property="twitter:title" content="1D Bayesian Optimisation · AbstractBayesOpt.jl"/><meta name="description" content="Documentation for AbstractBayesOpt.jl."/><meta property="og:description" content="Documentation for AbstractBayesOpt.jl."/><meta property="twitter:description" content="Documentation for AbstractBayesOpt.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">AbstractBayesOpt.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../reference/">Public API</a></li><li><span class="tocitem">Tutorials</span><ul><li class="is-active"><a class="tocitem" href>1D Bayesian Optimisation</a><ul class="internal"><li><a class="tocitem" href="#Setup"><span>Setup</span></a></li><li><a class="tocitem" href="#Define-the-objective-function"><span>Define the objective function</span></a></li><li><a class="tocitem" href="#Standard-GPs"><span>Standard GPs</span></a></li><li><a class="tocitem" href="#Gradient-enhanced-GPs"><span>Gradient-enhanced GPs</span></a></li></ul></li><li><a class="tocitem" href="../2D_BO/">2D Bayesian Optimisation</a></li><li><a class="tocitem" href="../acq_funcs_comparison/">1D Acquisition Function Comparison</a></li><li><a class="tocitem" href="../hyperparams_comparison/">Hyperparameter &amp; Standardisation Comparison</a></li><li><a class="tocitem" href="../nlml_landscape_visualization/">Log Likelihood Landscape Visualisation</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>1D Bayesian Optimisation</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>1D Bayesian Optimisation</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/evandieren/AbstractBayesOpt.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/evandieren/AbstractBayesOpt.jl/blob/main/docs/literate/tutorials/1D_BO.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="AbstractBayesOpt-Tutorial:-1D-Bayesian-Optimisation"><a class="docs-heading-anchor" href="#AbstractBayesOpt-Tutorial:-1D-Bayesian-Optimisation">AbstractBayesOpt Tutorial: 1D Bayesian Optimisation</a><a id="AbstractBayesOpt-Tutorial:-1D-Bayesian-Optimisation-1"></a><a class="docs-heading-anchor-permalink" href="#AbstractBayesOpt-Tutorial:-1D-Bayesian-Optimisation" title="Permalink"></a></h1><h2 id="Setup"><a class="docs-heading-anchor" href="#Setup">Setup</a><a id="Setup-1"></a><a class="docs-heading-anchor-permalink" href="#Setup" title="Permalink"></a></h2><p>Loading the necessary packages.</p><pre><code class="language-julia hljs">using AbstractBayesOpt
+using AbstractGPs
+using ForwardDiff
+using Plots</code></pre><h2 id="Define-the-objective-function"><a class="docs-heading-anchor" href="#Define-the-objective-function">Define the objective function</a><a id="Define-the-objective-function-1"></a><a class="docs-heading-anchor-permalink" href="#Define-the-objective-function" title="Permalink"></a></h2><p>We will optimise a simple 1D function: <span>$f(x) = (x-2)^2 + \sin(3x)$</span></p><pre><code class="language-julia hljs">f(x) = (x - 2)^2 + sin(3x)
+d = 1
+domain = ContinuousDomain([0.0], [5.0])</code></pre><img src="e3466520.svg" alt="Example block output"/><h2 id="Standard-GPs"><a class="docs-heading-anchor" href="#Standard-GPs">Standard GPs</a><a id="Standard-GPs-1"></a><a class="docs-heading-anchor-permalink" href="#Standard-GPs" title="Permalink"></a></h2><p>We&#39;ll use a standard Gaussian Process surrogate with a Matérn 5/2 kernel. We add a small jitter term for numerical stability of <span>$10^{-12}$</span>.</p><pre><code class="language-julia hljs">noise_var = 1e-12
+surrogate = StandardGP(Matern52Kernel(), noise_var)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">StandardGP{Float64}(AbstractGPs.GP{AbstractGPs.ZeroMean{Float64}, KernelFunctions.ScaledKernel{KernelFunctions.TransformedKernel{KernelFunctions.Matern52Kernel{Distances.Euclidean}, KernelFunctions.ScaleTransform{Float64}}, Float64}}(AbstractGPs.ZeroMean{Float64}(), Matern 5/2 Kernel (metric = Distances.Euclidean(0.0))
+	- Scale Transform (s = 1.0)
+	- σ² = 1.0), 1.0e-12, nothing)</code></pre><p>Generate uniform random samples <code>x_train</code> and evaluate the function at these points to get <code>y_train</code>.</p><pre><code class="language-julia hljs">n_train = 5
+x_train = first.([
+    domain.lower .+ (domain.upper .- domain.lower) .* rand(d) for _ in 1:n_train
+])
+
+y_train = f.(x_train)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element Vector{Float64}:
+ 1.2995813599341142
+ 0.5179286028794444
+ 0.9192097626323938
+ 1.3961489787170538
+ 1.2427322328731445</code></pre><h3 id="Choose-an-acquisition-function"><a class="docs-heading-anchor" href="#Choose-an-acquisition-function">Choose an acquisition function</a><a id="Choose-an-acquisition-function-1"></a><a class="docs-heading-anchor-permalink" href="#Choose-an-acquisition-function" title="Permalink"></a></h3><p>We&#39;ll use the Expected Improvement acquisition function with an exploration parameter ξ = 0.0.</p><pre><code class="language-julia hljs">ξ = 0.0
+acq = ExpectedImprovement(ξ, minimum(y_train))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ExpectedImprovement{Float64}(0.0, 0.5179286028794444)</code></pre><h3 id="Set-up-the-Bayesian-Optimisation-structure"><a class="docs-heading-anchor" href="#Set-up-the-Bayesian-Optimisation-structure">Set up the Bayesian Optimisation structure</a><a id="Set-up-the-Bayesian-Optimisation-structure-1"></a><a class="docs-heading-anchor-permalink" href="#Set-up-the-Bayesian-Optimisation-structure" title="Permalink"></a></h3><p>We use BOStruct to bundle all components needed for the optimisation. Here, we set the number of iterations to 5 and the actual noise level to 0.0 (since our function is noiseless). We then run the optimize function to perform the Bayesian optimisation.</p><pre><code class="language-julia hljs">bo_struct = BOStruct(
+    f,
+    acq,
+    surrogate,
+    domain,
+    x_train,
+    y_train,
+    30,  # number of iterations
+    0.0,  # Actual noise level (0.0 for noiseless)
+)
+
+@info &quot;Starting Bayesian ...&quot;
+result, acq_list, standard_params = AbstractBayesOpt.optimize(
+    bo_struct; standardize=&quot;mean_only&quot;
+);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Starting Bayesian ...
+[ Info: Standardization choice: mean_only
+[ Info: Standardization parameters: μ=1.07512018740723, σ=1.0
+[ Info: Optimizing GP hyperparameters at iteration 1...
+[ Info: New parameters: ℓ=[0.15948842499193144], variance =[0.10327371202126787]
+[ Info: Iteration #1, current min val: 0.5179286028794444
+[ Info: Acquisition optimized, new candidate point: 2.177257843364029
+[ Info: Iteration #2, current min val: 0.27745616783404387
+[ Info: Acquisition optimized, new candidate point: 2.1223870420181807
+[ Info: Iteration #3, current min val: 0.09885574301038724
+[ Info: Acquisition optimized, new candidate point: 2.077799806912192
+[ Info: Iteration #4, current min val: -0.04371251220030296
+[ Info: Acquisition optimized, new candidate point: 2.0391804686539956
+[ Info: Iteration #5, current min val: -0.16335234375248628
+[ Info: Acquisition optimized, new candidate point: 2.0041670612741735
+[ Info: Iteration #6, current min val: -0.267373348000345
+[ Info: Acquisition optimized, new candidate point: 1.9719571023459173
+[ Info: Iteration #7, current min val: -0.35832349529552865
+[ Info: Acquisition optimized, new candidate point: 1.941968027335281
+[ Info: Iteration #8, current min val: -0.43814259436941627
+[ Info: Acquisition optimized, new candidate point: 1.9139028329190748
+[ Info: Iteration #9, current min val: -0.5079893797621805
+[ Info: Acquisition optimized, new candidate point: 1.8875206334783818
+[ Info: Iteration #10, current min val: -0.5688908170247975
+[ Info: Acquisition optimized, new candidate point: 1.8626561311348364
+[ Info: Optimizing GP hyperparameters at iteration 11...
+[ Info: New parameters: ℓ=[1.7598559933518663], variance =[5.35650657927154]
+[ Info: Iteration #11, current min val: -0.621688687577332
+[ Info: Acquisition optimized, new candidate point: 8.60323240267251e-12
+[ Info: Iteration #12, current min val: -0.621688687577332
+[ Info: Acquisition optimized, new candidate point: 1.6043297588552197
+[ Info: Iteration #13, current min val: -0.8383891166577014
+[ Info: Acquisition optimized, new candidate point: 1.6463231757153827
+[ Info: Iteration #14, current min val: -0.8493529635615774
+[ Info: Acquisition optimized, new candidate point: 4.9999999999955
+[ Info: Iteration #15, current min val: -0.8493529635615774
+[ Info: Acquisition optimized, new candidate point: 1.6518828932227294
+[ Info: Iteration #16, current min val: -0.8493724565732267
+[ Info: Acquisition optimized, new candidate point: 1.6494249835876766
+[ Info: Iteration #17, current min val: -0.8494048255547759
+[ Info: Acquisition optimized, new candidate point: 1.04375
+[ Info: Iteration #18, current min val: -0.8494048255547759
+[ Info: Acquisition optimized, new candidate point: 1.43625
+[ Info: Iteration #19, current min val: -0.8494048255547759
+[ Info: Acquisition optimized, new candidate point: 4.17725
+[ Info: Iteration #20, current min val: -0.8494048255547759
+[ Info: Acquisition optimized, new candidate point: 1.68575
+[ Info: Optimizing GP hyperparameters at iteration 21...
+[ Info: New parameters: ℓ=[3.084261907169767], variance =[74.09034636968303]
+[ Info: Iteration #21, current min val: -0.8494048255547759
+[ Info: Acquisition optimized, new candidate point: 0.48175
+[ Info: Iteration #22, current min val: -0.8494048255547759
+[ Info: Acquisition optimized, new candidate point: 1.65225
+[ Info: Iteration #23, current min val: -0.8494048255547759
+[ Info: Acquisition optimized, new candidate point: 3.52725
+[ Info: Iteration #24, current min val: -0.8494048255547759
+[ Info: Acquisition optimized, new candidate point: 1.36075
+[ Info: Iteration #25, current min val: -0.8494048255547759
+[ Info: Acquisition optimized, new candidate point: 2.48025
+[ Info: Iteration #26, current min val: -0.8494048255547759
+[ Info: Acquisition optimized, new candidate point: 3.5302500000000006
+[ Info: Iteration #27, current min val: -0.8494048255547759
+[ Info: Acquisition optimized, new candidate point: 3.2197500000000003
+[ Info: Iteration #28, current min val: -0.8494048255547759
+[ Info: Acquisition optimized, new candidate point: 0.55825
+[ Info: Iteration #29, current min val: -0.8494048255547759
+[ Info: Acquisition optimized, new candidate point: 2.94975
+[ Info: Iteration #30, current min val: -0.8494048255547759
+[ Info: Acquisition optimized, new candidate point: 2.13275</code></pre><h3 id="Results"><a class="docs-heading-anchor" href="#Results">Results</a><a id="Results-1"></a><a class="docs-heading-anchor-permalink" href="#Results" title="Permalink"></a></h3><p>The  result is stored in <code>result</code>. We can print the best found input and its corresponding function value.</p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Optimal point: 1.6494249835876766
+Optimal value: -0.8494048255547759</code></pre><h3 id="Plotting-of-running-minimum-over-iterations"><a class="docs-heading-anchor" href="#Plotting-of-running-minimum-over-iterations">Plotting of running minimum over iterations</a><a id="Plotting-of-running-minimum-over-iterations-1"></a><a class="docs-heading-anchor-permalink" href="#Plotting-of-running-minimum-over-iterations" title="Permalink"></a></h3><p>The running minimum is the best function value found up to each iteration.</p><pre><code class="language-julia hljs">p = Plots.plot(
+    n_train:length(running_min),
+    running_min[n_train:end] .- min_f;
+    yaxis=:log,
+    title=&quot;Error w.r.t true minimum (1D BO)&quot;,
+    xlabel=&quot;Function evaluations&quot;,
+    label=&quot;BO&quot;,
+    xlims=(1, length(running_min)),</code></pre><img src="698d9d6e.svg" alt="Example block output"/><h2 id="Gradient-enhanced-GPs"><a class="docs-heading-anchor" href="#Gradient-enhanced-GPs">Gradient-enhanced GPs</a><a id="Gradient-enhanced-GPs-1"></a><a class="docs-heading-anchor-permalink" href="#Gradient-enhanced-GPs" title="Permalink"></a></h2><p>Now, let&#39;s see how to use gradient information to improve the optimisation. We&#39;ll use the same function but now also provide its gradient. We define a new surrogate model that can handle gradient information, specifically a <a href="../../reference/#AbstractBayesOpt.GradientGP"><code>GradientGP</code></a>.</p><pre><code class="language-julia hljs">grad_surrogate = GradientGP(ApproxMatern52Kernel(), d + 1, noise_var)
+
+ξ = 0.0
+acq = ExpectedImprovement(ξ, minimum(y_train))
+
+∂f(x) = ForwardDiff.derivative(f, x)
+f_∂f(x) = [f(x); ∂f(x)];</code></pre><p>Generate value and gradients at random samples</p><pre><code class="language-julia hljs">y_train_grad = f_∂f.(x_train)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element Vector{Vector{Float64}}:
+ [1.2995813599341142, -0.7061930870502873]
+ [0.5179286028794444, 3.1755096265129925]
+ [0.9192097626323938, 2.690325882093927]
+ [1.3961489787170538, 1.7301132677036684]
+ [1.2427322328731445, 0.39211734597424464]</code></pre><p>Set up the Bayesian Optimisation structure</p><pre><code class="language-julia hljs">bo_struct_grad = BOStruct(
+    f_∂f,
+    acq,
+    grad_surrogate,
+    domain,
+    x_train,
+    y_train_grad,
+    10,  # number of iterations
+    0.0,  # Actual noise level (0.0 for noiseless)
+)
+
+result_grad, acq_list_grad, standard_params_grad = AbstractBayesOpt.optimize(
+    bo_struct_grad; standardize=&quot;mean_only&quot;
+);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Starting Bayesian Optimisation...
+[ Info: Standardization choice: mean_only
+[ Info: Standardization parameters: μ=[1.07512018740723, 0.0], σ=[1.0, 1.0]
+[ Info: Optimizing GP hyperparameters at iteration 1...
+[ Info: New parameters: ℓ=[1.832283097069778], variance =[10.029452050817197]
+[ Info: Iteration #1, current min val: 0.5179286028794444
+[ Info: Acquisition optimized, new candidate point: 0.8651287795222714
+[ Info: Iteration #2, current min val: 0.5179286028794444
+[ Info: Acquisition optimized, new candidate point: 1.6818324749192415
+[ Info: Iteration #3, current min val: -0.8437999308776605
+[ Info: Acquisition optimized, new candidate point: 1.6503850142229117
+[ Info: Iteration #4, current min val: -0.8493999072529963
+[ Info: Acquisition optimized, new candidate point: 4.999999999993915
+[ Info: Iteration #5, current min val: -0.8493999072529963
+[ Info: Acquisition optimized, new candidate point: 1.64943072196701
+[ Info: Iteration #6, current min val: -0.8494048255871868
+[ Info: Acquisition optimized, new candidate point: 0.00025
+[ Info: Iteration #7, current min val: -0.8494048255871868
+[ Info: Acquisition optimized, new candidate point: 1.50825
+[ Info: Iteration #8, current min val: -0.8494048255871868
+[ Info: Acquisition optimized, new candidate point: 1.83225
+[ Info: Iteration #9, current min val: -0.8494048255871868
+[ Info: Acquisition optimized, new candidate point: 1.6247500000000001
+[ Info: Iteration #10, current min val: -0.8494048255871868
+[ Info: Acquisition optimized, new candidate point: 4.12875</code></pre><h3 id="Results-2"><a class="docs-heading-anchor" href="#Results-2">Results</a><a class="docs-heading-anchor-permalink" href="#Results-2" title="Permalink"></a></h3><p>The  result is stored in <code>result_grad</code>. We can print the best found input and its corresponding function value.</p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Optimal point (GradBO): 1.64943072196701
+Optimal value (GradBO): -0.8494048255871868</code></pre><h3 id="Plotting-of-running-minimum-over-iterations-2"><a class="docs-heading-anchor" href="#Plotting-of-running-minimum-over-iterations-2">Plotting of running minimum over iterations</a><a class="docs-heading-anchor-permalink" href="#Plotting-of-running-minimum-over-iterations-2" title="Permalink"></a></h3><p>The running minimum is the best function value found up to each iteration. Since each evaluation provides both a function value and a 1D gradient, we duplicate the running minimum values to reflect the number of function evaluations.</p><img src="0d9f4857.svg" alt="Example block output"/><h3 id="Plotting-the-surrogate-model"><a class="docs-heading-anchor" href="#Plotting-the-surrogate-model">Plotting the surrogate model</a><a id="Plotting-the-surrogate-model-1"></a><a class="docs-heading-anchor-permalink" href="#Plotting-the-surrogate-model" title="Permalink"></a></h3><p>We can visualize the surrogate model&#39;s mean and uncertainty along with the true function and the evaluated</p><pre><code class="language-julia hljs">plot_domain = collect(domain.lower[1]:0.01:domain.upper[1])
+
+plot_x = map(x -&gt; [x], plot_domain)
+plot_x = prep_input(grad_surrogate, plot_x)
+post_mean, post_var = unstandardized_mean_and_var(
+    result_grad.model, plot_x, standard_params_grad
+)
+
+post_mean = reshape(post_mean, :, d + 1)[:, 1]
+post_var = reshape(post_var, :, d + 1)[:, 1]
+post_var[post_var .&lt; 0] .= 0</code></pre><img src="fd3f504e.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../reference/">« Public API</a><a class="docs-footer-nextpage" href="../2D_BO/">2D Bayesian Optimisation »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Thursday 25 September 2025 09:48">Thursday 25 September 2025</span>. Using Julia version 1.11.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
