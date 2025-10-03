@@ -87,14 +87,14 @@ println("Optimal value: ", minimum(ys)) # hide
 # The running minimum is the best function value found up to each iteration.
 running_min = accumulate(min, f.(xs)) # hide
 
-p = Plots.plot(
-    n_train:length(running_min),
-    running_min[n_train:end] .- min_f;
-    yaxis=:log,
-    title="Error w.r.t true minimum (1D BO)",
-    xlabel="Function evaluations",
-    label="BO",
-    xlims=(1, length(running_min)),
+p = Plots.plot( # hide
+    n_train:length(running_min),  # hide
+    running_min[n_train:end] .- min_f;  # hide
+    yaxis=:log,  # hide
+    title="Error w.r.t true minimum (1D BO)",  # hide
+    xlabel="Function evaluations",  # hide
+    label="BO",  # hide
+    xlims=(1, length(running_min)),  # hide
 ) # hide
 Plots.vspan!([1, n_train]; color=:blue, alpha=0.2, label="training GP") # hide
 
