@@ -120,7 +120,12 @@ function update(BO::BOStruct, x::X, y::Y, i::Int) where {X,Y}
     try
         # test for ill-conditioning
         BO.model = update(BO.model, BO.xs, BO.ys)
-    catch
+    catch e
+        if !isa(e, LinearAlgebra.PosDefException) && !isa(e, LinearAlgebra.SingularException)
+            @warn "Caught an unexpected error during GP update: $e"
+            throw(e) # rethrow unexpected errors
+        end
+
         @info "We reached ill-conditioning, returning NON-UPDATED GP. Killing BO loop."
         # Issue: the gp_update in the try is updating the p.gp.gpx as it tries to create the posterior.
         # if it fails, it keeps the added x and y and overwrites the old structure, which I want to keep if it fails...
