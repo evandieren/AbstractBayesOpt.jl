@@ -747,6 +747,37 @@ using Random
 
             end
 
+            @testset "Test update BOStruct, wrong error thrown" begin
+                # Define a simple test function
+                f(x) = sum(x .^ 2)
+
+                # Create domain
+                lower = [-2.0, -2.0]
+                upper = [2.0, 2.0]
+                domain = ContinuousDomain(lower, upper)
+
+                # Create surrogate with training data
+                kernel = SqExponentialKernel()
+                gp = StandardGP(kernel, 0.1)
+
+                # Create initial training data and update GP
+                x_train = [[-1.0, -1.0], [5.0, -5.0]]
+                y_train = f.(x_train)
+                updated_gp = update(gp, x_train, y_train)
+
+                # Create acquisition function
+                acqf = ExpectedImprovement(0.01, minimum(y_train))
+
+                # Create BOStruct with updated GP
+                problem = BOStruct(f, acqf, updated_gp, domain, x_train, y_train, 10, 0.0)
+
+                # Test update with a point of wrong dimension
+                x_new = [0.0]  # Wrong dimension
+                y_new = f(x_new)
+
+                @test_throws DimensionMismatch update(problem, x_new, y_new, 0)
+            end
+
             @testset "Near-singular kernel matrices" begin
                 # Test with very close points that might cause numerical issues
                 x_train = [0.0, 1e-10, 2e-10]  # Very close points
