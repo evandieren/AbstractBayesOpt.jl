@@ -707,6 +707,75 @@ using Random
 
         @testset "Numerical Stability Tests" begin
             # Test behavior under challenging numerical conditions
+            @testset "Adding ill-conditioned point to BOStruct" begin
+                # Define a simple test function
+                f(x) = sum(x .^ 2)
+
+                # Create domain
+                lower = [-2.0, -2.0]
+                upper = [2.0, 2.0]
+                domain = ContinuousDomain(lower, upper)
+
+                # Create surrogate with training data
+                kernel = SqExponentialKernel()
+                gp = StandardGP(kernel, 0.0)
+
+                # Create initial training data and update GP
+                x_train = [[-1.0, -1.0], [5.0, -5.0]]
+                y_train = f.(x_train)
+                updated_gp = update(gp, x_train, y_train)
+
+                # Create acquisition function
+                acqf = ExpectedImprovement(0.01, minimum(y_train))
+
+                # Create BOStruct with updated GP
+                problem = BOStruct(f, acqf, updated_gp, domain, x_train, y_train, 10, 0.0)
+
+                # Test update with an ill-conditioned point (very close to existing point)
+                # Should handle gracefully and return non-updated GP
+                x_new = [-1.0 + 1e-12, -1.0 + 1e-12]  # Very close to existing point
+                y_new = f(x_new)
+
+                
+                updated_problem = update(problem, x_new, y_new, 0)
+
+                # Check that the problem state is consistent
+                @test length(updated_problem.xs) == 2
+                @test length(updated_problem.ys) == 2
+                @test updated_problem.iter == 0  # Should not increment iteration
+
+            end
+
+            @testset "Test update BOStruct, wrong error thrown" begin
+                # Define a simple test function
+                f(x) = sum(x .^ 2)
+
+                # Create domain
+                lower = [-2.0, -2.0]
+                upper = [2.0, 2.0]
+                domain = ContinuousDomain(lower, upper)
+
+                # Create surrogate with training data
+                kernel = SqExponentialKernel()
+                gp = StandardGP(kernel, 0.1)
+
+                # Create initial training data and update GP
+                x_train = [[-1.0, -1.0], [5.0, -5.0]]
+                y_train = f.(x_train)
+                updated_gp = update(gp, x_train, y_train)
+
+                # Create acquisition function
+                acqf = ExpectedImprovement(0.01, minimum(y_train))
+
+                # Create BOStruct with updated GP
+                problem = BOStruct(f, acqf, updated_gp, domain, x_train, y_train, 10, 0.0)
+
+                # Test update with a point of wrong dimension
+                x_new = [0.0]  # Wrong dimension
+                y_new = f(x_new)
+
+                @test_throws DimensionMismatch update(problem, x_new, y_new, 0)
+            end
 
             @testset "Adding ill-conditioned point to BOStruct" begin
                 # Define a simple test function
