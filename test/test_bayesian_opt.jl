@@ -420,14 +420,13 @@ using Random
         @testset "lengthscale bounds" begin
             @testset "1D domain" begin
                 X_train = [-1.0, 1.0]
-                domain_lower = [-2.0]
-                domain_upper = [2.0]
+                domain = ContinuousDomain([-2.0], [2.0])
 
                 h = 2.0
-                domain_diameter = domain_upper[1] - domain_lower[1]
+                domain_diameter = domain.upper[1] - domain.lower[1]
 
                 ℓ_lower, ℓ_upper = lengthscale_bounds(
-                    X_train, domain_lower, domain_upper, min_frac=0.1, max_frac=2.0
+                    X_train, domain, min_frac=0.1, max_frac=2.0
                 )
 
                 @test length(ℓ_lower) == 1
@@ -439,19 +438,13 @@ using Random
 
             @testset "2D domain" begin
                 X_train = [[-1.0, -1.0], [1.0, 1.0]]
-                domain_lower = [-2.0, -2.0]
-                domain_upper = [2.0, 2.0]
+                domain = ContinuousDomain([-2.0, -2.0], [2.0, 2.0])
 
                 # The furthest distance will be at [2.0, -2.0] or [-2.0, 2.0] here.
                 h = sqrt(10.0)  # Approximate fill distance in 2D
 
                 ℓ_lower, ℓ_upper = lengthscale_bounds(
-                    X_train,
-                    domain_lower,
-                    domain_upper,
-                    min_frac=0.1,
-                    max_frac=1.0,
-                    n_samples=100_000,
+                    X_train, domain, min_frac=0.1, max_frac=1.0, n_samples=100_000
                 )
 
                 @test length(ℓ_lower) == 2
