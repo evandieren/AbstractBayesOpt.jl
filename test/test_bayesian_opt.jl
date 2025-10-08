@@ -416,6 +416,52 @@ using Random
         end
     end
 
+    @testset "BO Utilities tests" begin
+        @testset "lengthscale bounds" begin
+            @testset "1D domain" begin
+                X_train = [-1.0, 1.0]
+                domain_lower = [-2.0]
+                domain_upper = [2.0]
+
+                h = 2.0
+                domain_diameter = domain_upper[1] - domain_lower[1]
+
+                ℓ_lower, ℓ_upper = lengthscale_bounds(
+                    X_train, domain_lower, domain_upper, min_frac=0.1, max_frac=2.0
+                )
+
+                @test length(ℓ_lower) == 1
+                @test length(ℓ_upper) == 1
+
+                @test ℓ_lower[1] ≈ 0.1*h atol=1e-8
+                @test ℓ_upper[1] ≈ 2.0*domain_diameter atol=1e-8
+            end
+
+            @testset "2D domain" begin
+                X_train = [[-1.0, -1.0], [1.0, 1.0]]
+                domain_lower = [-2.0, -2.0]
+                domain_upper = [2.0, 2.0]
+
+                # The furthest distance will be at [2.0, -2.0] or [-2.0, 2.0] here.
+                h = sqrt(10.0)  # Approximate fill distance in 2D
+
+                ℓ_lower, ℓ_upper = lengthscale_bounds(
+                    X_train,
+                    domain_lower,
+                    domain_upper,
+                    min_frac=0.1,
+                    max_frac=1.0,
+                    n_samples=100_000,
+                )
+
+                @test length(ℓ_lower) == 2
+                @test length(ℓ_upper) == 2
+
+                @test all(isapprox.(ℓ_lower, 0.1*h, atol=1e-2))
+            end
+        end
+    end
+
     @testset "Mathematical Properties and Correctness" begin
         Random.seed!(42)
 

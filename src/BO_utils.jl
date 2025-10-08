@@ -65,7 +65,7 @@ end
 
 """
     lengthscale_bounds(
-        X_train::AbstractVector{<:AbstractVector},
+        X_train::AbstractVector,
         domain_lower::AbstractVector,
         domain_upper::AbstractVector;
         min_frac::Float64=0.1,
@@ -76,7 +76,7 @@ Compute sensible per-dimension lower and upper bounds for GP kernel lengthscales
 using approximate fill distances that include domain boundaries.
 
 Arguments:
-- `X_train`: vector of n points, each a vector of length d.
+- `X_train`: vector of n points
 - `domain_lower`: vector of length d, lower bounds of domain.
 - `domain_upper`: vector of length d, upper bounds of domain.
 - `min_frac`: fraction of fill distance for minimum lengthscale. defaults to 0.1.
@@ -86,50 +86,83 @@ Returns:
 - `(ℓ_lower, ℓ_upper)` — vectors of length d.
 """
 function lengthscale_bounds(
-    X_train::AbstractVector{<:AbstractVector},
+    X_train::AbstractVector,
     domain_lower::AbstractVector,
     domain_upper::AbstractVector;
     min_frac::Float64=0.1,
     max_frac::Float64=1.0,
+    n_samples::Int=10_000,
 )
     n = length(X_train)
     d = length(domain_lower)
-    @assert all(length(x) == d for x in X_train) """
+
+    # if d = 1, X_train will be a vector of scalars, otherwise a vector of vectors
+    if d > 1
+        @assert all(length(x) == d for x in X_train) """
                                                 All points in X_train must have 
                                                 dimension $d
                                                 """
+    end
 
-    ℓ_lower = zeros(d)
-    ℓ_upper = zeros(d)
+    # ℓ_upper is a fraction of the domain diameter
+    ℓ_upper = max_frac .* (domain_upper .- domain_lower)
 
-    xi = Vector{Float64}(undef, n)
-    xi_aug = Vector{Float64}(undef, n + 2)
+    if d > 1
+        # Multidimensional Monte Carlo fill distance
+        h_fill = monte_carlo_fill_distance(
+            X_train, domain_lower, domain_upper; n_samples=n_samples
+        )
+        ℓ_lower = fill(max(min_frac * h_fill, 1e-12), d)
+    else
+        # 1D axis-wise computation (including domain edges)
+        @assert length(X_train) == n "X_train must be a vector of scalars for d=1"
 
-    for i in 1:d
-        # collect all coordinates for dimension i
-        @inbounds for j in 1:n
-            xi[j] = X_train[j][i]
-        end
-
-        sort!(xi)
-
-        # Fill xi_aug manually (no vcat allocation)
-        xi_aug[1] = domain_lower[i]
-        for j in 1:n
-            xi_aug[j + 1] = xi[j]
-        end
-        xi_aug[end] = domain_upper[i]
-
-        # largest consecutive gap
-        h_i = maximum(diff(xi_aug))
-
-        domain_size = domain_upper[i] - domain_lower[i]
-
-        ℓ_lower[i] = max(min_frac * h_i, 1e-12)
-        ℓ_upper[i] = max_frac * domain_size
+        sort!(X_train)
+        gaps = diff([domain_lower[1]; X_train; domain_upper[1]])
+        h_fill = maximum(gaps)
+        ℓ_lower = [max(min_frac * h_fill, 1e-12)]
     end
 
     return ℓ_lower, ℓ_upper
+end
+
+"""
+    monte_carlo_fill_distance(X_train, domain_lower, domain_upper;
+                              n_samples=10_000)
+
+Estimate the fill distance h_X,D = sup_{x in D} min_{x_j in X} ||x - x_j|| 
+using Monte Carlo sampling. Used for d>1.
+
+Arguments:
+- `X_train`: vector of points (each a vector of length d)
+- `domain_lower`, `domain_upper`: vectors of length d
+- `n_samples`: number of random points to sample
+
+returns
+- `h_max`: estimated fill distance
+"""
+function monte_carlo_fill_distance(
+    X_train::AbstractVector{<:AbstractVector},
+    domain_lower::AbstractVector,
+    domain_upper::AbstractVector;
+    n_samples::Int=10_000,
+)
+    d = length(domain_lower)
+
+    # convert training points to d × n matrix
+    X = hcat(X_train...)
+
+    h_max = 0.0
+    for _ in 1:n_samples
+        x_sample = domain_lower .+ rand(d) .* (domain_upper .- domain_lower)
+        dists = sqrt.(sum((X .- x_sample) .^ 2; dims=1))
+        min_dist = minimum(dists)
+        if min_dist > h_max
+            h_max = min_dist
+        end
+    end
+
+    return h_max
 end
 
 """
