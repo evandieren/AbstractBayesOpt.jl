@@ -24,19 +24,12 @@ The library uses **Bayesian Optimisation (BO)** to iteratively propose evaluatio
 
 ## Installation
 
-You can install AbstractBayesOpt.jl directly from this repository:
+You can install AbstractBayesOpt.jl directly from this repository via the Julia General Registry
 
-```julia
-using Pkg
-Pkg.add(url="https://github.com/evandieren/AbstractBayesOpt.jl")
 ```
-
-For development and contributions:
-```julia
 using Pkg
-Pkg.develop(url="https://github.com/evandieren/AbstractBayesOpt.jl")
+Pkg.add("AbstractBayesOpt")
 ```
-
 ## What does it provide?
 
 We currently have three main abstract interfaces that work with our BO loop:
