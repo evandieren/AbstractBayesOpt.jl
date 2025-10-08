@@ -35,7 +35,7 @@ Attributes:
 - `flag::Bool`: A flag to indicate if the optimization should stop due to issues like
     ill-conditioning.
 """
-mutable struct BOStruct{
+struct BOStruct{
     F,M<:AbstractSurrogate,A<:AbstractAcquisition,D<:AbstractDomain,X,Y,T
 }
 
@@ -108,10 +108,6 @@ Remarks:
     by returning the previous state if an error occurs and setting a flag to stop the optimization loop.
 """
 function update(BO::BOStruct, x::X, y::Y, i::Int) where {X,Y}
-
-    #TODO make the copy only if we fail
-    prev_gp = copy(BO.model)
-
     # Adding queried point to conditioning dataset
     push!(BO.xs, x)
     push!(BO.ys, y)
@@ -119,29 +115,49 @@ function update(BO::BOStruct, x::X, y::Y, i::Int) where {X,Y}
     # Could create some issues if we have the same point twice.
     try
         # test for ill-conditioning
-        BO.model = update(BO.model, BO.xs, BO.ys)
+        new_model = update(BO.model, BO.xs, BO.ys)
+
+        # update the ACQ function
+        acq_updated = update(BO.acq, BO.ys, BO.model)
+
+        return BOStruct(
+            BO.func,
+            acq_updated,
+            new_model,
+            BO.domain,
+            BO.xs,
+            BO.ys,
+            BO.ys_non_std,
+            BO.max_iter,
+            BO.iter + 1,
+            BO.noise,
+            BO.flag,
+        )
     catch
         @info "We reached ill-conditioning, returning NON-UPDATED GP. Killing BO loop."
         # Issue: the gp_update in the try is updating the p.gp.gpx as it tries to create the posterior.
         # if it fails, it keeps the added x and y and overwrites the old structure, which I want to keep if it fails...
         # so now its a bit bruteforce but I try to recreate the previous GP structure. Maybe copying it every time would help.
-        BO.model = prev_gp
-        BO.xs = BO.xs[1:(length(BO.xs) - 1)]
-        BO.ys = BO.ys[1:(length(BO.ys) - 1)]
-        BO.ys_non_std = BO.ys_non_std[1:(length(BO.ys_non_std) - 1)]
+        new_xs = BO.xs[1:(length(BO.xs) - 1)]
+        new_ys = BO.ys[1:(length(BO.ys) - 1)]
+        new_ys_non_std = BO.ys_non_std[1:(length(BO.ys_non_std) - 1)]
 
         #println("Final # points for posterior: ",length(BO.xs))
-        BO.flag = true # we need to stop the BO loop
-        return BO
+        new_flag = true # we need to stop the BO loop
+        return BOStruct(
+            BO.func,
+            BO.acq,
+            copy(BO.model),
+            BO.domain,
+            new_xs,
+            new_ys,
+            new_ys_non_std,
+            BO.max_iter,
+            BO.iter,
+            BO.noise,
+            new_flag,
+        )
     end
-
-    # update the ACQ function
-    acq_updated = update(BO.acq, BO.ys, BO.model)
-
-    BO.acq = acq_updated
-    BO.iter = i + 1
-
-    return BO
 end
 
 """
@@ -368,7 +384,20 @@ function optimize(
     μ = zero(BO.ys[1])
     σ = μ isa AbstractArray ? ones(eltype(μ), size(μ)) : one(μ)
     if isnothing(standardize)
-        BO.model = update(BO.model, BO.xs, BO.ys) # because we might not to that before
+        new_model = update(BO.model, BO.xs, BO.ys) # because we might not to that before
+        BO = BOStruct(
+            BO.func,
+            BO.acq,
+            new_model,
+            BO.domain,
+            BO.xs,
+            BO.ys,
+            BO.ys_non_std,
+            BO.max_iter,
+            BO.iter + 1,
+            BO.noise,
+            BO.flag,
+        )
     else
         BO, (μ, σ) = standardize_problem(BO, standardize)
     end

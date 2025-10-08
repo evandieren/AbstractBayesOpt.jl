@@ -51,16 +51,31 @@ function standardize_problem(BO::BOStruct, choice::String)
     @info "Standardization parameters: μ=$μ, σ=$σ"
 
     # Need to update original kernel scale if scale_only or mean_scale
-    if choice in ["scale_only", "mean_scale"]
-        BO.model = rescale_model(BO.model, σ) # Update the kernel scale / σ² and mean by σ
+    new_model = if choice in ["scale_only", "mean_scale"]
+        rescale_model(BO.model, σ) # Update the kernel scale / σ² and mean by σ
+    else
+        BO.model
     end
 
     # Need to standardize the outputs too:
-    BO.ys = std_y(BO.model, BO.ys_non_std, μ, σ)
-    BO.model = update(BO.model, BO.xs, BO.ys)
-    BO.acq = update(BO.acq, BO.ys, BO.model)
+    new_ys = std_y(new_model, BO.ys_non_std, μ, σ)
+    new_model = update(new_model, BO.xs, BO.ys)
+    new_acq = update(BO.acq, BO.ys, new_model)
+    new_BO = BOStruct(
+        BO.func,
+        new_acq,
+        new_model,
+        BO.domain,
+        BO.xs,
+        new_ys,
+        BO.ys_non_std,
+        BO.max_iter,
+        BO.iter + 1,
+        BO.noise,
+        BO.flag,
+    )
 
-    return BO, (μ, σ)
+    return new_BO, (μ, σ)
 end
 
 """
