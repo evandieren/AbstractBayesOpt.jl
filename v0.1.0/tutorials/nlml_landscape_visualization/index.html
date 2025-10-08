@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Log Likelihood Landscape Visualisation · AbstractBayesOpt.jl</title><meta name="title" content="Log Likelihood Landscape Visualisation · AbstractBayesOpt.jl"/><meta property="og:title" content="Log Likelihood Landscape Visualisation · AbstractBayesOpt.jl"/><meta property="twitter:title" content="Log Likelihood Landscape Visualisation · AbstractBayesOpt.jl"/><meta name="description" content="Documentation for AbstractBayesOpt.jl."/><meta property="og:description" content="Documentation for AbstractBayesOpt.jl."/><meta property="twitter:description" content="Documentation for AbstractBayesOpt.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">AbstractBayesOpt.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../reference/">Public API</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../1D_BO/">1D Bayesian Optimisation</a></li><li><a class="tocitem" href="../2D_BO/">2D Bayesian Optimisation</a></li><li><a class="tocitem" href="../acq_funcs_comparison/">1D Acquisition Function Comparison</a></li><li><a class="tocitem" href="../hyperparams_comparison/">Hyperparameter &amp; Standardisation Comparison</a></li><li class="is-active"><a class="tocitem" href>Log Likelihood Landscape Visualisation</a><ul class="internal"><li><a class="tocitem" href="#Setup"><span>Setup</span></a></li><li><a class="tocitem" href="#Define-the-objective-function"><span>Define the objective function</span></a></li><li><a class="tocitem" href="#Problem-Setup-and-Training-Data"><span>Problem Setup and Training Data</span></a></li><li><a class="tocitem" href="#NLML-Landscape-Plots"><span>NLML Landscape Plots</span></a></li></ul></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Log Likelihood Landscape Visualisation</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Log Likelihood Landscape Visualisation</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/evandieren/AbstractBayesOpt.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/evandieren/AbstractBayesOpt.jl/blob/main/docs/literate/tutorials/nlml_landscape_visualization.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="AbstractBayesOpt-Tutorial:-NLML-Landscape-Visualisation"><a class="docs-heading-anchor" href="#AbstractBayesOpt-Tutorial:-NLML-Landscape-Visualisation">AbstractBayesOpt Tutorial: NLML Landscape Visualisation</a><a id="AbstractBayesOpt-Tutorial:-NLML-Landscape-Visualisation-1"></a><a class="docs-heading-anchor-permalink" href="#AbstractBayesOpt-Tutorial:-NLML-Landscape-Visualisation" title="Permalink"></a></h1><p>This tutorial shows how to visualise the negative log marginal likelihood (NLML) landscape for Gaussian Process models. The NLML landscape shows how the model likelihood changes as we vary the kernel hyperparameters. Understanding this landscape is crucial for:</p><ul><li>Choosing appropriate hyperparameter optimisation strategies</li><li>Understanding why some configurations converge faster than others</li><li>Identifying potential issues like local minima or ill-conditioned regions</li></ul><h2 id="Setup"><a class="docs-heading-anchor" href="#Setup">Setup</a><a id="Setup-1"></a><a class="docs-heading-anchor-permalink" href="#Setup" title="Permalink"></a></h2><p>Loading the necessary packages.</p><pre><code class="language-julia hljs">using AbstractBayesOpt
+using AbstractGPs
+using Plots
+using ForwardDiff
+using QuasiMonteCarlo
+using Random</code></pre><h2 id="Define-the-objective-function"><a class="docs-heading-anchor" href="#Define-the-objective-function">Define the objective function</a><a id="Define-the-objective-function-1"></a><a class="docs-heading-anchor-permalink" href="#Define-the-objective-function" title="Permalink"></a></h2><p>We&#39;ll use the Himmelblau function again, as it provides a good test case with complex structure.</p><pre><code class="language-julia hljs">himmelblau(x::AbstractVector) = (x[1]^2 + x[2] - 11)^2 + (x[1] + x[2]^2 - 7)^2
+∇himmelblau(x::AbstractVector) = ForwardDiff.gradient(himmelblau, x)
+f_val_grad(x::AbstractVector) = [himmelblau(x); ∇himmelblau(x)];</code></pre><h2 id="Problem-Setup-and-Training-Data"><a class="docs-heading-anchor" href="#Problem-Setup-and-Training-Data">Problem Setup and Training Data</a><a id="Problem-Setup-and-Training-Data-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-Setup-and-Training-Data" title="Permalink"></a></h2><pre><code class="language-julia hljs">d = 2
+lower = [-4.0, -4.0]
+upper = [4.0, 4.0]
+domain = ContinuousDomain(lower, upper)
+σ² = 1e-6</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1.0e-6</code></pre><p>Generate training data using Sobol sampling for better coverage</p><pre><code class="language-julia hljs">n_train = 75
+x_train = [
+    collect(col) for
+    col in eachcol(QuasiMonteCarlo.sample(n_train, lower, upper, SobolSample()))
+]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">75-element Vector{Vector{Float64}}:
+ [-3.8125, -0.8125]
+ [0.1875, 3.1875]
+ [2.1875, -2.8125]
+ [-1.8125, 1.1875]
+ [-0.8125, -3.8125]
+ [3.1875, 0.1875]
+ [1.1875, -1.8125]
+ [-2.8125, 2.1875]
+ [-2.3125, -2.3125]
+ [1.6875, 1.6875]
+ ⋮
+ [2.09375, -3.34375]
+ [-1.90625, 0.65625]
+ [-0.90625, -2.34375]
+ [3.09375, 1.65625]
+ [1.09375, -0.34375]
+ [-2.90625, 3.65625]
+ [-2.40625, -3.84375]
+ [1.59375, 0.15625]
+ [3.59375, -1.84375]</code></pre><p>Evaluate function at training points for both model types</p><pre><code class="language-julia hljs">y_train_standard = [himmelblau(x) for x in x_train]  # Standard GP: only function values
+y_train_gradient = f_val_grad.(x_train);    # Gradient GP: function values + gradients</code></pre><h3 id="Setup-Gaussian-Process-Models"><a class="docs-heading-anchor" href="#Setup-Gaussian-Process-Models">Setup Gaussian Process Models</a><a id="Setup-Gaussian-Process-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Setup-Gaussian-Process-Models" title="Permalink"></a></h3><p>We&#39;ll create both standard and gradient-enhanced GP models using the same kernel type but configured for their respective data structures.</p><pre><code class="language-julia hljs">kernel = ApproxMatern52Kernel()
+
+standard_model = StandardGP(kernel, σ²)
+gradient_model = GradientGP(kernel, d+1, σ²)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">GradientGP{Float64}(AbstractGPs.GP{AbstractGPs.CustomMean{AbstractBayesOpt.var&quot;#5#6&quot;{Vector{Float64}, AbstractBayesOpt.var&quot;#f_mean#f_mean##0&quot;}}, gradKernel{KernelFunctions.ScaledKernel{KernelFunctions.TransformedKernel{ApproxMatern52Kernel{Distances.SqEuclidean}, KernelFunctions.ScaleTransform{Float64}}, Float64}}}(AbstractGPs.CustomMean{AbstractBayesOpt.var&quot;#5#6&quot;{Vector{Float64}, AbstractBayesOpt.var&quot;#f_mean#f_mean##0&quot;}}(AbstractBayesOpt.var&quot;#5#6&quot;{Vector{Float64}, AbstractBayesOpt.var&quot;#f_mean#f_mean##0&quot;}([0.0, 0.0, 0.0], AbstractBayesOpt.var&quot;#f_mean#f_mean##0&quot;())), gradKernel{KernelFunctions.ScaledKernel{KernelFunctions.TransformedKernel{ApproxMatern52Kernel{Distances.SqEuclidean}, KernelFunctions.ScaleTransform{Float64}}, Float64}}(Matern 5/2 Kernel, quadratic approximation around d=0 (metric = Distances.SqEuclidean(0.0))
+	- Scale Transform (s = 1.0)
+	- σ² = 1.0)), 1.0e-6, 3, nothing)</code></pre><p>Prepare data for NLML computation (this is done under the hood in AbstractBayesOpt.jl)</p><p>Standard GP data structure</p><pre><code class="language-julia hljs">x_standard = x_train;
+y_standard = reduce(vcat, y_train_standard);</code></pre><p>Gradient GP data structure</p><pre><code class="language-julia hljs">x_gradient = KernelFunctions.MOInputIsotopicByOutputs(x_train, d+1);
+y_gradient = vec(permutedims(reduce(hcat, y_train_gradient)));</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Data shapes for NLML computation:
+  Standard GP: x=75, y=75
+  Gradient GP: x=225, y=225</code></pre><h3 id="Define-Parameter-Ranges-for-NLML-Landscape"><a class="docs-heading-anchor" href="#Define-Parameter-Ranges-for-NLML-Landscape">Define Parameter Ranges for NLML Landscape</a><a id="Define-Parameter-Ranges-for-NLML-Landscape-1"></a><a class="docs-heading-anchor-permalink" href="#Define-Parameter-Ranges-for-NLML-Landscape" title="Permalink"></a></h3><p>We will create a grid of hyperparameter values to evaluate the NLML landscape. The parameters we will vary are:</p><ul><li>Length scale: Controls how quickly the function varies spatially</li><li>Scale parameter: Controls the overall magnitude of function variations</li></ul><pre><code class="language-julia hljs">    model,
+    x_data,
+    y_data,
+    log_ls_range,
+    log_scale_range,</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">compute_nlml_landscape (generic function with 1 method)</code></pre><h3 id="Compute-landscapes-for-both-models"><a class="docs-heading-anchor" href="#Compute-landscapes-for-both-models">Compute landscapes for both models</a><a id="Compute-landscapes-for-both-models-1"></a><a class="docs-heading-anchor-permalink" href="#Compute-landscapes-for-both-models" title="Permalink"></a></h3><p>This computation may take several minutes depending on the grid resolution. We&#39;re evaluating 10,000 parameter combinations for each model type.</p><pre><code class="language-julia hljs">nlml_standard = compute_nlml_landscape(
+    standard_model,
+    x_standard,
+    y_standard,
+    log_lengthscale_range,
+    log_scale_range,
+    &quot;Standard GP&quot;,
+)
+
+nlml_gradient = compute_nlml_landscape(
+    gradient_model,
+    x_gradient,
+    y_gradient,
+    log_lengthscale_range,
+    log_scale_range,
+    &quot;Gradient GP&quot;,
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">100×100 Matrix{Float64}:
+ 4.57988e8  3.71559e8  3.01429e8  2.44529e8  …  2812.5        2835.94
+ 4.57989e8  3.71559e8  3.01429e8  2.44529e8     2791.56       2815.01
+ 4.57989e8  3.71559e8  3.01429e8  2.44529e8     2770.63       2794.07
+ 4.57989e8  3.71559e8  3.01429e8  2.44529e8     2749.7        2773.14
+ 4.57989e8  3.71559e8  3.01429e8  2.44529e8     2728.77       2752.21
+ 4.57989e8  3.71559e8  3.01429e8  2.44529e8  …  2707.83       2731.28
+ 4.57989e8  3.71559e8  3.01429e8  2.44529e8     2686.9        2710.34
+ 4.57989e8  3.71559e8  3.01429e8  2.44529e8     2665.97       2689.41
+ 4.57989e8  3.71559e8  3.0143e8   2.44529e8     2645.04       2668.48
+ 4.5799e8   3.7156e8   3.0143e8   2.44529e8     2624.1        2647.55
+ ⋮                                           ⋱                
+ 1.0e9      1.0e9      1.0e9      1.0e9            6.06983e8     4.98377e8
+ 1.0e9      1.0e9      1.0e9      1.0e9            1.0e9         9.55107e8
+ 1.0e9      1.0e9      1.0e9      1.0e9            1.0e9         1.0e9
+ 1.0e9      1.0e9      1.0e9      1.0e9            1.0e9         1.0e9
+ 1.0e9      1.0e9      1.0e9      1.0e9      …     1.0e9         1.0e9
+ 1.0e9      1.0e9      1.0e9      1.0e9            1.0e9         1.0e9
+ 1.0e9      1.0e9      1.0e9      1.0e9            1.0e9         1.0e9
+ 1.0e9      1.0e9      1.0e9      1.0e9            1.0e9         1.0e9
+ 1.0e9      1.0e9      1.0e9      1.0e9            1.0e9         1.0e9</code></pre><p>This provides a 100x100 grid of NLML values for each model type.</p><h3 id="Optimal-Parameters"><a class="docs-heading-anchor" href="#Optimal-Parameters">Optimal Parameters</a><a id="Optimal-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Optimal-Parameters" title="Permalink"></a></h3><p>We approximately provide the hyperparameter combinations that minimise the NLML for each model type. In AbstractBayesOpt.jl, we optimise the MLML using Optim.jl&#39;s BFGS method.</p><pre><code class="language-julia hljs">    nlml_values,
+    log_ls_range,
+    log_scale_range,
+    title_str,
+
+            legend=:bottomright,</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
+Optimal parameters found:
+Standard GP:
+  Lengthscale: 11.498 (log: 2.442)
+  Scale: 1.0e6 (log: 13.816)
+  NLML: 263.478
+
+Gradient GP:
+  Lengthscale: 13.219 (log: 2.582)
+  Scale: 1.0e6 (log: 13.816)
+  NLML: 524.945</code></pre><h2 id="NLML-Landscape-Plots"><a class="docs-heading-anchor" href="#NLML-Landscape-Plots">NLML Landscape Plots</a><a id="NLML-Landscape-Plots-1"></a><a class="docs-heading-anchor-permalink" href="#NLML-Landscape-Plots" title="Permalink"></a></h2><p>These contour plots show the NLML landscape for both model types. The star indicates the optimal hyperparameter combination found through the approximate minimisers over the 100x100 grid. Darker blue regions correspond to lower NLML values (better likelihood).</p><img src="0b08ac3d.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../hyperparams_comparison/">« Hyperparameter &amp; Standardisation Comparison</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Wednesday 8 October 2025 12:23">Wednesday 8 October 2025</span>. Using Julia version 1.12.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
