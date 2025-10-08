@@ -113,8 +113,8 @@ function lengthscale_bounds(
         # 1D axis-wise computation (including domain edges)
         @assert length(X_train) == n "X_train must be a vector of scalars for d=1"
 
-        sort!(X_train)
-        gaps = diff([domain.lower[1]; X_train; domain.upper[1]])
+        X_train_sorted = sort(X_train)
+        gaps = diff([domain.lower[1]; X_train_sorted; domain.upper[1]])
         h_fill = maximum(gaps)
         ℓ_lower = [max(min_frac * h_fill, 1e-12)]
     end
