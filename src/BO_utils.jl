@@ -65,89 +65,97 @@ end
 
 """
     lengthscale_bounds(
-        x_train::AbstractMatrix,
-        domain_lower::AbstractVector,
-        domain_upper::AbstractVector;
+        X_train::AbstractVector,
+        domain::AbstractDomain,
         min_frac::Float64=0.1,
         max_frac::Float64=1.0,
+        n_samples::Int=10_000
     )
 
-Computes sensible per-dimension lower and upper bounds for GP kernel lengthscales using
-nearest-neighbor fill distances and domain extents.
+Compute sensible per-dimension lower and upper bounds for GP kernel lengthscales
+using approximate fill distances that include domain boundaries.
 
 Arguments:
-- `x_train`: n×d matrix of training points (rows = points, columns = dimensions)
-- `domain_lower`: vector of length d, lower bound of domain per dimension
-- `domain_upper`: vector of length d, upper bound of domain per dimension
-- `min_frac`: fraction of fill distance for minimum lengthscale (default 0.05)
-- `max_frac`: fraction of domain size for maximum lengthscale (default 2.0)
+- `X_train`: vector of n points
+- `domain`: an AbstractDomain defining the search space.
+- `min_frac`: fraction of fill distance for minimum lengthscale. defaults to 0.1.
+- `max_frac`: fraction of domain size for maximum lengthscale. defaults to 1.0.
 
 Returns:
-- `(ℓ_lower, ℓ_upper)` vectors of length d suitable for setting log-space bounds.
+- `(ℓ_lower, ℓ_upper)` — vectors of length d.
 """
 function lengthscale_bounds(
-    x_train::AbstractMatrix,
-    domain_lower::AbstractVector,
-    domain_upper::AbstractVector;
+    X_train::AbstractVector,
+    domain::AbstractDomain;
     min_frac::Float64=0.1,
     max_frac::Float64=1.0,
+    n_samples::Int=10_000,
 )
-    n, d = size(x_train)
-    ℓ_lower = zeros(d)
-    ℓ_upper = zeros(d)
+    n = length(X_train)
+    d = length(domain.lower)
 
-    for i in 1:d
-        xi = view(x_train, :, i)
-        domain_size = domain_upper[i] - domain_lower[i]
+    # if d = 1, X_train will be a vector of scalars, otherwise a vector of vectors
+    if d > 1
+        @assert all(length(x) == d for x in X_train) """
+                                                All points in X_train must have 
+                                                dimension $d
+                                                """
+    end
 
-        # approximate fill distance along this dimension: max nearest-neighbor distance
-        if n < 2
-            h_i = domain_size
-        else
-            max_min_dist = 0.0
-            for j in 1:n
-                min_d = Inf
-                xj = xi[j]
-                for k in 1:n
-                    if k == j
-                        continue
-                    end
-                    dk = abs(xj - xi[k])
-                    if dk < min_d
-                        min_d = dk
-                    end
-                end
-                if min_d > max_min_dist
-                    max_min_dist = min_d
-                end
-            end
-            h_i = max_min_dist
-        end
+    # ℓ_upper is a fraction of the domain diameter
+    ℓ_upper = max_frac .* (domain.upper .- domain.lower)
 
-        ℓ_lower[i] = max(min_frac * h_i, 1e-12)
-        ℓ_upper[i] = max_frac * domain_size
+    if d > 1
+        # Multidimensional Monte Carlo fill distance
+        h_fill = monte_carlo_fill_distance(X_train, domain; n_samples=n_samples)
+        ℓ_lower = fill(max(min_frac * h_fill, 1e-12), d)
+    else
+        # 1D axis-wise computation (including domain edges)
+        @assert length(X_train) == n "X_train must be a vector of scalars for d=1"
+
+        X_train_sorted = sort(X_train)
+        gaps = diff([domain.lower[1]; X_train_sorted; domain.upper[1]])
+        h_fill = maximum(gaps)
+        ℓ_lower = [max(min_frac * h_fill, 1e-12)]
     end
 
     return ℓ_lower, ℓ_upper
 end
 
 """
-    lengthscale_bounds(x_train::AbstractVector{<:AbstractVector}, domain::ContinuousDomain;
-                       min_frac::Float64=0.05, max_frac::Float64=2.0)
+    monte_carlo_fill_distance(X_train, domain; 
+                              n_samples=10_000)
 
-Convenience overload accepting a vector-of-vectors of points and a `ContinuousDomain`.
-Returns the same as the matrix method.
+Estimate the fill distance h_X,D = sup_{x in D} min_{x_j in X} ||x - x_j|| 
+using Monte Carlo sampling. Used for d>1.
+
+Arguments:
+- `X_train`: vector of points (each a vector of length d)
+- `domain`: an AbstractDomain defining the search space
+- `n_samples`: number of random points to sample
+
+returns
+- `h_max`: estimated fill distance
 """
-function lengthscale_bounds(
-    x_train::AbstractVector,
-    domain::ContinuousDomain;
-    min_frac::Float64=0.1,
-    max_frac::Float64=1.0,
+function monte_carlo_fill_distance(
+    X_train::AbstractVector{<:AbstractVector}, domain::AbstractDomain; n_samples::Int=10_000
 )
-    X = permutedims(reduce(hcat, x_train)) # n × d
-    return lengthscale_bounds(
-        X, domain.lower, domain.upper; min_frac=min_frac, max_frac=max_frac
-    )
+    d = length(domain.lower)
+
+    # convert training points to d × n matrix
+    X = hcat(X_train...)
+
+    h_max = 0.0
+    for _ in 1:n_samples
+        x_sample = domain.lower .+ rand(d) .* (domain.upper .- domain.lower)
+        dists = sqrt.(sum((X .- x_sample) .^ 2; dims=1))
+        min_dist = minimum(dists)
+        if min_dist > h_max
+            h_max = min_dist
+        end
+    end
+
+    return h_max
 end
 
 """
@@ -157,7 +165,8 @@ Rescale the standardized output values back to the original scale.
 
 Arguments:
 - `ys::AbstractVector`: A vector of standardized function values.
-- `params::Tuple`: A tuple containing the mean and standard deviation used for standardization.
+- `params::Tuple`: A tuple containing the mean and standard deviation used 
+for standardization.
 
 returns:
 - `ys_rescaled`: A vector of rescaled function values.
@@ -196,7 +205,8 @@ Arguments:
 - `σ::Float64`: Standard deviation of the noise (default is 1.0
 
 returns:
-- `noise::Vector{T}`: A vector of random noise values drawn from a normal distribution with mean.
+- `noise::Vector{T}`: A vector of random noise values drawn from a normal 
+distribution with mean.
 """
 _noise_like(y::AbstractVector{T}; σ=1.0) where {T<:AbstractFloat} = σ * randn(length(y))
 
@@ -207,9 +217,10 @@ Generate Gaussian noise with per-dimension standard deviations for a single floa
 
 Arguments:
 - `y::AbstractVector{T}`: One output (vector of type T).
-- `σ::AbstractVector{T}`: A vector of standard deviations for each dimension. (size must match output dimension)
+- `σ::AbstractVector{T}`: A vector of standard deviations for each dimension. 
 
 returns:
-- `noise::Vector{T}`: A vector of random noise values drawn from a normal distribution with mean.
+- `noise::Vector{T}`: A vector of random noise values drawn from a normal distribution 
+with mean.
 """
 _noise_like(y::AbstractVector{T}; σ::AbstractVector{T}) where {T} = σ .* randn(length(y))

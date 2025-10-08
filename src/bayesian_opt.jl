@@ -237,7 +237,7 @@ function optimize_hyperparameters(
     end
 
     @debug "lower bounds (ℓ, scale)" exp.(lower_bounds)
-    @debug "upper bounds (ℓ,scale)" exp.(upper_bounds)
+    @debug "upper bounds (ℓ, scale)" exp.(upper_bounds)
 
     x_train_prepped = prep_input(model, x_train)
     y_train_prepped = prep_output(model, y_train)

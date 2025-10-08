@@ -9,7 +9,8 @@ using AbstractBayesOpt:
     standardize_problem,
     get_mean_std,
     print_info,
-    rescale_output
+    rescale_output,
+    lengthscale_bounds
 
 using Test
 using AbstractGPs
