@@ -11,11 +11,11 @@ Attributes:
 - `p::Int`: The number of outputs (1 for function value + d for gradients).
 - `gpx::Union{Nothing,AbstractGPs.PosteriorGP}`: The posterior GP after conditioning on data, `nothing` if not conditioned yet.
 """
-struct GradientGP{T} <: AbstractSurrogate
-    gp::AbstractGPs.GP
+struct GradientGP{T,GPT<:AbstractGPs.GP,TPostGP<:Union{Nothing,AbstractGPs.PosteriorGP}} <: AbstractSurrogate
+    gp::GPT
     noise_var::T
     p::Int
-    gpx::Union{Nothing,AbstractGPs.PosteriorGP}
+    gpx::TPostGP
     # gpx is the posterior GP after conditioning on data, nothing if not conditioned yet
 end
 
