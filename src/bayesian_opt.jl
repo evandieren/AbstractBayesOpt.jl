@@ -92,6 +92,8 @@ function BOStruct(func, acq, model, domain, x_train, y_train, max_iter, noise)
 end
 
 """
+    update(BO::BOStruct, x::X, y::Y, i::Int) where {X,Y}
+
 Update the Bayesian Optimization structure with a new data point (x, y).
 
 Arguments:
@@ -105,7 +107,8 @@ returns:
 
 Remarks:
     This function handles potential ill-conditioning issues when updating the GP,
-    by returning the previous state if an error occurs and setting a flag to stop the optimization loop.
+    by returning the previous state if an error occurs and setting a flag to stop 
+    the optimization loop.
 """
 function update(BO::BOStruct, x::X, y::Y, i::Int) where {X,Y}
 
@@ -120,17 +123,19 @@ function update(BO::BOStruct, x::X, y::Y, i::Int) where {X,Y}
     try
         # test for ill-conditioning
         BO.model = update(BO.model, BO.xs, BO.ys)
-    catch
+    catch e
+        if !isa(e, LinearAlgebra.PosDefException) &&
+            !isa(e, LinearAlgebra.SingularException)
+            @warn "Caught an unexpected error during GP update: $e"
+            throw(e) # rethrow unexpected errors
+        end
+
         @info "We reached ill-conditioning, returning NON-UPDATED GP. Killing BO loop."
-        # Issue: the gp_update in the try is updating the p.gp.gpx as it tries to create the posterior.
-        # if it fails, it keeps the added x and y and overwrites the old structure, which I want to keep if it fails...
-        # so now its a bit bruteforce but I try to recreate the previous GP structure. Maybe copying it every time would help.
         BO.model = prev_gp
         BO.xs = BO.xs[1:(length(BO.xs) - 1)]
         BO.ys = BO.ys[1:(length(BO.ys) - 1)]
         BO.ys_non_std = BO.ys_non_std[1:(length(BO.ys_non_std) - 1)]
 
-        #println("Final # points for posterior: ",length(BO.xs))
         BO.flag = true # we need to stop the BO loop
         return BO
     end
