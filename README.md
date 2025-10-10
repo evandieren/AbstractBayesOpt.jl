@@ -1,4 +1,5 @@
 # AbstractBayesOpt
+[![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://evandieren.github.io/AbstractBayesOpt.jl/stable)
 [![Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://evandieren.github.io/AbstractBayesOpt.jl/dev)
 [![Build Status](https://github.com/evandieren/AbstractBayesOpt.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/evandieren/AbstractBayesOpt.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![codecov](https://codecov.io/gh/evandieren/AbstractBayesOpt.jl/graph/badge.svg?token=ZU1TJCHT4O)](https://codecov.io/gh/evandieren/AbstractBayesOpt.jl)
