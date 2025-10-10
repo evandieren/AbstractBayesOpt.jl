@@ -1,4 +1,5 @@
 # AbstractBayesOpt
+[![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://evandieren.github.io/AbstractBayesOpt.jl/stable)
 [![Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://evandieren.github.io/AbstractBayesOpt.jl/dev)
 [![Build Status](https://github.com/evandieren/AbstractBayesOpt.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/evandieren/AbstractBayesOpt.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![codecov](https://codecov.io/gh/evandieren/AbstractBayesOpt.jl/graph/badge.svg?token=ZU1TJCHT4O)](https://codecov.io/gh/evandieren/AbstractBayesOpt.jl)
@@ -24,19 +25,12 @@ The library uses **Bayesian Optimisation (BO)** to iteratively propose evaluatio
 
 ## Installation
 
-You can install AbstractBayesOpt.jl directly from this repository:
+You can install AbstractBayesOpt.jl directly from this repository via the Julia General Registry
 
-```julia
-using Pkg
-Pkg.add(url="https://github.com/evandieren/AbstractBayesOpt.jl")
 ```
-
-For development and contributions:
-```julia
 using Pkg
-Pkg.develop(url="https://github.com/evandieren/AbstractBayesOpt.jl")
+Pkg.add("AbstractBayesOpt")
 ```
-
 ## What does it provide?
 
 We currently have three main abstract interfaces that work with our BO loop:
