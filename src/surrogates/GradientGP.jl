@@ -1,5 +1,8 @@
 """
-    GradientGP{T}(gp::AbstractGps.GP, noise_var::T, p::Int, gpx::Union{Nothing,AbstractGPs.PosteriorGP}) <: AbstractSurrogate
+    GradientGP{T}(gp::AbstractGps.GP, 
+                  noise_var::T, 
+                  p::Int, 
+                  gpx::Union{Nothing,AbstractGPs.PosteriorGP}) <: AbstractSurrogate
 
 Implementation of the Abstract structures for the gradient-enhanced GP.
 
@@ -9,7 +12,8 @@ Attributes:
 - `gp::AbstractGPs.GP`: The underlying Gaussian Process model.
 - `noise_var::T`: The noise variance of the observations.
 - `p::Int`: The number of outputs (1 for function value + d for gradients).
-- `gpx::Union{Nothing,AbstractGPs.PosteriorGP}`: The posterior GP after conditioning on data, `nothing` if not conditioned yet.
+- `gpx::Union{Nothing,AbstractGPs.PosteriorGP}`: The posterior GP after conditioning on data, 
+    `nothing` if not conditioned yet.
 """
 struct GradientGP{T} <: AbstractSurrogate
     gp::AbstractGPs.GP
@@ -174,7 +178,8 @@ end
 """
     KernelFunctions.kappa(::ADMatern52Kernel, d²::ForwardDiff.Dual{T}) where {T}
 
-Compute the kernel value for a given squared distance using the AD-friendly Matern 5/2 kernel with ForwardDiff support.
+Compute the kernel value for a given squared distance using the AD-friendly 
+    Matern 5/2 kernel with ForwardDiff support.
 
 Arguments:
 - `k::ADMatern52Kernel`: The kernel instance.
@@ -212,6 +217,105 @@ returns:
 """
 function Base.show(io::IO, k::ADMatern52Kernel)
     return print(io, "Matern 5/2 Kernel with AD support (metric = ", k.metric, ")")
+end
+
+"""
+    ADMatern72Kernel{M} <: KernelFunctions.SimpleKernel
+
+Matern 7/2 kernel with custom differentiation rules for gradient computations.
+
+Attributes:
+- `metric`: The distance metric to be used, defaults to squared Euclidean distance.
+"""
+struct ADMatern72Kernel{M} <: KernelFunctions.SimpleKernel
+    metric::M
+end
+
+"""
+    ADMatern72Kernel(; metric=Distances.SqEuclidean())
+
+Constructor for the ADMatern72Kernel with an optional metric argument.
+
+Arguments:
+- `metric`: The distance metric to be used, defaults to squared Euclidean distance.
+
+returns:
+- `ADMatern72Kernel`: An instance of the ADMatern72Kernel.
+"""
+ADMatern72Kernel(; metric=Distances.SqEuclidean()) = ADMatern72Kernel(metric)
+
+"""
+    KernelFunctions.metric(k::ADMatern72Kernel)
+
+Get the metric used in the ADMatern72Kernel.
+
+Arguments:
+- `k::ADMatern72Kernel`: The kernel instance.
+
+returns:
+- `metric::M`: The metric used in the kernel.
+"""
+KernelFunctions.metric(k::ADMatern72Kernel) = k.metric
+
+"""
+    KernelFunctions.kappa(::ADMatern72Kernel, d²::Real)
+
+Compute the kernel value for a given squared distance using the AD-friendly Matern 7/2 kernel.
+
+Arguments:
+- `k::ADMatern72Kernel`: The kernel instance.
+- `d²::Real`: The squared distance between two points.
+
+returns:
+- `value::Float64`: The computed kernel value.
+"""
+function KernelFunctions.kappa(::ADMatern72Kernel, d²::Real)
+    d = sqrt(d²)
+    return (1 + sqrt(7) * d + 14 * d² / 5 + 7 * sqrt(7) * d^3 / 15) * exp(-sqrt(7) * d)
+end
+
+"""
+    KernelFunctions.kappa(::ADMatern72Kernel, d²::ForwardDiff.Dual{T}) where {T}
+
+Compute the kernel value for a given squared distance using the AD-friendly 
+    Matern 7/2 kernel with ForwardDiff support.
+
+Arguments:
+- `k::ADMatern72Kernel`: The kernel instance.
+- `d²::ForwardDiff.Dual{T}`: The squared distance between two points
+
+returns:
+- `value::ForwardDiff.Dual{T}`: The computed kernel value with derivatives.
+"""
+function KernelFunctions.kappa(::ADMatern72Kernel, d²::ForwardDiff.Dual{T}) where {T}
+    v = ForwardDiff.value(d²)
+    parts = ForwardDiff.partials(d²)
+    if iszero(v)
+        φ_val = 1.0
+        φ_deriv = -7/10 * parts
+    else
+        d = sqrt(v)
+        z = exp(-√7*d)
+        φ_val = (1 + √7*d + 14*d^2/5 + 7*√7*d^3/15) * z
+        φ_deriv = (-7/30) * (7*d^2 + 3*√7*d + 3) * z * parts
+    end
+    return ForwardDiff.Dual{T}(φ_val, φ_deriv)
+end
+
+"""
+    Base.show(io::IO, k::ADMatern72Kernel)
+
+Pretty print for the ADMatern72Kernel.
+
+Arguments:
+- `io::IO`: The IO stream to print to.
+- `k::ADMatern72Kernel`: The kernel instance.
+
+returns:
+- `nothing`: Prints the kernel information to the IO stream.
+"""
+function Base.show(io::IO, k::ADMatern72Kernel)
+    return print(io, "Matern 7/2 Kernel with AD support (metric = ", k.metric, ")")
 end
 
 """
