@@ -29,8 +29,12 @@ returns:
 """
 Base.copy(s::GradientGP) = GradientGP(s.gp, s.noise_var, s.p, copy(s.gpx))
 
-# Need to approximate around d ≈ 0 because of differentiation issues.
-# We will use the squared euclidean distance because this is fine to differentiate when d ≈ 0.
+# Need to define some kernels for Matern to work with gradients.
+# Option 1 is using some Taylor expansion around d=0.
+# Option 2 is to use the exact expression, but with a custom rule for ForwardDiff.
+
+#Option 1 is implemented in ApproxMatern52Kernel below.
+#Option 2 is ADMatern52Kernel below.
 
 """
     ApproxMatern52Kernel{M}(metric::M) <: KernelFunctions.SimpleKernel
@@ -110,6 +114,104 @@ function Base.show(io::IO, k::ApproxMatern52Kernel)
         k.metric,
         ")",
     )
+end
+
+"""
+    ADMatern52Kernel{M} <: KernelFunctions.SimpleKernel
+
+Matern 5/2 kernel with custom differentiation rules for gradient computations.
+
+Attributes:
+- `metric`: The distance metric to be used, defaults to squared Euclidean distance.
+"""
+struct ADMatern52Kernel{M} <: KernelFunctions.SimpleKernel
+    metric::M
+end
+
+"""
+    ADMatern52Kernel(; metric=Distances.SqEuclidean())
+
+Constructor for the ADMatern52Kernel with an optional metric argument.
+
+Arguments:
+- `metric`: The distance metric to be used, defaults to squared Euclidean distance.
+
+returns:
+- `ADMatern52Kernel`: An instance of the ADMatern52Kernel.
+"""
+ADMatern52Kernel(; metric=Distances.SqEuclidean()) = ADMatern52Kernel(metric)
+
+"""
+    KernelFunctions.metric(k::ADMatern52Kernel)
+
+Get the metric used in the ADMatern52Kernel.
+
+Arguments:
+- `k::ADMatern52Kernel`: The kernel instance.
+
+returns:
+- `metric::M`: The metric used in the kernel.
+"""
+KernelFunctions.metric(k::ADMatern52Kernel) = k.metric
+
+"""
+    KernelFunctions.kappa(::ADMatern52Kernel, d²::Real)
+
+Compute the kernel value for a given squared distance using the AD-friendly Matern 5/2 kernel.
+
+Arguments:
+- `k::ADMatern52Kernel`: The kernel instance.
+- `d²::Real`: The squared distance between two points.
+
+returns:
+- `value::Float64`: The computed kernel value.
+"""
+function KernelFunctions.kappa(::ADMatern52Kernel, d²::Real)
+    d = sqrt(d²)
+    return (1 + sqrt(5) * d + 5 * d² / 3) * exp(-sqrt(5) * d)
+end
+
+"""
+    KernelFunctions.kappa(::ADMatern52Kernel, d²::ForwardDiff.Dual{T}) where {T}
+
+Compute the kernel value for a given squared distance using the AD-friendly Matern 5/2 kernel with ForwardDiff support.
+
+Arguments:
+- `k::ADMatern52Kernel`: The kernel instance.
+- `d²::ForwardDiff.Dual{T}`: The squared distance between two points
+
+returns:
+- `value::ForwardDiff.Dual{T}`: The computed kernel value with derivatives.
+"""
+function KernelFunctions.kappa(::ADMatern52Kernel, d²::ForwardDiff.Dual{T}) where {T}
+    v = ForwardDiff.value(d²)
+    parts = ForwardDiff.partials(d²)
+    if iszero(v)
+        φ_val = 1.0
+        φ_deriv = -5/6 * parts
+    else
+        d = sqrt(v)
+        z = exp(-√5*d)
+        φ_val = (1 + √5*d + 5d^2/3) * z
+        φ_deriv = (-5/6) * (1 + √5*d) * z * parts
+    end
+    return ForwardDiff.Dual{T}(φ_val, φ_deriv)
+end
+
+"""
+    Base.show(io::IO, k::ADMatern52Kernel)
+
+Pretty print for the ADMatern52Kernel.
+
+Arguments:
+- `io::IO`: The IO stream to print to.
+- `k::ADMatern52Kernel`: The kernel instance.
+
+returns:
+- `nothing`: Prints the kernel information to the IO stream.
+"""
+function Base.show(io::IO, k::ADMatern52Kernel)
+    return print(io, "Matern 5/2 Kernel with AD support (metric = ", k.metric, ")")
 end
 
 """
