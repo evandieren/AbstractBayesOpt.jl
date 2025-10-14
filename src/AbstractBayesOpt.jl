@@ -29,8 +29,8 @@ export StandardGP, GradientGP
 export posterior_mean, posterior_var, nlml
 export posterior_grad_mean, posterior_grad_var, posterior_grad_cov # gradient-enhanced GP methods
 
-## Safe AD Matern 5/2
-export ApproxMatern52Kernel
+## Safe AD Matern kernels
+export ApproxMatern52Kernel, ADMatern52Kernel, ADMatern72Kernel
 
 ## Gradient kernel and mean functions
 export gradConstMean, gradKernel
