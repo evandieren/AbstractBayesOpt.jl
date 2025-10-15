@@ -40,6 +40,9 @@ Base.copy(s::GradientGP) = GradientGP(s.gp, s.noise_var, s.p, copy(s.gpx))
 #Option 1 is implemented in ApproxMatern52Kernel below.
 #Option 2 is ADMatern52Kernel below.
 
+## Matern 5/2 kernel with custom differentiation rules for gradient computations.
+
+# Taylor approximation of Matern 5/2 kernel around d=0.
 """
     ApproxMatern52Kernel{M}(metric::M) <: KernelFunctions.SimpleKernel
 
@@ -120,6 +123,7 @@ function Base.show(io::IO, k::ApproxMatern52Kernel)
     )
 end
 
+# AD-friendly Matern 5/2 kernel using ForwardDiff with custom differentiation rules.
 """
     ADMatern52Kernel{M} <: KernelFunctions.SimpleKernel
 
@@ -159,9 +163,58 @@ returns:
 KernelFunctions.metric(k::ADMatern52Kernel) = k.metric
 
 """
+    kappa_matern52(v::Real)
+
+Helper function to compute the Matern 5/2 kernel value and its derivative 
+    with respect to squared distance.
+
+Arguments:
+- `v::Real`: The squared distance between two points.
+
+returns:
+- `φ_val::Float64`: The computed kernel value.
+- `φ_deriv::Float64`: The derivative of the kernel value with respect to squared distance.
+"""
+function kappa_matern52(v::Real)
+    d = sqrt(v)
+    z = exp(-sqrt(5)*d)
+    φ_val = (1 + sqrt(5)*d + 5d^2/3) * z
+    φ_deriv = (-5/6)*(1 + sqrt(5)*d)*z
+    return φ_val, φ_deriv
+end
+
+"""
+    kappa_matern52(v::ForwardDiff.Dual{T}) where {T}
+
+Helper function to compute the Matern 5/2 kernel value and its derivative
+    with respect to squared distance d² using ForwardDiff.
+
+Arguments:
+- `v::ForwardDiff.Dual{T}`: The squared distance between two points with dual number support.
+
+returns:
+- `φ_val::ForwardDiff.Dual{T}`: The computed kernel value with derivatives.
+- `φ_deriv::ForwardDiff.Dual{T}`: The derivative of the kernel value with respect to 
+    squared distance with derivatives.
+"""
+function kappa_matern52(v::ForwardDiff.Dual{T}) where {T}
+    w = ForwardDiff.value(v)
+    parts = ForwardDiff.partials(v)
+
+    φ_val, φ_deriv = kappa_matern52(w)
+
+    d = sqrt(w)
+    φ_dd = 25/12*exp(-sqrt(5)*d)
+
+    return ForwardDiff.Dual{T}(φ_val, φ_deriv*parts),
+    ForwardDiff.Dual{T}(φ_deriv, φ_dd*parts)
+end
+
+"""
     KernelFunctions.kappa(::ADMatern52Kernel, d²::Real)
 
-Compute the kernel value for a given squared distance using the AD-friendly Matern 5/2 kernel.
+Compute the kernel value for a given squared distance d² using 
+    the AD-friendly Matern 5/2 kernel.
 
 Arguments:
 - `k::ADMatern52Kernel`: The kernel instance.
@@ -171,8 +224,8 @@ returns:
 - `value::Float64`: The computed kernel value.
 """
 function KernelFunctions.kappa(::ADMatern52Kernel, d²::Real)
-    d = sqrt(d²)
-    return (1 + sqrt(5) * d + 5 * d² / 3) * exp(-sqrt(5) * d)
+    φ_val, _ = kappa_matern52(d²)
+    return φ_val
 end
 
 """
@@ -191,16 +244,10 @@ returns:
 function KernelFunctions.kappa(::ADMatern52Kernel, d²::ForwardDiff.Dual{T}) where {T}
     v = ForwardDiff.value(d²)
     parts = ForwardDiff.partials(d²)
-    if iszero(v)
-        φ_val = 1.0
-        φ_deriv = -5/6 * parts
-    else
-        d = sqrt(v)
-        z = exp(-√5*d)
-        φ_val = (1 + √5*d + 5d^2/3) * z
-        φ_deriv = (-5/6) * (1 + √5*d) * z * parts
-    end
-    return ForwardDiff.Dual{T}(φ_val, φ_deriv)
+
+    φ_val, φ_deriv = kappa_matern52(v)
+
+    return ForwardDiff.Dual{T}(φ_val, φ_deriv*parts)
 end
 
 """
@@ -219,6 +266,87 @@ function Base.show(io::IO, k::ADMatern52Kernel)
     return print(io, "Matern 5/2 Kernel with AD support (metric = ", k.metric, ")")
 end
 
+## Matern 7/2 kernel with custom differentiation rules for gradient computations.
+
+# Taylor approximation of Matern 7/2 kernel around d=0.
+"""
+    ApproxMatern72Kernel{M}(metric::M) <: KernelFunctions.SimpleKernel
+
+Approximate Matern 7/2 kernel using a second-order Taylor expansion around d=0.
+
+Attributes:
+- `metric`: The distance metric to be used, defaults to squared Euclidean distance.
+"""
+struct ApproxMatern72Kernel{M} <: KernelFunctions.SimpleKernel
+    metric::M
+end
+
+"""
+    ApproxMatern72Kernel(; metric=Distances.SqEuclidean())
+
+Constructor for the ApproxMatern72Kernel with an optional metric argument.
+
+Arguments:
+- `metric`: The distance metric to be used, defaults to squared Euclidean distance.
+
+returns:
+- `ApproxMatern72Kernel`: An instance of the approximate Matern 7/2 kernel.
+"""
+ApproxMatern72Kernel(; metric=Distances.SqEuclidean()) = ApproxMatern72Kernel(metric)
+
+"""
+    KernelFunctions.metric(k::ApproxMatern72Kernel)
+
+Get the metric used in the ApproxMatern72Kernel.
+
+Arguments:
+- `k::ApproxMatern72Kernel`: The kernel instance.
+
+returns:
+- `metric::M`: The metric used in the kernel.
+"""
+KernelFunctions.metric(k::ApproxMatern72Kernel) = k.metric
+
+"""
+    KernelFunctions.kappa(k::ApproxMatern72Kernel, d²::Real)
+
+Compute the kernel value for a given squared distance using the approximate Matern 7/2 kernel.
+
+Arguments:
+- `k::ApproxMatern72Kernel`: The kernel instance.
+- `d²::Real`: The squared distance between two points.
+
+returns:
+- `value::Float64`: The computed kernel value.
+"""
+function KernelFunctions.kappa(k::ApproxMatern72Kernel, d²::Real)
+    if d² < 1e-10 # we do Taylor of order 3 around d = 0.
+        return 1.0 - (7.0 / 10) * d²
+    else
+        d = sqrt(d²)
+        return (1 + sqrt(7) * d + 14/5 * d² + 7*sqrt(7)/15*d^3) * exp(-sqrt(7) * d)
+    end
+end
+
+"""
+    Base.show(io::IO, k::ApproxMatern72Kernel)
+
+Pretty print for the ApproxMatern72Kernel.
+
+Arguments:
+- `io::IO`: The IO stream to print to.
+- `k::ApproxMatern72Kernel`: The kernel instance.
+
+returns:
+- `nothing`: Prints the kernel information to the IO stream.
+"""
+function Base.show(io::IO, k::ApproxMatern72Kernel)
+    return print(
+        io, "Matern 7/2 Kernel, Taylor approximation around d=0 (metric = ", k.metric, ")"
+    )
+end
+
+# AD-friendly Matern 7/2 kernel using ForwardDiff with custom differentiation rules.
 """
     ADMatern72Kernel{M} <: KernelFunctions.SimpleKernel
 
@@ -258,6 +386,59 @@ returns:
 KernelFunctions.metric(k::ADMatern72Kernel) = k.metric
 
 """
+    kappa_matern72(v::Real)
+
+Helper function to compute the Matern 7/2 kernel value and its first two derivatives 
+    with respect to squared distance d².
+
+Arguments:
+- `v::Real`: The squared distance between two points.
+
+returns:
+- `φ_val::Float64`: The computed kernel value.
+- `φ_deriv::Float64`: The first derivative of the kernel value with respect to squared distance.
+- `φ_dd::Float64`: The second derivative of the kernel value with respect to squared distance.
+"""
+function kappa_matern72(v::Real)
+    d = sqrt(v)
+    z = exp(-sqrt(7)*d)
+    φ_val = (1 + sqrt(7)*d + 14*d^2/5 + 7*sqrt(7)*d^3/15) * z
+    φ_deriv = -7/10*(1 + sqrt(7)*d + 7*d^2/3) * z
+    φ_dd = (49/60)*(1 + sqrt(7)*d)*z
+    return φ_val, φ_deriv, φ_dd
+end
+
+"""
+    kappa_matern72(v::ForwardDiff.Dual{T}) where {T}
+
+Helper function to compute the Matern 7/2 kernel value and its first two derivatives
+    with respect to squared distance d² using ForwardDiff.
+
+Arguments:
+- `v::ForwardDiff.Dual{T}`: The squared distance between two points with dual number support.
+
+returns:
+- `φ_val::ForwardDiff.Dual{T}`: The computed kernel value with derivatives.
+- `φ_deriv::ForwardDiff.Dual{T}`: The first derivative of the kernel value with respect to 
+    squared distance with derivatives.
+- `φ_dd::ForwardDiff.Dual{T}`: The second derivative of the kernel value with respect to
+    squared distance with derivatives.
+"""
+function kappa_matern72(v::ForwardDiff.Dual{T}) where {T}
+    w = ForwardDiff.value(v)
+    parts = ForwardDiff.partials(v)
+
+    φ_val, φ_deriv, φ_dd = kappa_matern72(w)
+
+    d = sqrt(w)
+    φ_ddd = -7*49/120*exp(-sqrt(7)*d)
+
+    return ForwardDiff.Dual{T}(φ_val, φ_deriv*parts), 
+           ForwardDiff.Dual{T}(φ_deriv, φ_dd*parts), 
+           ForwardDiff.Dual{T}(φ_dd, φ_ddd*parts) 
+end
+
+"""
     KernelFunctions.kappa(::ADMatern72Kernel, d²::Real)
 
 Compute the kernel value for a given squared distance using the AD-friendly Matern 7/2 kernel.
@@ -270,8 +451,8 @@ returns:
 - `value::Float64`: The computed kernel value.
 """
 function KernelFunctions.kappa(::ADMatern72Kernel, d²::Real)
-    d = sqrt(d²)
-    return (1 + sqrt(7) * d + 14 * d² / 5 + 7 * sqrt(7) * d^3 / 15) * exp(-sqrt(7) * d)
+    φ_val, _, _ = kappa_matern72(d²)
+    return φ_val
 end
 
 """
@@ -290,16 +471,8 @@ returns:
 function KernelFunctions.kappa(::ADMatern72Kernel, d²::ForwardDiff.Dual{T}) where {T}
     v = ForwardDiff.value(d²)
     parts = ForwardDiff.partials(d²)
-    if iszero(v)
-        φ_val = 1.0
-        φ_deriv = -7/10 * parts
-    else
-        d = sqrt(v)
-        z = exp(-√7*d)
-        φ_val = (1 + √7*d + 14*d^2/5 + 7*√7*d^3/15) * z
-        φ_deriv = (-7/30) * (7*d^2 + 3*√7*d + 3) * z * parts
-    end
-    return ForwardDiff.Dual{T}(φ_val, φ_deriv)
+    φ_val, φ_deriv, _ = kappa_matern72(v)
+    return ForwardDiff.Dual{T}(φ_val, φ_deriv*parts)
 end
 
 """
