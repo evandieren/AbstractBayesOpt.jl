@@ -85,7 +85,7 @@ Random.seed!(1234)
     @test isapprox(∇k_ad(x1, x1), [0.0; 0.0]; atol=1e-12)
     @test all(isnan.(∇k_ref(x1, x1))) # this produces NaNs, as expected
 
-    # Check posterior mean derivatives
+    # Check posterior mean value and derivatives
     f(x) = sin(π*x[1])*cos(π*x[2])
     ∇f(x) = ForwardDiff.gradient(f, x)
     f_val_grad(x) = [f(x); ∇f(x)]
@@ -117,6 +117,51 @@ Random.seed!(1234)
     @test all(isnan.(hessian_post_mean_ad(x_train))) # this produces NaNs, as expected
     # One should not believe in the Hessian at a training point, for the Matern 5/2 kernel!
 
+    # posterior gradient mean
+    post_grad_mean_approx(x) = posterior_grad_mean(post_approx, [x])
+    post_grad_mean_ad(x) = posterior_grad_mean(post_ad, [x])
+
+    ## at a test point
+    @test isapprox(post_grad_mean_approx(x1), post_grad_mean_ad(x1); atol=1e-10)
+
+    ## at a training point
+    @test isapprox(post_grad_mean_approx(x_train), post_grad_mean_ad(x_train); atol=1e-10)
+
+    # Check posterior variance value
+    post_var_approx(x) = posterior_var(post_approx, [x])[1]
+    post_var_ad(x) = posterior_var(post_ad, [x])[1]
+
+    ## at a test point
+    @test isapprox(post_var_approx(x1), post_var_ad(x1); atol=1e-10)
+    @test post_var_approx(x1) > 0.0
+    @test post_var_ad(x1) > 0.0
+
+    ## at a training point
+    @test isapprox(post_var_approx(x_train), post_var_ad(x_train); atol=1e-10)
+    @test isapprox(post_var_approx(x_train), 0.0; atol=1e-10)
+    @test isapprox(post_var_ad(x_train), 0.0; atol=1e-10)
+
+    # Check posterior gradient variance value
+    post_grad_var_approx(x) = posterior_grad_cov(post_approx, [x])
+    post_grad_var_ad(x) = posterior_grad_cov(post_ad, [x])
+    ## at a test point
+    @test isapprox(post_grad_var_approx(x1), post_grad_var_ad(x1); atol=1e-10)
+
+    ## at a training point
+    @test isapprox(post_grad_var_approx(x_train), post_grad_var_ad(x_train); atol=1e-10)
+
+    # test printing
+    io = IOBuffer()
+
+    show(io, approx_kernel)
+    output = String(take!(io))
+    @test output ==
+        "Matern 5/2 Kernel, quadratic approximation around d=0 (metric = Distances.SqEuclidean(0.0))\n\t- Scale Transform (s = $(1/ℓ))\n\t- σ² = $σ²"
+
+    show(io, ad_kernel)
+    output = String(take!(io))
+    @test output ==
+        "Matern 5/2 Kernel with AD support (metric = Distances.SqEuclidean(0.0))\n\t- Scale Transform (s = $(1/ℓ))\n\t- σ² = $σ²"
 end # of Matern 5/2 tests
 
 @testset "Matern 7/2 Tests" begin
@@ -227,4 +272,50 @@ end # of Matern 5/2 tests
         hessian_post_mean_approx(x_train), hessian_post_mean_ad(x_train); atol=1e-7
     )
     # This time, the Hessian makes sense, as the Matern 7/2 kernel is thrice differentiable.
+
+    # posterior gradient mean
+    post_grad_mean_approx(x) = posterior_grad_mean(post_approx, [x])
+    post_grad_mean_ad(x) = posterior_grad_mean(post_ad, [x])
+
+    ## at a test point
+    @test isapprox(post_grad_mean_approx(x1), post_grad_mean_ad(x1); atol=1e-8)
+
+    ## at a training point
+    @test isapprox(post_grad_mean_approx(x_train), post_grad_mean_ad(x_train); atol=1e-8)
+
+    # Check posterior variance value
+    post_var_approx(x) = posterior_var(post_approx, [x])[1]
+    post_var_ad(x) = posterior_var(post_ad, [x])[1]
+
+    ## at a test point
+    @test isapprox(post_var_approx(x1), post_var_ad(x1); atol=1e-8)
+    @test post_var_approx(x1) > 0.0
+    @test post_var_ad(x1) > 0.0
+
+    ## at a training point
+    @test isapprox(post_var_approx(x_train), post_var_ad(x_train); atol=1e-8)
+    @test isapprox(post_var_approx(x_train), 0.0; atol=1e-8)
+    @test isapprox(post_var_ad(x_train), 0.0; atol=1e-8)
+
+    # Check posterior gradient variance value
+    post_grad_var_approx(x) = posterior_grad_cov(post_approx, [x])
+    post_grad_var_ad(x) = posterior_grad_cov(post_ad, [x])
+    ## at a test point
+    @test isapprox(post_grad_var_approx(x1), post_grad_var_ad(x1); atol=1e-10)
+
+    ## at a training point
+    @test isapprox(post_grad_var_approx(x_train), post_grad_var_ad(x_train); atol=1e-10)
+
+    # test printing
+    io = IOBuffer()
+
+    show(io, approx_kernel)
+    output = String(take!(io))
+    @test output ==
+        "Matern 7/2 Kernel, Taylor approximation around d=0 (metric = Distances.SqEuclidean(0.0))\n\t- Scale Transform (s = $(1/ℓ))\n\t- σ² = $σ²"
+
+    show(io, ad_kernel)
+    output = String(take!(io))
+    @test output ==
+        "Matern 7/2 Kernel with AD support (metric = Distances.SqEuclidean(0.0))\n\t- Scale Transform (s = $(1/ℓ))\n\t- σ² = $σ²"
 end # of Matern 7/2 tests
