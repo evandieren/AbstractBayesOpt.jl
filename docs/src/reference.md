@@ -38,6 +38,9 @@ nlml
 
 ```@docs
 ApproxMatern52Kernel
+ApproxMatern72Kernel
+ADMatern52Kernel
+ADMatern72Kernel
 ```
 
 ### GradientGP-related functions

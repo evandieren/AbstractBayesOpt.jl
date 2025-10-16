@@ -25,7 +25,7 @@ evaluation points $x$ in the domain by:
 
 ### How AbstractBayesOpt.jl fits in the Julia ecosystem
 
-AbstractBayesOpt.jl provides a modular, abstract framework for Bayesian
+`AbstractBayesOpt.jl` provides a modular, abstract framework for Bayesian
 Optimisation in Julia. It defines three core abstractions:
 [`AbstractSurrogate`](@ref), [`AbstractAcquisition`](@ref), and
 [`AbstractDomain`](@ref), as well as a standard optimisation loop, allowing
