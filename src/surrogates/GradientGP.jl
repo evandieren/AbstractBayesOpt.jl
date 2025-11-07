@@ -1,12 +1,7 @@
 """
-    GradientGP{T}(gp::AbstractGps.GP, 
-                  noise_var::T, 
-                  p::Int, 
-                  gpx::Union{Nothing,AbstractGPs.PosteriorGP}) <: AbstractSurrogate
+    struct GradientGP{T} <: AbstractSurrogate
 
-Implementation of the Abstract structures for the gradient-enhanced GP.
-
-This relies on MOGP from AbstractGPs.jl and KernelFunctions.jl.
+Gradient-enhanced Gaussian Process surrogate model.
 
 Attributes:
 - `gp::AbstractGPs.GP`: The underlying Gaussian Process model.
@@ -14,13 +9,16 @@ Attributes:
 - `p::Int`: The number of outputs (1 for function value + d for gradients).
 - `gpx::Union{Nothing,AbstractGPs.PosteriorGP}`: The posterior GP after conditioning on data, 
     `nothing` if not conditioned yet.
+
+Note: `gpx` is the posterior GP after conditioning on data, nothing if not conditioned yet
+
+This relies on `MOGP` from `AbstractGPs.jl` and `KernelFunctions.jl`.
 """
 struct GradientGP{T} <: AbstractSurrogate
     gp::AbstractGPs.GP
     noise_var::T
     p::Int
     gpx::Union{Nothing,AbstractGPs.PosteriorGP}
-    # gpx is the posterior GP after conditioning on data, nothing if not conditioned yet
 end
 
 """
