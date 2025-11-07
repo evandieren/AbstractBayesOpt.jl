@@ -14,11 +14,11 @@ Note: `gpx` is the posterior GP after conditioning on data, nothing if not condi
 
 This relies on `MOGP` from `AbstractGPs.jl` and `KernelFunctions.jl`.
 """
-struct GradientGP{T, G<:AbstractGPs.GP} <: AbstractSurrogate
+struct GradientGP{T,G<:AbstractGPs.GP} <: AbstractSurrogate
     gp::G
     noise_var::T
     p::Int
-    gpx::Union{Nothing, AbstractGPs.PosteriorGP}
+    gpx::Union{Nothing,AbstractGPs.PosteriorGP}
 end
 
 """
@@ -401,7 +401,7 @@ function kappa_matern72(v::Real)
     d = sqrt(v)
     z = exp(-sqrt(7)*d)
     φ_val = (1 + sqrt(7)*d + 14*d^2/5 + 7*sqrt(7)*d^3/15) * z
-    φ_deriv = -7/10*(1 + sqrt(7)*d + 7*d^2/3) * z
+    φ_deriv = -7/10 * (1 + sqrt(7)*d + 7*d^2/3) * z
     φ_dd = (49/60)*(1 + sqrt(7)*d)*z
     return φ_val, φ_deriv, φ_dd
 end
@@ -431,9 +431,9 @@ function kappa_matern72(v::ForwardDiff.Dual{T}) where {T}
     d = sqrt(w)
     φ_ddd = -7*49/120*exp(-sqrt(7)*d)
 
-    return ForwardDiff.Dual{T}(φ_val, φ_deriv*parts), 
-           ForwardDiff.Dual{T}(φ_deriv, φ_dd*parts), 
-           ForwardDiff.Dual{T}(φ_dd, φ_ddd*parts) 
+    return ForwardDiff.Dual{T}(φ_val, φ_deriv*parts),
+    ForwardDiff.Dual{T}(φ_deriv, φ_dd*parts),
+    ForwardDiff.Dual{T}(φ_dd, φ_ddd*parts)
 end
 
 """
