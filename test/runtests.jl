@@ -23,6 +23,7 @@ Random.seed!(42)
 @testset "AbstractBayesOpt.jl" begin
     include("test_domains.jl")
     include("test_surrogates.jl")
+    include("test_kernels.jl")
     include("test_acquisition.jl")
     include("test_bayesian_opt.jl")
 end
