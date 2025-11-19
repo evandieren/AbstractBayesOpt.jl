@@ -253,7 +253,7 @@ function optimize_hyperparameters(
     obj = nothing
     if length_scale_only
         # Only optimize lengthscale, keep scale fixed at original log value (second parameter)
-        obj = p -> nlml_ls(model, p[1], old_params[2], x_train_prepped, y_train_prepped)
+        obj = p -> nlml_ls(model, p[1], starting_point[2], x_train_prepped, y_train_prepped)
     else
         # Optimize both lengthscale and scale (vector p)
         obj = p -> nlml(model, p, x_train_prepped, y_train_prepped)
@@ -265,9 +265,9 @@ function optimize_hyperparameters(
         rand.(Uniform.(lower_bounds, upper_bounds)) for _ in 1:(num_restarts - 1)
     ]
     if length_scale_only
-        init_guesses = [[old_params[1]], random_inits...]
+        init_guesses = [[starting_point[1]], random_inits...]
     else
-        init_guesses = [collect(old_params), random_inits...]
+        init_guesses = [collect(starting_point), random_inits...]
     end
 
     inner_optimizer = LBFGS(; linesearch=Optim.LineSearches.HagerZhang(; linesearchmax=20))

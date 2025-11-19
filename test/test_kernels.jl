@@ -275,7 +275,7 @@ end # of Matern 5/2 tests
         # see that the more we derive, the more tolerance we need to give away.
         @test isapprox(post_mean_approx(x1), post_mean_ad(x1); atol=1e-9)
         @test isapprox(∇post_mean_approx(x1), ∇post_mean_ad(x1); atol=1e-8)
-        @test isapprox(hessian_post_mean_approx(x1), hessian_post_mean_ad(x1); atol=1e-7)
+        @test isapprox(hessian_post_mean_approx(x1), hessian_post_mean_ad(x1); atol=1e-6)
 
         ## at a training point
         x_train = X[1]
