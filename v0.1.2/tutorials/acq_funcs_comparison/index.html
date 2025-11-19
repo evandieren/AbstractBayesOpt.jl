@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>1D Acquisition Function Comparison · AbstractBayesOpt.jl</title><meta name="title" content="1D Acquisition Function Comparison · AbstractBayesOpt.jl"/><meta property="og:title" content="1D Acquisition Function Comparison · AbstractBayesOpt.jl"/><meta property="twitter:title" content="1D Acquisition Function Comparison · AbstractBayesOpt.jl"/><meta name="description" content="Documentation for AbstractBayesOpt.jl."/><meta property="og:description" content="Documentation for AbstractBayesOpt.jl."/><meta property="twitter:description" content="Documentation for AbstractBayesOpt.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">AbstractBayesOpt.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../reference/">Public API</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../1D_BO/">1D Bayesian Optimisation</a></li><li><a class="tocitem" href="../2D_BO/">2D Bayesian Optimisation</a></li><li class="is-active"><a class="tocitem" href>1D Acquisition Function Comparison</a><ul class="internal"><li><a class="tocitem" href="#Setup"><span>Setup</span></a></li><li><a class="tocitem" href="#Define-the-objective-function"><span>Define the objective function</span></a></li><li><a class="tocitem" href="#Acquisition-Functions-Setup"><span>Acquisition Functions Setup</span></a></li></ul></li><li><a class="tocitem" href="../hyperparams_comparison/">Hyperparameter &amp; Standardisation Comparison</a></li><li><a class="tocitem" href="../nlml_landscape_visualization/">Log Likelihood Landscape Visualisation</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>1D Acquisition Function Comparison</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>1D Acquisition Function Comparison</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/evandieren/AbstractBayesOpt.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/evandieren/AbstractBayesOpt.jl/blob/main/docs/literate/tutorials/acq_funcs_comparison.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="AbstractBayesOpt-Tutorial:-Acquisition-Functions-Comparison-with-gradient-enhanced-GPs"><a class="docs-heading-anchor" href="#AbstractBayesOpt-Tutorial:-Acquisition-Functions-Comparison-with-gradient-enhanced-GPs">AbstractBayesOpt Tutorial: Acquisition Functions Comparison with gradient-enhanced GPs</a><a id="AbstractBayesOpt-Tutorial:-Acquisition-Functions-Comparison-with-gradient-enhanced-GPs-1"></a><a class="docs-heading-anchor-permalink" href="#AbstractBayesOpt-Tutorial:-Acquisition-Functions-Comparison-with-gradient-enhanced-GPs" title="Permalink"></a></h1><h2 id="Setup"><a class="docs-heading-anchor" href="#Setup">Setup</a><a id="Setup-1"></a><a class="docs-heading-anchor-permalink" href="#Setup" title="Permalink"></a></h2><p>Loading the necessary packages.</p><pre><code class="language-julia hljs">using AbstractBayesOpt
+using AbstractGPs
+using Plots
+using ForwardDiff
+using QuasiMonteCarlo
+using Random</code></pre><h2 id="Define-the-objective-function"><a class="docs-heading-anchor" href="#Define-the-objective-function">Define the objective function</a><a id="Define-the-objective-function-1"></a><a class="docs-heading-anchor-permalink" href="#Define-the-objective-function" title="Permalink"></a></h2><p>We will compare different acquisition functions on a 1D function with multiple local minima: <span>$f(x) = \sin(x + 1) + \sin(\frac{10}{3}(x + 1))$</span></p><pre><code class="language-julia hljs">f(x) = sin(x + 1) + sin((10.0 / 3.0) * (x + 1))
+∂f(x) = ForwardDiff.derivative(f, x)
+f_∂f(x) = [f(x); ∂f(x)];
+
+d = 1
+lower = [-10.0]
+upper = [10.0]
+domain = ContinuousDomain(lower, upper)</code></pre><img src="da58fc98.svg" alt="Example block output"/><h3 id="Initial-Training-Data"><a class="docs-heading-anchor" href="#Initial-Training-Data">Initial Training Data</a><a id="Initial-Training-Data-1"></a><a class="docs-heading-anchor-permalink" href="#Initial-Training-Data" title="Permalink"></a></h3><p>We will use a gradient-enhanced Gaussian Process (<a href="../../reference/#AbstractBayesOpt.GradientGP"><code>GradientGP</code></a>) with a Matérn 5/2 kernel. We add a small noise variance for numerical stability.</p><pre><code class="language-julia hljs">σ² = 1e-12;</code></pre><p>Generate initial training data using Sobol sampling for better space coverage</p><pre><code class="language-julia hljs">n_train = 5
+x_train = vec(QuasiMonteCarlo.sample(n_train, lower, upper, SobolSample()))
+y_train = f_∂f.(x_train)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element Vector{Vector{Float64}}:
+ [-0.03857071194091599, 1.016277819878457]
+ [0.7395218845192136, -3.929545360024944]
+ [-1.1339260739262087, 1.1363494685934712]
+ [-0.5339377612900902, -2.1827991422845128]
+ [1.8345604988947497, 1.2435520212800384]</code></pre><p>Setup the gradient-enhanced GP model, using in-house <a href="../../reference/#AbstractBayesOpt.ApproxMatern52Kernel"><code>ApproxMatern52Kernel</code></a> for AD compatibility.</p><pre><code class="language-julia hljs">model = GradientGP(ApproxMatern52Kernel(), d+1, σ²)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">GradientGP{Float64, AbstractGPs.GP{AbstractGPs.CustomMean{AbstractBayesOpt.var&quot;#8#9&quot;{Vector{Float64}, AbstractBayesOpt.var&quot;#f_mean#f_mean##0&quot;}}, gradKernel{KernelFunctions.ScaledKernel{KernelFunctions.TransformedKernel{ApproxMatern52Kernel{Distances.SqEuclidean}, KernelFunctions.ScaleTransform{Float64}}, Float64}}}}(AbstractGPs.GP{AbstractGPs.CustomMean{AbstractBayesOpt.var&quot;#8#9&quot;{Vector{Float64}, AbstractBayesOpt.var&quot;#f_mean#f_mean##0&quot;}}, gradKernel{KernelFunctions.ScaledKernel{KernelFunctions.TransformedKernel{ApproxMatern52Kernel{Distances.SqEuclidean}, KernelFunctions.ScaleTransform{Float64}}, Float64}}}(AbstractGPs.CustomMean{AbstractBayesOpt.var&quot;#8#9&quot;{Vector{Float64}, AbstractBayesOpt.var&quot;#f_mean#f_mean##0&quot;}}(AbstractBayesOpt.var&quot;#8#9&quot;{Vector{Float64}, AbstractBayesOpt.var&quot;#f_mean#f_mean##0&quot;}([0.0, 0.0], AbstractBayesOpt.var&quot;#f_mean#f_mean##0&quot;())), gradKernel{KernelFunctions.ScaledKernel{KernelFunctions.TransformedKernel{ApproxMatern52Kernel{Distances.SqEuclidean}, KernelFunctions.ScaleTransform{Float64}}, Float64}}(Matern 5/2 Kernel, quadratic approximation around d=0 (metric = Distances.SqEuclidean(0.0))
+	- Scale Transform (s = 1.0)
+	- σ² = 1.0)), 1.0e-12, 2, nothing)</code></pre><h2 id="Acquisition-Functions-Setup"><a class="docs-heading-anchor" href="#Acquisition-Functions-Setup">Acquisition Functions Setup</a><a id="Acquisition-Functions-Setup-1"></a><a class="docs-heading-anchor-permalink" href="#Acquisition-Functions-Setup" title="Permalink"></a></h2><p>We will compare five different acquisition functions:</p><ol><li><strong>Expected Improvement (EI)</strong>: Balances exploitation and exploration by considering both the magnitude and probability of improvement (see <a href="../../reference/#AbstractBayesOpt.ExpectedImprovement"><code>ExpectedImprovement</code></a>)</li><li><strong>Probability of Improvement (PI)</strong>: Focuses on the probability of finding a better point (see <a href="../../reference/#AbstractBayesOpt.ProbabilityImprovement"><code>ProbabilityImprovement</code></a>)</li><li><strong>Upper Confidence Bound (UCB)</strong>: Uses lower bound estimates to guide exploration (see <a href="../../reference/#AbstractBayesOpt.UpperConfidenceBound"><code>UpperConfidenceBound</code></a>)</li><li><strong>UCB + Gradient UCB Ensemble</strong>: Combines standard UCB with gradient norm information (see <a href="../../reference/#AbstractBayesOpt.GradientNormUCB"><code>GradientNormUCB</code></a> and <a href="../../reference/#AbstractBayesOpt.EnsembleAcquisition"><code>EnsembleAcquisition</code></a>)</li><li><strong>EI + Gradient UCB Ensemble</strong>: Combines Expected Improvement with gradient norm information (see <a href="../../reference/#AbstractBayesOpt.GradientNormUCB"><code>GradientNormUCB</code></a> and <a href="../../reference/#AbstractBayesOpt.EnsembleAcquisition"><code>EnsembleAcquisition</code></a>)</li></ol><p>We show below the function to setup the acquisition functions, and run the tests. You can skip to the results analysis and visualisation section if you want to see the outcomes directly.</p><pre><code class="language-julia hljs">function setup_acquisition_functions(y_train)
+    best_y = minimum(first.(y_train))
+
+    ei_acq = ExpectedImprovement(0.0, best_y)
+
+    pi_acq = ProbabilityImprovement(0.0, best_y)
+
+    ucb_acq = UpperConfidenceBound(1.96)
+
+    ucb_acq_for_ensemble = UpperConfidenceBound(1.96)
+    grad_ucb_acq = GradientNormUCB(1.5)
+    ensemble_ucb_grad = EnsembleAcquisition(
+        [0.9, 0.1], [ucb_acq_for_ensemble, grad_ucb_acq]
+    )
+
+    ei_for_ensemble = ExpectedImprovement(0.0, best_y)
+    grad_ucb_for_ensemble = GradientNormUCB(1.5)
+    ensemble_ei_grad = EnsembleAcquisition(
+        [0.9, 0.1], [ei_for_ensemble, grad_ucb_for_ensemble]
+    )
+
+    return [
+        (&quot;EI&quot;, ei_acq),
+        (&quot;PI&quot;, pi_acq),
+        (&quot;UCB&quot;, ucb_acq),
+        (&quot;UCB+GradUCB&quot;, ensemble_ucb_grad),
+        (&quot;EI+GradUCB&quot;, ensemble_ei_grad),
+    ]
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">setup_acquisition_functions (generic function with 1 method)</code></pre><h3 id="Running-the-Optimisation-Comparison"><a class="docs-heading-anchor" href="#Running-the-Optimisation-Comparison">Running the Optimisation Comparison</a><a id="Running-the-Optimisation-Comparison-1"></a><a class="docs-heading-anchor-permalink" href="#Running-the-Optimisation-Comparison" title="Permalink"></a></h3><p>Now we will run Bayesian optimisation with each acquisition function and compare their performance.</p><pre><code class="language-julia hljs">function run_comparison(n_iterations=30)
+    results = Dict{String,Any}()
+
+    for (name, acq_func) in setup_acquisition_functions(y_train)
+        @info &quot;\n=== Running optimisation with $name ===&quot;
+
+        problem = BOStruct(
+            f_∂f,
+            acq_func,
+            model,
+            domain,
+            x_train,
+            y_train,
+            n_iterations,
+            0.0,  # Actual noise level (0.0 for noiseless)
+        )
+
+        result, _, _ = AbstractBayesOpt.optimize(problem);
+
+        xs = result.xs
+        ys = first.(result.ys_non_std)
+
+        optimal_point = xs[argmin(ys)]
+        optimal_value = minimum(ys)
+
+        @info &quot;Optimal point: $optimal_point&quot;
+        @info &quot;Optimal value: $optimal_value&quot;
+        @info &quot;Error from true minimum: $(abs(optimal_value - min_f))&quot;
+
+        running_min = accumulate(min, f.(xs));
+
+        results[name] = (
+            xs=xs,
+            ys=ys,
+            running_min=running_min,
+            optimal_point=optimal_point,
+            optimal_value=optimal_value,
+            error=abs(optimal_value - min_f),
+        )
+    end
+
+    return results
+end;</code></pre><h3 id="Execute-the-comparison"><a class="docs-heading-anchor" href="#Execute-the-comparison">Execute the comparison</a><a id="Execute-the-comparison-1"></a><a class="docs-heading-anchor-permalink" href="#Execute-the-comparison" title="Permalink"></a></h3><p>Let&#39;s run the optimisation with each acquisition function for 30 iterations.</p><pre><code class="language-julia hljs">results = run_comparison(30)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, Any} with 5 entries:
+  &quot;EI+GradUCB&quot;  =&gt; (xs = [-2.5, 7.5, 2.5, -7.5, -6.25, 2.04432, -5.79765, 6.606…
+  &quot;UCB+GradUCB&quot; =&gt; (xs = [-2.5, 7.5, 2.5, -7.5, -6.25, 1.86995, 8.48369, 3.5904…
+  &quot;EI&quot;          =&gt; (xs = [-2.5, 7.5, 2.5, -7.5, -6.25, 2.11366, 2.37234, 8.3527…
+  &quot;PI&quot;          =&gt; (xs = [-2.5, 7.5, 2.5, -7.5, -6.25, 2.497, 2.463, 2.447, 2.4…
+  &quot;UCB&quot;         =&gt; (xs = [-2.5, 7.5, 2.5, -7.5, -6.25, 1.87185, 8.39524, 3.4259…</code></pre><h3 id="Results-Analysis-and-Visualisation"><a class="docs-heading-anchor" href="#Results-Analysis-and-Visualisation">Results Analysis and Visualisation</a><a id="Results-Analysis-and-Visualisation-1"></a><a class="docs-heading-anchor-permalink" href="#Results-Analysis-and-Visualisation" title="Permalink"></a></h3><p>We will create a convergence plot showing how each acquisition function performs over time. The plot shows the error relative to the true minimum on a logarithmic scale.</p><h3 id="Create-and-display-the-convergence-plot"><a class="docs-heading-anchor" href="#Create-and-display-the-convergence-plot">Create and display the convergence plot</a><a id="Create-and-display-the-convergence-plot-1"></a><a class="docs-heading-anchor-permalink" href="#Create-and-display-the-convergence-plot" title="Permalink"></a></h3><p>This plot shows how quickly each acquisition function converges to the global minimum. The ensemble methods that combine multiple acquisition functions often show improved performance.</p><img src="efb280c3.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../2D_BO/">« 2D Bayesian Optimisation</a><a class="docs-footer-nextpage" href="../hyperparams_comparison/">Hyperparameter &amp; Standardisation Comparison »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.0 on <span class="colophon-date" title="Wednesday 19 November 2025 12:20">Wednesday 19 November 2025</span>. Using Julia version 1.12.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
