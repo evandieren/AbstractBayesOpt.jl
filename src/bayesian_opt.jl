@@ -244,6 +244,9 @@ function optimize_hyperparameters(
     @debug "lower bounds (ℓ, scale)" exp.(lower_bounds)
     @debug "upper bounds (ℓ, scale)" exp.(upper_bounds)
 
+    # Now, we need to ensure that the initial points are within bounds
+    starting_point = clamp.(old_params, lower_bounds .+ 2*eps(), upper_bounds .- 2*eps())
+
     x_train_prepped = prep_input(model, x_train)
     y_train_prepped = prep_output(model, y_train)
 
