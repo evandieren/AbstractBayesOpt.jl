@@ -8,7 +8,7 @@ domain = ContinuousDomain([-6.0, -6.0], [6.0, 6.0])</code></pre><pre class="docu
  [3.0, 2.0]
  [-2.805118, 3.131312]
  [-3.77931, -3.283186]
- [3.584428, -1.848126]</code></pre><p>Scatter them on the contour plot</p><img src="a56c4582.svg" alt="Example block output"/><h2 id="Standard-GPs"><a class="docs-heading-anchor" href="#Standard-GPs">Standard GPs</a><a id="Standard-GPs-1"></a><a class="docs-heading-anchor-permalink" href="#Standard-GPs" title="Permalink"></a></h2><p>We&#39;ll use a standard Gaussian Process surrogate with a squared-exponential kernel. We add a small jitter term for numerical stability of <span>$10^{-9}$</span>.</p><pre><code class="language-julia hljs">noise_var = 1e-9
+ [3.584428, -1.848126]</code></pre><p>Scatter them on the contour plot</p><img src="05332881.svg" alt="Example block output"/><h2 id="Standard-GPs"><a class="docs-heading-anchor" href="#Standard-GPs">Standard GPs</a><a id="Standard-GPs-1"></a><a class="docs-heading-anchor-permalink" href="#Standard-GPs" title="Permalink"></a></h2><p>We&#39;ll use a standard Gaussian Process surrogate with a squared-exponential kernel. We add a small jitter term for numerical stability of <span>$10^{-9}$</span>.</p><pre><code class="language-julia hljs">noise_var = 1e-9
 surrogate = StandardGP(SqExponentialKernel(), noise_var)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">StandardGP{Float64}(AbstractGPs.GP{AbstractGPs.ZeroMean{Float64}, KernelFunctions.ScaledKernel{KernelFunctions.TransformedKernel{KernelFunctions.SqExponentialKernel{Distances.Euclidean}, KernelFunctions.ScaleTransform{Float64}}, Float64}}(AbstractGPs.ZeroMean{Float64}(), Squared Exponential Kernel (metric = Distances.Euclidean(0.0))
 	- Scale Transform (s = 1.0)
 	- σ² = 1.0), 1.0e-9, nothing)</code></pre><p>Generate uniform random samples x_train</p><pre><code class="language-julia hljs">n_train = 5
@@ -38,116 +38,116 @@ result, acq_list, standard_params = AbstractBayesOpt.optimize(
 [ Info: Standardization choice: mean_only
 [ Info: Standardization parameters: μ=130.3105396580678, σ=1.0
 [ Info: Optimizing GP hyperparameters at iteration 1...
-[ Info: New parameters: ℓ=[4.3301786775537305], variance =[7070.708258943665]
+[ Info: New parameters: ℓ=[4.330178677553758], variance =[7070.708258943715]
 [ Info: Iteration #1, current min val: 53.19981955218784
-[ Info: Acquisition optimized, new candidate point: [5.115857383078854, 3.2143239896890967]
+[ Info: Acquisition optimized, new candidate point: [5.1158573820317566, 3.214323991466043]
 [ Info: Iteration #2, current min val: 53.19981955218784
-[ Info: Acquisition optimized, new candidate point: [0.845424229971077, 1.9173484254543451]
+[ Info: Acquisition optimized, new candidate point: [0.8454242341686662, 1.9173484214127408]
 [ Info: Iteration #3, current min val: 53.19981955218784
-[ Info: Acquisition optimized, new candidate point: [-1.3377578693672527, 5.999999999999999]
+[ Info: Acquisition optimized, new candidate point: [-1.337757799608115, 5.999999999999993]
 [ Info: Iteration #4, current min val: 53.19981955218784
-[ Info: Acquisition optimized, new candidate point: [-5.999999999999981, 0.7512300985628113]
+[ Info: Acquisition optimized, new candidate point: [-5.999999999999998, 0.7512296868265195]
 [ Info: Iteration #5, current min val: 53.19981955218784
-[ Info: Acquisition optimized, new candidate point: [4.613860395345961, -0.9168867080225622]
+[ Info: Acquisition optimized, new candidate point: [4.613860295482777, -0.9168867262217522]
 [ Info: Iteration #6, current min val: 53.19981955218784
-[ Info: Acquisition optimized, new candidate point: [3.3356383514066703, -0.06409933386184638]
-[ Info: Iteration #7, current min val: 13.401343215764077
-[ Info: Acquisition optimized, new candidate point: [-3.0374521124694067, -5.999999999999999]
-[ Info: Iteration #8, current min val: 13.401343215764077
-[ Info: Acquisition optimized, new candidate point: [3.3351826864795333, 0.5905594985460638]
-[ Info: Iteration #9, current min val: 11.506033005543554
-[ Info: Acquisition optimized, new candidate point: [3.358281988610822, 0.42165060288073747]
-[ Info: Iteration #10, current min val: 11.506033005543554
-[ Info: Acquisition optimized, new candidate point: [2.874086567664644, 1.8059265484204396]
+[ Info: Acquisition optimized, new candidate point: [3.335638405835577, -0.06409950012617717]
+[ Info: Iteration #7, current min val: 13.40134268584122
+[ Info: Acquisition optimized, new candidate point: [-3.037453653751061, -5.999999999999999]
+[ Info: Iteration #8, current min val: 13.40134268584122
+[ Info: Acquisition optimized, new candidate point: [3.335182836293147, 0.5905587398363953]
+[ Info: Iteration #9, current min val: 11.50603829875251
+[ Info: Acquisition optimized, new candidate point: [3.3582820027918494, 0.42165006943696004]
+[ Info: Iteration #10, current min val: 11.50603829875251
+[ Info: Acquisition optimized, new candidate point: [2.8740862763207624, 1.8059275480894166]
 [ Info: Optimizing GP hyperparameters at iteration 11...
-[ Info: New parameters: ℓ=[2.8887734130214517], variance =[197318.28899774252]
-[ Info: Iteration #11, current min val: 1.6192295547619184
-[ Info: Acquisition optimized, new candidate point: [5.999999999999978, -5.999999999958906]
-[ Info: Iteration #12, current min val: 1.6192295547619184
-[ Info: Acquisition optimized, new candidate point: [-5.999999999985845, 5.999999999999548]
-[ Info: Iteration #13, current min val: 1.6192295547619184
-[ Info: Acquisition optimized, new candidate point: [-2.2623215742391523, 0.6775338380036582]
-[ Info: Iteration #14, current min val: 1.6192295547619184
-[ Info: Acquisition optimized, new candidate point: [-5.999999999999999, -3.768509006238866]
-[ Info: Iteration #15, current min val: 1.6192295547619184
-[ Info: Acquisition optimized, new candidate point: [2.821100758710569, 5.999999999999999]
-[ Info: Iteration #16, current min val: 1.6192295547619184
-[ Info: Acquisition optimized, new candidate point: [2.246495861203007, -2.0873713583090647]
-[ Info: Iteration #17, current min val: 1.6192295547619184
-[ Info: Acquisition optimized, new candidate point: [-2.094950424532763, 2.2718433079116247]
-[ Info: Iteration #18, current min val: 1.6192295547619184
-[ Info: Acquisition optimized, new candidate point: [2.773973839557414, 1.557132308351617]
-[ Info: Iteration #19, current min val: 1.6192295547619184
-[ Info: Acquisition optimized, new candidate point: [0.3536915882896765, -5.999999999999999]
-[ Info: Iteration #20, current min val: 1.6192295547619184
-[ Info: Acquisition optimized, new candidate point: [-5.999999999990384, -5.999999999999963]
+[ Info: New parameters: ℓ=[2.8887731554237424], variance =[197318.2348750738]
+[ Info: Iteration #11, current min val: 1.6192250759381157
+[ Info: Acquisition optimized, new candidate point: [5.999999999992656, -5.9999999999934355]
+[ Info: Iteration #12, current min val: 1.6192250759381157
+[ Info: Acquisition optimized, new candidate point: [-5.999999999984024, 5.99999999999954]
+[ Info: Iteration #13, current min val: 1.6192250759381157
+[ Info: Acquisition optimized, new candidate point: [-2.2623210447298705, 0.677533846453799]
+[ Info: Iteration #14, current min val: 1.6192250759381157
+[ Info: Acquisition optimized, new candidate point: [-5.999999999999999, -3.768509536890467]
+[ Info: Iteration #15, current min val: 1.6192250759381157
+[ Info: Acquisition optimized, new candidate point: [2.82111290193802, 5.999999999999999]
+[ Info: Iteration #16, current min val: 1.6192250759381157
+[ Info: Acquisition optimized, new candidate point: [2.246494633506502, -2.087371681019063]
+[ Info: Iteration #17, current min val: 1.6192250759381157
+[ Info: Acquisition optimized, new candidate point: [-2.0949503519438, 2.2718430877128815]
+[ Info: Iteration #18, current min val: 1.6192250759381157
+[ Info: Acquisition optimized, new candidate point: [2.7739740984591323, 1.5571325250209356]
+[ Info: Iteration #19, current min val: 1.6192250759381157
+[ Info: Acquisition optimized, new candidate point: [0.3536911854010919, -5.999999999999999]
+[ Info: Iteration #20, current min val: 1.6192250759381157
+[ Info: Acquisition optimized, new candidate point: [-5.999999999990361, -5.999999999999984]
 [ Info: Optimizing GP hyperparameters at iteration 21...
-[ Info: New parameters: ℓ=[3.417415218971281], variance =[999999.9999999978]
-[ Info: Iteration #21, current min val: 1.6192295547619184
-[ Info: Acquisition optimized, new candidate point: [-3.358888978360358, -2.9264761713569896]
-[ Info: Iteration #22, current min val: 1.6192295547619184
-[ Info: Acquisition optimized, new candidate point: [3.43582441101804, -2.2369748452602476]
-[ Info: Iteration #23, current min val: 1.6192295547619184
-[ Info: Acquisition optimized, new candidate point: [-2.8043175285364335, -2.2528449614331416]
-[ Info: Iteration #24, current min val: 1.6192295547619184
-[ Info: Acquisition optimized, new candidate point: [-3.207210645331833, -3.4127156797771434]
-[ Info: Iteration #25, current min val: 1.6192295547619184
-[ Info: Acquisition optimized, new candidate point: [3.4668063152617004, -1.7055652578634786]
-[ Info: Iteration #26, current min val: 0.8613972763586741
-[ Info: Acquisition optimized, new candidate point: [-3.7743126711432766, -3.4069104522919713]
-[ Info: Iteration #27, current min val: 0.7195068092127793
-[ Info: Acquisition optimized, new candidate point: [-3.6878809266606725, -3.325983611947392]
-[ Info: Iteration #28, current min val: 0.6664662530676188
-[ Info: Acquisition optimized, new candidate point: [3.0184367900409024, 1.9007217285891957]
-[ Info: Iteration #29, current min val: 0.136164759329886
-[ Info: Acquisition optimized, new candidate point: [-3.360533062387275, 1.9092921904005749]
-[ Info: Iteration #30, current min val: 0.136164759329886
-[ Info: Acquisition optimized, new candidate point: [2.997132828884206, 1.9981121548408816]
+[ Info: New parameters: ℓ=[3.417415883297539], variance =[999999.9999999888]
+[ Info: Iteration #21, current min val: 1.6192250759381157
+[ Info: Acquisition optimized, new candidate point: [-3.3588890244099403, -2.926476681384581]
+[ Info: Iteration #22, current min val: 1.6192250759381157
+[ Info: Acquisition optimized, new candidate point: [3.43582380599386, -2.2369737098395577]
+[ Info: Iteration #23, current min val: 1.6192250759381157
+[ Info: Acquisition optimized, new candidate point: [-2.8043180104880103, -2.2528459308729425]
+[ Info: Iteration #24, current min val: 1.6192250759381157
+[ Info: Acquisition optimized, new candidate point: [-3.2072103320474126, -3.412715512236945]
+[ Info: Iteration #25, current min val: 1.6192250759381157
+[ Info: Acquisition optimized, new candidate point: [3.466806057518783, -1.705563694484021]
+[ Info: Iteration #26, current min val: 0.8614045634880657
+[ Info: Acquisition optimized, new candidate point: [-3.774312417080445, -3.4069104706861735]
+[ Info: Iteration #27, current min val: 0.7195080663846882
+[ Info: Acquisition optimized, new candidate point: [-3.6878809976340703, -3.325983804823959]
+[ Info: Iteration #28, current min val: 0.6664666806433988
+[ Info: Acquisition optimized, new candidate point: [3.018436133038438, 1.9007216149556596]
+[ Info: Iteration #29, current min val: 0.13616546729338896
+[ Info: Acquisition optimized, new candidate point: [-3.3605310401431567, 1.9092978641468956]
+[ Info: Iteration #30, current min val: 0.13616546729338896
+[ Info: Acquisition optimized, new candidate point: [2.9971279598440055, 1.9981195962305578]
 [ Info: Optimizing GP hyperparameters at iteration 31...
-[ Info: New parameters: ℓ=[3.359600025724728], variance =[999999.9999999978]
-[ Info: Iteration #31, current min val: 0.0004726195469245476
-[ Info: Acquisition optimized, new candidate point: [-2.4923385766355928, 3.279148009296276]
-[ Info: Iteration #32, current min val: 0.0004726195469245476
-[ Info: Acquisition optimized, new candidate point: [-2.7704871867183667, 3.0116868268533734]
-[ Info: Iteration #33, current min val: 0.0004726195469245476
-[ Info: Acquisition optimized, new candidate point: [-2.6206009296379076, 3.006889756234223]
-[ Info: Iteration #34, current min val: 0.0004726195469245476
-[ Info: Acquisition optimized, new candidate point: [-2.8018356021271953, 3.1603783149251554]
-[ Info: Iteration #35, current min val: 0.0004726195469245476
-[ Info: Acquisition optimized, new candidate point: [3.620148121301583, -1.8682904153531283]
-[ Info: Iteration #36, current min val: 0.0004726195469245476
-[ Info: Acquisition optimized, new candidate point: [3.57815232490016, -1.8436775411872912]
-[ Info: Iteration #37, current min val: 0.0004726195469245476
-[ Info: Acquisition optimized, new candidate point: [-2.8171312471351526, 3.1272362823807653]
-[ Info: Iteration #38, current min val: 0.0004726195469245476
-[ Info: Acquisition optimized, new candidate point: [3.58215563611747, -1.8715845434277032]
-[ Info: Iteration #39, current min val: 0.0004726195469245476
-[ Info: Acquisition optimized, new candidate point: [-3.7903616931423527, -3.283059260236909]
-[ Info: Iteration #40, current min val: 0.0004726195469245476
-[ Info: Acquisition optimized, new candidate point: [-3.7856114892200954, -3.2968160932744324]
+[ Info: New parameters: ℓ=[3.356241854591386], variance =[999999.9999999978]
+[ Info: Iteration #31, current min val: 0.0004729325293811403
+[ Info: Acquisition optimized, new candidate point: [-2.491817020371822, 3.2799578901286437]
+[ Info: Iteration #32, current min val: 0.0004729325293811403
+[ Info: Acquisition optimized, new candidate point: [-2.7706473991215987, 3.0115356088105725]
+[ Info: Iteration #33, current min val: 0.0004729325293811403
+[ Info: Acquisition optimized, new candidate point: [-2.62026137182543, 3.006898049170872]
+[ Info: Iteration #34, current min val: 0.0004729325293811403
+[ Info: Acquisition optimized, new candidate point: [-2.8018435174971543, 3.1606208309891546]
+[ Info: Iteration #35, current min val: 0.0004729325293811403
+[ Info: Acquisition optimized, new candidate point: [3.6204729885656484, -1.8684662262121483]
+[ Info: Iteration #36, current min val: 0.0004729325293811403
+[ Info: Acquisition optimized, new candidate point: [3.578148981441889, -1.8436812760542838]
+[ Info: Iteration #37, current min val: 0.0004729325293811403
+[ Info: Acquisition optimized, new candidate point: [-2.8172267448478583, 3.1272196829687213]
+[ Info: Iteration #38, current min val: 0.0004729325293811403
+[ Info: Acquisition optimized, new candidate point: [3.582139318888811, -1.8717148440175566]
+[ Info: Iteration #39, current min val: 0.0004729325293811403
+[ Info: Acquisition optimized, new candidate point: [-3.790457170666605, -3.2830314394513116]
+[ Info: Iteration #40, current min val: 0.0004729325293811403
+[ Info: Acquisition optimized, new candidate point: [-3.7856545288757935, -3.296883162812113]
 [ Info: Optimizing GP hyperparameters at iteration 41...
-[ Info: New parameters: ℓ=[3.220359159229683], variance =[999999.9999999978]
-[ Info: Iteration #41, current min val: 0.0004726195469245476
-[ Info: Acquisition optimized, new candidate point: [5.9723067897678375, 5.999999999999999]
-[ Info: Iteration #42, current min val: 0.0004726195469245476
-[ Info: Acquisition optimized, new candidate point: [-2.801276821367239, 3.1302710598448553]
-[ Info: Iteration #43, current min val: 0.0004726195469245476
+[ Info: New parameters: ℓ=[3.220532487195865], variance =[999999.9999999978]
+[ Info: Iteration #41, current min val: 0.0004729325293811403
+[ Info: Acquisition optimized, new candidate point: [5.972312936252141, 5.999999999999999]
+[ Info: Iteration #42, current min val: 0.0004729325293811403
+[ Info: Acquisition optimized, new candidate point: [-2.801289628116683, 3.130276709917722]
+[ Info: Iteration #43, current min val: 0.0004729325293811403
 [ Info: Acquisition optimized, new candidate point: [3.7098000000000013, -5.9526]
-[ Info: Iteration #44, current min val: 0.0004726195469245476
+[ Info: Iteration #44, current min val: 0.0004729325293811403
 [ Info: Acquisition optimized, new candidate point: [5.959800000000001, -3.3114]
-[ Info: Iteration #45, current min val: 0.0004726195469245476
+[ Info: Iteration #45, current min val: 0.0004729325293811403
 [ Info: Acquisition optimized, new candidate point: [-5.9886, 3.2958]
-[ Info: Iteration #46, current min val: 0.0004726195469245476
-[ Info: Acquisition optimized, new candidate point: [-3.77827863665996, -3.2823237591587366]
-[ Info: Iteration #47, current min val: 6.951568578864588e-5
+[ Info: Iteration #46, current min val: 0.0004729325293811403
+[ Info: Acquisition optimized, new candidate point: [-3.778281643793397, -3.282319016912422]
+[ Info: Iteration #47, current min val: 6.945277077072509e-5
 [ Info: Acquisition optimized, new candidate point: [0.9222000000000001, 4.212600000000002]
-[ Info: Iteration #48, current min val: 6.951568578864588e-5
+[ Info: Iteration #48, current min val: 6.945277077072509e-5
 [ Info: Acquisition optimized, new candidate point: [-3.6605999999999996, 5.9886]
-[ Info: Iteration #49, current min val: 6.951568578864588e-5
+[ Info: Iteration #49, current min val: 6.945277077072509e-5
 [ Info: Acquisition optimized, new candidate point: [5.9862, 1.8714000000000004]
-[ Info: Iteration #50, current min val: 6.951568578864588e-5
-[ Info: Acquisition optimized, new candidate point: [-4.0314, -0.9233999999999991]</code></pre><h3 id="Results"><a class="docs-heading-anchor" href="#Results">Results</a><a id="Results-1"></a><a class="docs-heading-anchor-permalink" href="#Results" title="Permalink"></a></h3><p>The optimization result is stored in <code>result</code>. We can print the best found input and its corresponding function value.</p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Optimal point: [-3.77827863665996, -3.2823237591587366]
-Optimal value: 6.951568578864588e-5</code></pre><h3 id="Plotting-of-running-minimum-over-iterations"><a class="docs-heading-anchor" href="#Plotting-of-running-minimum-over-iterations">Plotting of running minimum over iterations</a><a id="Plotting-of-running-minimum-over-iterations-1"></a><a class="docs-heading-anchor-permalink" href="#Plotting-of-running-minimum-over-iterations" title="Permalink"></a></h3><p>The running minimum is the best function value found up to each iteration.</p><img src="eaadbe5c.svg" alt="Example block output"/><h2 id="Gradient-enhanced-GPs"><a class="docs-heading-anchor" href="#Gradient-enhanced-GPs">Gradient-enhanced GPs</a><a id="Gradient-enhanced-GPs-1"></a><a class="docs-heading-anchor-permalink" href="#Gradient-enhanced-GPs" title="Permalink"></a></h2><p>Now, let&#39;s see how to use gradient information to improve the optimization. We&#39;ll use the same function but now also provide its gradient. We define a new surrogate model that can handle gradient information, specifically a <code>GradientGP</code>.</p><pre><code class="language-julia hljs">grad_surrogate = GradientGP(SqExponentialKernel(), d + 1, noise_var)
+[ Info: Iteration #50, current min val: 6.945277077072509e-5
+[ Info: Acquisition optimized, new candidate point: [-4.0314, -0.9233999999999991]</code></pre><h3 id="Results"><a class="docs-heading-anchor" href="#Results">Results</a><a id="Results-1"></a><a class="docs-heading-anchor-permalink" href="#Results" title="Permalink"></a></h3><p>The optimization result is stored in <code>result</code>. We can print the best found input and its corresponding function value.</p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Optimal point: [-3.778281643793397, -3.282319016912422]
+Optimal value: 6.945277077072509e-5</code></pre><h3 id="Plotting-of-running-minimum-over-iterations"><a class="docs-heading-anchor" href="#Plotting-of-running-minimum-over-iterations">Plotting of running minimum over iterations</a><a id="Plotting-of-running-minimum-over-iterations-1"></a><a class="docs-heading-anchor-permalink" href="#Plotting-of-running-minimum-over-iterations" title="Permalink"></a></h3><p>The running minimum is the best function value found up to each iteration.</p><img src="273d07c0.svg" alt="Example block output"/><h2 id="Gradient-enhanced-GPs"><a class="docs-heading-anchor" href="#Gradient-enhanced-GPs">Gradient-enhanced GPs</a><a id="Gradient-enhanced-GPs-1"></a><a class="docs-heading-anchor-permalink" href="#Gradient-enhanced-GPs" title="Permalink"></a></h2><p>Now, let&#39;s see how to use gradient information to improve the optimization. We&#39;ll use the same function but now also provide its gradient. We define a new surrogate model that can handle gradient information, specifically a <code>GradientGP</code>.</p><pre><code class="language-julia hljs">grad_surrogate = GradientGP(SqExponentialKernel(), d + 1, noise_var)
 
 ξ = 0.0
 acq = ExpectedImprovement(ξ, minimum(y_train))
@@ -173,47 +173,47 @@ result_grad, acq_list_grad, standard_params_grad = AbstractBayesOpt.optimize(bo_
 [ Info: Standardization choice: mean_scale
 [ Info: Standardization parameters: μ=[130.3105396580678, 0.0, 0.0], σ=[76.32718415574614, 76.32718415574614, 76.32718415574614]
 [ Info: Optimizing GP hyperparameters at iteration 1...
-[ Info: New parameters: ℓ=[2.312746251838473], variance =[5.347064280796123]
+[ Info: New parameters: ℓ=[2.3127462518384774], variance =[5.347064280796145]
 [ Info: Iteration #1, current min val: 53.19981955218784
-[ Info: Acquisition optimized, new candidate point: [4.18076462679124, -2.1829760306998867]
-[ Info: Iteration #2, current min val: 22.24153811290866
-[ Info: Acquisition optimized, new candidate point: [3.0321160770020845, 5.027404087232351]
-[ Info: Iteration #3, current min val: 22.24153811290866
-[ Info: Acquisition optimized, new candidate point: [3.952569491877039, 2.629550281343957]
-[ Info: Iteration #4, current min val: 22.24153811290866
-[ Info: Acquisition optimized, new candidate point: [-3.0136775036564485, 4.696040816128977]
-[ Info: Iteration #5, current min val: 22.24153811290866
-[ Info: Acquisition optimized, new candidate point: [-4.28861949486747, 2.729584623169842]
-[ Info: Iteration #6, current min val: 22.24153811290866
-[ Info: Acquisition optimized, new candidate point: [-2.771587342271167, 3.187143209191088]
-[ Info: Iteration #7, current min val: 0.16642648501143498
-[ Info: Acquisition optimized, new candidate point: [-3.2548222747682574, -0.09378667781673782]
-[ Info: Iteration #8, current min val: 0.16642648501143498
-[ Info: Acquisition optimized, new candidate point: [-4.5733267448053905, -3.3787850473215966]
-[ Info: Iteration #9, current min val: 0.16642648501143498
-[ Info: Acquisition optimized, new candidate point: [-3.484647363806727, -3.0977896318607785]
-[ Info: Iteration #10, current min val: 0.16642648501143498
-[ Info: Acquisition optimized, new candidate point: [-3.890423123497139, -5.999999999999999]
+[ Info: Acquisition optimized, new candidate point: [4.180764626801667, -2.182976030698095]
+[ Info: Iteration #2, current min val: 22.24153811368328
+[ Info: Acquisition optimized, new candidate point: [3.0321160577556894, 5.027404172942484]
+[ Info: Iteration #3, current min val: 22.24153811368328
+[ Info: Acquisition optimized, new candidate point: [3.9525694870067305, 2.6295503405143075]
+[ Info: Iteration #4, current min val: 22.24153811368328
+[ Info: Acquisition optimized, new candidate point: [-3.0136775156820974, 4.696040826642482]
+[ Info: Iteration #5, current min val: 22.24153811368328
+[ Info: Acquisition optimized, new candidate point: [-4.288619490100959, 2.7295846270156594]
+[ Info: Iteration #6, current min val: 22.24153811368328
+[ Info: Acquisition optimized, new candidate point: [-2.7715873314251547, 3.18714319979214]
+[ Info: Iteration #7, current min val: 0.16642646534053945
+[ Info: Acquisition optimized, new candidate point: [-3.254822275968196, -0.0937866828548307]
+[ Info: Iteration #8, current min val: 0.16642646534053945
+[ Info: Acquisition optimized, new candidate point: [-4.573326802582675, -3.3787850676711377]
+[ Info: Iteration #9, current min val: 0.16642646534053945
+[ Info: Acquisition optimized, new candidate point: [-3.4846473575221846, -3.097789643270924]
+[ Info: Iteration #10, current min val: 0.16642646534053945
+[ Info: Acquisition optimized, new candidate point: [-3.8904225678555058, -5.999999999999999]
 [ Info: Optimizing GP hyperparameters at iteration 11...
-[ Info: New parameters: ℓ=[3.2704286252201618], variance =[171.6490951668017]
-[ Info: Iteration #11, current min val: 0.16642648501143498
-[ Info: Acquisition optimized, new candidate point: [5.999999999999999, -5.999999999999971]
-[ Info: Iteration #12, current min val: 0.16642648501143498
-[ Info: Acquisition optimized, new candidate point: [3.5476248295037345, -1.819980796193849]
-[ Info: Iteration #13, current min val: 0.07452732596827287
-[ Info: Acquisition optimized, new candidate point: [2.9193776754828304, 2.208706998095649]
-[ Info: Iteration #14, current min val: 0.07452732596827287
-[ Info: Acquisition optimized, new candidate point: [3.0576343909603922, 1.8574914179217212]
-[ Info: Iteration #15, current min val: 0.07452732596827287
-[ Info: Acquisition optimized, new candidate point: [-3.786046627434117, -3.3096051920252405]
-[ Info: Iteration #16, current min val: 0.028638521699334656
-[ Info: Acquisition optimized, new candidate point: [3.5843617933335996, -1.849515325118609]
-[ Info: Iteration #17, current min val: 2.9173467877657977e-5
+[ Info: New parameters: ℓ=[3.270428595899929], variance =[171.64909516680018]
+[ Info: Iteration #11, current min val: 0.16642646534053945
+[ Info: Acquisition optimized, new candidate point: [5.999999999999999, -5.999999999999953]
+[ Info: Iteration #12, current min val: 0.16642646534053945
+[ Info: Acquisition optimized, new candidate point: [3.5476243699134278, -1.819980451980704]
+[ Info: Iteration #13, current min val: 0.07452917262748454
+[ Info: Acquisition optimized, new candidate point: [2.9193775861283, 2.2087073530523096]
+[ Info: Iteration #14, current min val: 0.07452917262748454
+[ Info: Acquisition optimized, new candidate point: [3.0576360987758937, 1.8574884298951693]
+[ Info: Iteration #15, current min val: 0.07452917262748454
+[ Info: Acquisition optimized, new candidate point: [-3.7860465011920135, -3.30960890813771]
+[ Info: Iteration #16, current min val: 0.02864657255656579
+[ Info: Acquisition optimized, new candidate point: [3.5843677762676442, -1.8494632100068225]
+[ Info: Iteration #17, current min val: 2.696927771020888e-5
 [ Info: Acquisition optimized, new candidate point: [-5.9034, 5.9298]
-[ Info: Iteration #18, current min val: 2.9173467877657977e-5
+[ Info: Iteration #18, current min val: 2.696927771020888e-5
 [ Info: Acquisition optimized, new candidate point: [-5.9346, -5.7918]
-[ Info: Iteration #19, current min val: 2.9173467877657977e-5
+[ Info: Iteration #19, current min val: 2.696927771020888e-5
 [ Info: Acquisition optimized, new candidate point: [5.968200000000001, 5.857800000000001]
-[ Info: Iteration #20, current min val: 2.9173467877657977e-5
-[ Info: Acquisition optimized, new candidate point: [-2.8157999999999994, 3.1470000000000002]</code></pre><h3 id="Results-2"><a class="docs-heading-anchor" href="#Results-2">Results</a><a class="docs-heading-anchor-permalink" href="#Results-2" title="Permalink"></a></h3><p>The optimization result is stored in <code>result_grad</code>. We can print the best found input and its corresponding function value.</p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Optimal point (GradBO): [3.5843617933335996, -1.849515325118609]
-Optimal value (GradBO): 2.9173467877657977e-5</code></pre><h3 id="Plotting-of-running-minimum-over-iterations-2"><a class="docs-heading-anchor" href="#Plotting-of-running-minimum-over-iterations-2">Plotting of running minimum over iterations</a><a class="docs-heading-anchor-permalink" href="#Plotting-of-running-minimum-over-iterations-2" title="Permalink"></a></h3><p>The running minimum is the best function value found up to each iteration. Since each evaluation provides both a function value and a 2D gradient, we duplicate the running minimum values 3x to reflect the number of function evaluations.</p><img src="ce4058b4.svg" alt="Example block output"/><p>We observe that the gradient information does not necessarily lead to a better optimisation path in terms of function evaluations.</p><h3 id="Plotting-the-surrogate-model"><a class="docs-heading-anchor" href="#Plotting-the-surrogate-model">Plotting the surrogate model</a><a id="Plotting-the-surrogate-model-1"></a><a class="docs-heading-anchor-permalink" href="#Plotting-the-surrogate-model" title="Permalink"></a></h3><p>We can visualize the surrogate model&#39;s mean and uncertainty along with the true function and the evaluated</p><img src="d2aeb34e.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../1D_BO/">« 1D Bayesian Optimisation</a><a class="docs-footer-nextpage" href="../acq_funcs_comparison/">1D Acquisition Function Comparison »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.0 on <span class="colophon-date" title="Wednesday 19 November 2025 11:47">Wednesday 19 November 2025</span>. Using Julia version 1.12.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+[ Info: Iteration #20, current min val: 2.696927771020888e-5
+[ Info: Acquisition optimized, new candidate point: [-2.8157999999999994, 3.1470000000000002]</code></pre><h3 id="Results-2"><a class="docs-heading-anchor" href="#Results-2">Results</a><a class="docs-heading-anchor-permalink" href="#Results-2" title="Permalink"></a></h3><p>The optimization result is stored in <code>result_grad</code>. We can print the best found input and its corresponding function value.</p><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Optimal point (GradBO): [3.5843677762676442, -1.8494632100068225]
+Optimal value (GradBO): 2.696927771020888e-5</code></pre><h3 id="Plotting-of-running-minimum-over-iterations-2"><a class="docs-heading-anchor" href="#Plotting-of-running-minimum-over-iterations-2">Plotting of running minimum over iterations</a><a class="docs-heading-anchor-permalink" href="#Plotting-of-running-minimum-over-iterations-2" title="Permalink"></a></h3><p>The running minimum is the best function value found up to each iteration. Since each evaluation provides both a function value and a 2D gradient, we duplicate the running minimum values 3x to reflect the number of function evaluations.</p><img src="5935642d.svg" alt="Example block output"/><p>We observe that the gradient information does not necessarily lead to a better optimisation path in terms of function evaluations.</p><h3 id="Plotting-the-surrogate-model"><a class="docs-heading-anchor" href="#Plotting-the-surrogate-model">Plotting the surrogate model</a><a id="Plotting-the-surrogate-model-1"></a><a class="docs-heading-anchor-permalink" href="#Plotting-the-surrogate-model" title="Permalink"></a></h3><p>We can visualize the surrogate model&#39;s mean and uncertainty along with the true function and the evaluated</p><img src="c81213a4.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../1D_BO/">« 1D Bayesian Optimisation</a><a class="docs-footer-nextpage" href="../acq_funcs_comparison/">1D Acquisition Function Comparison »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.0 on <span class="colophon-date" title="Wednesday 19 November 2025 12:00">Wednesday 19 November 2025</span>. Using Julia version 1.12.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
