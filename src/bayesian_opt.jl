@@ -174,6 +174,7 @@ end
         length_scale_only::Bool=false,
         num_restarts::Int=1,
         domain::Union{Nothing,AbstractDomain}=nothing,
+        ad_backend::Symbol=:finite
     ) where {X,Y,T}
 
 Optimizes the hyperparameters of the surrogate model using Maximum Likelihood Estimation (MLE).
@@ -186,6 +187,8 @@ Arguments:
 - `length_scale_only::Bool`: If true, only optimize the lengthscale, keeping the scale fixed.
 - `mean::AbstractGPs.MeanFunction`: The mean function of the GP, defaults to ZeroMean().
 - `num_restarts::Int`: Number of random restarts for the optimization. If set to 1, uses the current parameters as the initial guess.
+- `domain::Union{Nothing,AbstractDomain}`: The domain of the input space, used to compute data-informed bounds for lengthscale.
+- `ad_backend::Symbol`: The automatic differentiation backend to use, defaults to :finite.
 
 returns:
 - `model::AbstractSurrogate`: The updated surrogate model with optimized hyperparameters.
@@ -202,6 +205,7 @@ function optimize_hyperparameters(
     length_scale_only::Bool=false,
     num_restarts::Int=1,
     domain::Union{Nothing,AbstractDomain}=nothing,
+    ad_backend::Symbol=:finite
 ) where {X,Y,T}
     best_nlml = Inf
     best_result = nothing
@@ -281,7 +285,7 @@ function optimize_hyperparameters(
                 init_guesses[i],
                 Fminbox(inner_optimizer),
                 opts;
-                autodiff=:forward, #AutoMooncake(),
+                autodiff=ad_backend
             )
 
             @debug "Optimization result: " result
