@@ -316,7 +316,6 @@ function optimize_hyperparameters(
     end
 
     ℓ = nothing
-    ℓ = nothing
     scale = nothing
     if length_scale_only
         ℓ = exp(best_result[1])
@@ -422,8 +421,15 @@ function optimize(
 
             @debug "MLE new parameters: ℓ=$(get_lengthscale(out)), variance =$(get_scale(out))"
             if !isnothing(out)
-                BO.model = out
-                BO.model = update(BO.model, BO.xs, BO.ys)
+                prev_model = copy(BO.model)
+                try 
+                    BO.model = out
+                    BO.model = update(BO.model, BO.xs, BO.ys)
+                catch e
+                    @warn "Failed to update model with new hyperparameters: $e"
+                    @info "Reverting to previous model."
+                    BO.model = prev_model
+                end
             end
 
             @info "New parameters: ℓ=$(get_lengthscale(BO.model)), variance =$(get_scale(BO.model))"
