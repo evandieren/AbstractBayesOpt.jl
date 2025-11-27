@@ -174,6 +174,7 @@ end
         length_scale_only::Bool=false,
         num_restarts::Int=1,
         domain::Union{Nothing,AbstractDomain}=nothing,
+        ad_backend::Symbol=:finite
     ) where {X,Y,T}
 
 Optimizes the hyperparameters of the surrogate model using Maximum Likelihood Estimation (MLE).
@@ -186,6 +187,8 @@ Arguments:
 - `length_scale_only::Bool`: If true, only optimize the lengthscale, keeping the scale fixed.
 - `mean::AbstractGPs.MeanFunction`: The mean function of the GP, defaults to ZeroMean().
 - `num_restarts::Int`: Number of random restarts for the optimization. If set to 1, uses the current parameters as the initial guess.
+- `domain::Union{Nothing,AbstractDomain}`: The domain of the input space, used to compute data-informed bounds for lengthscale.
+- `ad_backend::Symbol`: The automatic differentiation backend to use, defaults to :finite.
 
 returns:
 - `model::AbstractSurrogate`: The updated surrogate model with optimized hyperparameters.
@@ -202,6 +205,7 @@ function optimize_hyperparameters(
     length_scale_only::Bool=false,
     num_restarts::Int=1,
     domain::Union{Nothing,AbstractDomain}=nothing,
+    ad_backend::Symbol=:finite
 ) where {X,Y,T}
     best_nlml = Inf
     best_result = nothing
@@ -281,7 +285,7 @@ function optimize_hyperparameters(
                 init_guesses[i],
                 Fminbox(inner_optimizer),
                 opts;
-                autodiff=:forward, #AutoMooncake(),
+                autodiff=ad_backend
             )
 
             @debug "Optimization result: " result
@@ -311,7 +315,6 @@ function optimize_hyperparameters(
         end
     end
 
-    ℓ = nothing
     ℓ = nothing
     scale = nothing
     if length_scale_only
@@ -366,6 +369,7 @@ function optimize(
     standardize::Union{String,Nothing}="mean_scale",
     hyper_params::Union{String,Nothing}="all",
     num_restarts_HP::Int=1,
+    ad_backend::Symbol=:forward
 )
     @argcheck hyper_params in ["all", "length_scale_only", nothing] "hyper_params must be one of: 'all', 'length_scale_only', or nothing."
 
@@ -400,6 +404,7 @@ function optimize(
                     scale_std=σ[1],
                     num_restarts=num_restarts_HP,
                     domain=BO.domain,
+                    ad_backend=ad_backend,
                 )
             elseif hyper_params == "all"
                 out = optimize_hyperparameters(
@@ -411,6 +416,7 @@ function optimize(
                     scale_std=σ[1],
                     num_restarts=num_restarts_HP,
                     domain=BO.domain,
+                    ad_backend=ad_backend,
                 )
             else
                 out = nothing
@@ -418,8 +424,15 @@ function optimize(
 
             @debug "MLE new parameters: ℓ=$(get_lengthscale(out)), variance =$(get_scale(out))"
             if !isnothing(out)
-                BO.model = out
-                BO.model = update(BO.model, BO.xs, BO.ys)
+                prev_model = copy(BO.model)
+                try 
+                    BO.model = out
+                    BO.model = update(BO.model, BO.xs, BO.ys)
+                catch e
+                    @warn "Failed to update model with new hyperparameters: $e"
+                    @info "Reverting to previous model."
+                    BO.model = prev_model
+                end
             end
 
             @info "New parameters: ℓ=$(get_lengthscale(BO.model)), variance =$(get_scale(BO.model))"
