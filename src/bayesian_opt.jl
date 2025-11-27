@@ -369,6 +369,7 @@ function optimize(
     standardize::Union{String,Nothing}="mean_scale",
     hyper_params::Union{String,Nothing}="all",
     num_restarts_HP::Int=1,
+    ad_backend::Symbol=:forward
 )
     @argcheck hyper_params in ["all", "length_scale_only", nothing] "hyper_params must be one of: 'all', 'length_scale_only', or nothing."
 
@@ -403,6 +404,7 @@ function optimize(
                     scale_std=σ[1],
                     num_restarts=num_restarts_HP,
                     domain=BO.domain,
+                    ad_backend=ad_backend,
                 )
             elseif hyper_params == "all"
                 out = optimize_hyperparameters(
@@ -414,6 +416,7 @@ function optimize(
                     scale_std=σ[1],
                     num_restarts=num_restarts_HP,
                     domain=BO.domain,
+                    ad_backend=ad_backend,
                 )
             else
                 out = nothing
