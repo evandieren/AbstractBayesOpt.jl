@@ -336,6 +336,7 @@ end
         standardize::Union{String,Nothing}="mean_scale",
         hyper_params::Union{String,Nothing}="all",
         num_restarts_HP::Int=1,
+        ad_backend::Symbol=:forward
     )
 
 This function implements the EGO framework:
@@ -358,6 +359,7 @@ Arguments:
     - If "length_scale_only", only optimize the lengthscale.
     - If nothing, do not re-optimize hyperparameters.
 - `num_restarts_HP::Int`: Number of random restarts for hyperparameter optimization.
+- `ad_backend::Symbol`: The automatic differentiation backend to use for hyperparameter optimization.
 
 returns:
 - `BO::BOStruct`: The updated Bayesian Optimization problem after optimization.
