@@ -175,9 +175,9 @@ returns:
 """
 function kappa_matern52(v::Real)
     d = sqrt(v)
-    z = exp(-sqrt(5)*d)
-    φ_val = (1 + sqrt(5)*d + 5d^2/3) * z
-    φ_deriv = (-5/6)*(1 + sqrt(5)*d)*z
+    z = exp(-sqrt(5) * d)
+    φ_val = (1 + sqrt(5) * d + 5d^2 / 3) * z
+    φ_deriv = (-5 / 6) * (1 + sqrt(5) * d) * z
     return φ_val, φ_deriv
 end
 
@@ -199,13 +199,24 @@ function kappa_matern52(v::ForwardDiff.Dual{T}) where {T}
     w = ForwardDiff.value(v)
     parts = ForwardDiff.partials(v)
 
+    if w isa ForwardDiff.Dual
+        @warn "ADMatern52Kernel: computing 3rd-order derivatives of the Matérn 5/2 kernel, " *
+            "which is only twice differentiable. These results are only valid for " *
+            "hyperparameter tuning and should not be used for other purposes." maxlog = 1
+    end
+
     φ_val, φ_deriv = kappa_matern52(w)
 
-    d = sqrt(w)
-    φ_dd = 25/12*exp(-sqrt(5)*d)
+    # When w is itself a Dual (triple-nested AD: K_dd block + hyperparameter gradient),
+    # sqrt(w) at value(w)==0 yields NaN partials via IEEE 0/0. The true derivative
+    # d(sqrt(w))/dℓ² vanishes at w=0 because d²=||x-y||²/ℓ²=0
+    # See Warning above. 
+    w_val = ForwardDiff.value(w)
+    d = iszero(w_val) ? zero(w) : sqrt(w)
+    φ_dd = 25 / 12 * exp(-sqrt(5) * d)
 
-    return ForwardDiff.Dual{T}(φ_val, φ_deriv*parts),
-    ForwardDiff.Dual{T}(φ_deriv, φ_dd*parts)
+    return ForwardDiff.Dual{T}(φ_val, φ_deriv * parts),
+    ForwardDiff.Dual{T}(φ_deriv, φ_dd * parts)
 end
 
 """
@@ -245,7 +256,7 @@ function KernelFunctions.kappa(::ADMatern52Kernel, d²::ForwardDiff.Dual{T}) whe
 
     φ_val, φ_deriv = kappa_matern52(v)
 
-    return ForwardDiff.Dual{T}(φ_val, φ_deriv*parts)
+    return ForwardDiff.Dual{T}(φ_val, φ_deriv * parts)
 end
 
 """
@@ -322,7 +333,7 @@ function KernelFunctions.kappa(k::ApproxMatern72Kernel, d²::Real)
         return 1.0 - (7.0 / 10) * d²
     else
         d = sqrt(d²)
-        return (1 + sqrt(7) * d + 14/5 * d² + 7*sqrt(7)/15*d^3) * exp(-sqrt(7) * d)
+        return (1 + sqrt(7) * d + 14 / 5 * d² + 7 * sqrt(7) / 15 * d^3) * exp(-sqrt(7) * d)
     end
 end
 
@@ -399,10 +410,10 @@ returns:
 """
 function kappa_matern72(v::Real)
     d = sqrt(v)
-    z = exp(-sqrt(7)*d)
-    φ_val = (1 + sqrt(7)*d + 14*d^2/5 + 7*sqrt(7)*d^3/15) * z
-    φ_deriv = -7/10 * (1 + sqrt(7)*d + 7*d^2/3) * z
-    φ_dd = (49/60)*(1 + sqrt(7)*d)*z
+    z = exp(-sqrt(7) * d)
+    φ_val = (1 + sqrt(7) * d + 14 * d^2 / 5 + 7 * sqrt(7) * d^3 / 15) * z
+    φ_deriv = -7 / 10 * (1 + sqrt(7) * d + 7 * d^2 / 3) * z
+    φ_dd = (49 / 60) * (1 + sqrt(7) * d) * z
     return φ_val, φ_deriv, φ_dd
 end
 
@@ -429,11 +440,11 @@ function kappa_matern72(v::ForwardDiff.Dual{T}) where {T}
     φ_val, φ_deriv, φ_dd = kappa_matern72(w)
 
     d = sqrt(w)
-    φ_ddd = -7*49/120*exp(-sqrt(7)*d)
+    φ_ddd = -7 * 49 / 120 * exp(-sqrt(7) * d)
 
-    return ForwardDiff.Dual{T}(φ_val, φ_deriv*parts),
-    ForwardDiff.Dual{T}(φ_deriv, φ_dd*parts),
-    ForwardDiff.Dual{T}(φ_dd, φ_ddd*parts)
+    return ForwardDiff.Dual{T}(φ_val, φ_deriv * parts),
+    ForwardDiff.Dual{T}(φ_deriv, φ_dd * parts),
+    ForwardDiff.Dual{T}(φ_dd, φ_ddd * parts)
 end
 
 """
@@ -470,7 +481,7 @@ function KernelFunctions.kappa(::ADMatern72Kernel, d²::ForwardDiff.Dual{T}) whe
     v = ForwardDiff.value(d²)
     parts = ForwardDiff.partials(d²)
     φ_val, φ_deriv, _ = kappa_matern72(v)
-    return ForwardDiff.Dual{T}(φ_val, φ_deriv*parts)
+    return ForwardDiff.Dual{T}(φ_val, φ_deriv * parts)
 end
 
 """
@@ -573,8 +584,6 @@ Some snippets kindly provided by [N. Schmitz](https://github.com/niklasschmitz),
 function (κ::gradKernel)((x, px)::Tuple{X,Int}, (y, py)::Tuple{Y,Int}) where {X,Y}
     (px > length(x) + 1 || py > length(y) + 1 || px < 1 || py < 1) &&
         error("`px` and `py` must be within the range of the number of outputs")
-
-    onehot(n, i) = 1:n .== i # collect(1:n) .== i
 
     val = px == 1 && py == 1 # we are looking at f(x), f(y)
 
@@ -935,7 +944,7 @@ returns:
 """
 function posterior_grad_mean(model::GradientGP, x)
     # Be careful with the output order, it is (f(x1),f(x2),...,∂₁f(x1),∂₁f(x2),...)
-    mean(model.gpx(_prep_input(x, model.p)))
+    return mean(model.gpx(_prep_input(x, model.p)))
 end
 
 """
@@ -951,7 +960,7 @@ returns:
 - `var::Vector`: The variance predictions
 """
 function posterior_grad_var(model::GradientGP, x)
-    var(model.gpx(_prep_input(x, model.p)))
+    return var(model.gpx(_prep_input(x, model.p)))
 end
 
 """
@@ -967,7 +976,7 @@ returns:
 - `cov::Matrix`: The covariance matrix of the predictions
 """
 function posterior_grad_cov(model::GradientGP, x)
-    cov(model.gpx(_prep_input(x, model.p)))
+    return cov(model.gpx(_prep_input(x, model.p)))
 end
 
 """
@@ -983,7 +992,7 @@ returns:
 - `mean::Vector`: The mean predictions (function value only)
 """
 function posterior_mean(model::GradientGP, x)
-    mean(model.gpx(_prep_input(x, 1)))
+    return mean(model.gpx(_prep_input(x, 1)))
 end
 
 """
@@ -999,7 +1008,7 @@ returns:
 - `var::Vector`: The variance predictions (function value only)
 """
 function posterior_var(model::GradientGP, x)
-    var(model.gpx(_prep_input(x, 1)))
+    return var(model.gpx(_prep_input(x, 1)))
 end
 
 """
