@@ -13,15 +13,15 @@ Random.seed!(1234)
     d = 2
     ℓ = 2.0
     σ² = 4.0
-    reference_kernel = σ²*with_lengthscale(Matern52Kernel(), ℓ)
-    GP_ref = GradientGP(reference_kernel, d+1, 0)
+    reference_kernel = σ² * with_lengthscale(Matern52Kernel(), ℓ)
+    GP_ref = GradientGP(reference_kernel, d + 1, 0)
 
     # Hyperparameter testing for construction
-    approx_kernel = σ²*with_lengthscale(ApproxMatern52Kernel(), ℓ)
-    GP_approx = GradientGP(approx_kernel, d+1, 0)
+    approx_kernel = σ² * with_lengthscale(ApproxMatern52Kernel(), ℓ)
+    GP_approx = GradientGP(approx_kernel, d + 1, 0)
 
-    ad_kernel = σ²*with_lengthscale(ADMatern52Kernel(), ℓ)
-    GP_ad = GradientGP(ad_kernel, d+1, 0)
+    ad_kernel = σ² * with_lengthscale(ADMatern52Kernel(), ℓ)
+    GP_ad = GradientGP(ad_kernel, d + 1, 0)
 
     @test AbstractBayesOpt.get_lengthscale(GP_ref)[1] ==
         AbstractBayesOpt.get_lengthscale(GP_approx)[1] ==
@@ -43,7 +43,7 @@ Random.seed!(1234)
         @test isapprox(ad_kernel(x1, x2), reference_kernel(x1, x2); atol=1e-12)
 
         ### check hyperparameter scaling
-        ref_val = σ²*KernelFunctions.kappa(Matern52Kernel(), norm(x1 - x2)/ℓ)
+        ref_val = σ² * KernelFunctions.kappa(Matern52Kernel(), norm(x1 - x2) / ℓ)
         @test isapprox(approx_kernel(x1, x2), ref_val; atol=1e-12)
         @test isapprox(ad_kernel(x1, x2), ref_val; atol=1e-12)
 
@@ -51,7 +51,7 @@ Random.seed!(1234)
         @test isapprox(approx_kernel(x1, x1), reference_kernel(x1, x1); atol=1e-12)
         @test isapprox(ad_kernel(x1, x1), reference_kernel(x1, x1); atol=1e-12)
 
-        ref_val = σ²*KernelFunctions.kappa(Matern52Kernel(), 0.0)
+        ref_val = σ² * KernelFunctions.kappa(Matern52Kernel(), 0.0)
         @test isapprox(approx_kernel(x1, x1), ref_val; atol=1e-12)
         @test isapprox(ad_kernel(x1, x1), ref_val; atol=1e-12)
 
@@ -69,9 +69,11 @@ Random.seed!(1234)
 
         ## hyperparameter tests (over second variable to match above)
         ∇k_ref_val(x, y) =
-            σ²*ForwardDiff.derivative(
-                z -> KernelFunctions.kappa(Matern52Kernel(), z/ℓ), norm(x-y)
-            )*(y-x)/norm(x-y)
+            σ² *
+            ForwardDiff.derivative(
+                z -> KernelFunctions.kappa(Matern52Kernel(), z / ℓ), norm(x - y)
+            ) *
+            (y - x) / norm(x - y)
         ref_val = ∇k_ref_val(x1, x2)
 
         @test isapprox(∇k_ref(x1, x2), ref_val; atol=1e-12)
@@ -90,7 +92,7 @@ Random.seed!(1234)
     @testset "Posteriors" begin
 
         # Check posterior mean value and derivatives
-        f(x) = sin(π*x[1])*cos(π*x[2])
+        f(x) = sin(π * x[1]) * cos(π * x[2])
         ∇f(x) = ForwardDiff.gradient(f, x)
         f_val_grad(x) = [f(x); ∇f(x)]
         y_∂y = [f_val_grad(x) for x in X]
@@ -115,11 +117,13 @@ Random.seed!(1234)
         x_train = X[1]
         @test isapprox(post_mean_approx(x_train), post_mean_ad(x_train); atol=1e-12)
         @test isapprox(∇post_mean_approx(x_train), ∇post_mean_ad(x_train); atol=1e-10)
-        @test !isapprox(
+        # After the fix for issue #55, ADMatern52Kernel no longer produces NaN for the
+        # Hessian at training points. Matern 5/2 is C², so its cross-Hessian k_xy is
+        # finite at x==y; the NaN was an artifact of sqrt(Dual(0)) in the AD rules.
+        @test all(isfinite.(hessian_post_mean_ad(x_train)))
+        @test isapprox(
             hessian_post_mean_approx(x_train), hessian_post_mean_ad(x_train); atol=1e-8
         )
-        @test all(isnan.(hessian_post_mean_ad(x_train))) # this produces NaNs, as expected
-        # One should not believe in the Hessian at a training point, for the Matern 5/2 kernel!
 
         # posterior gradient mean
         post_grad_mean_approx(x) = posterior_grad_mean(post_approx, [x])
@@ -157,6 +161,36 @@ Random.seed!(1234)
         @test isapprox(post_grad_var_approx(x_train), post_grad_var_ad(x_train); atol=1e-10)
     end # of posteriors tests
 
+    @testset "NLML ForwardDiff gradient (regression test for issue #55)" begin
+        # Regression test: ForwardDiff.gradient through nlml on a GradientGP with
+        # ADMatern52Kernel must not produce NaN. The K_dd block (double spatial
+        # derivative) creates triple-nested Duals; sqrt(Dual(0,0)) used to yield NaN.
+        f(x) = sin(π * x[1]) * cos(π * x[2])
+        ∇f(x) = ForwardDiff.gradient(f, x)
+        f_val_grad(x) = [f(x); ∇f(x)]
+        y_∂y = [f_val_grad(x) for x in X]
+
+        X_mo = AbstractBayesOpt.prep_input(GP_ad, X)
+        y_mo = AbstractBayesOpt.prep_output(GP_ad, y_∂y)
+        params0 = log.([ℓ, σ²])
+
+        grad_approx = ForwardDiff.gradient(
+            p -> AbstractBayesOpt.nlml(
+                GP_approx,
+                p,
+                AbstractBayesOpt.prep_input(GP_approx, X),
+                AbstractBayesOpt.prep_output(GP_approx, y_∂y),
+            ),
+            params0,
+        )
+        grad_ad = ForwardDiff.gradient(
+            p -> AbstractBayesOpt.nlml(GP_ad, p, X_mo, y_mo), params0
+        )
+
+        @test all(isfinite.(grad_ad))  # must not contain NaN (regression for issue #55)
+        @test isapprox(grad_approx, grad_ad; atol=1e-6)
+    end # of NLML ForwardDiff gradient tests
+
     @testset "Printing tests" begin
         io = IOBuffer()
 
@@ -178,15 +212,15 @@ end # of Matern 5/2 tests
     d = 2
     ℓ = 2.0
     σ² = 4.0
-    reference_kernel = σ²*with_lengthscale(Matern72Kernel(), ℓ)
-    GP_ref = GradientGP(reference_kernel, d+1, 0)
+    reference_kernel = σ² * with_lengthscale(Matern72Kernel(), ℓ)
+    GP_ref = GradientGP(reference_kernel, d + 1, 0)
 
     # Hyperparameter testing for construction
-    approx_kernel = σ²*with_lengthscale(ApproxMatern72Kernel(), ℓ)
-    GP_approx = GradientGP(approx_kernel, d+1, 0)
+    approx_kernel = σ² * with_lengthscale(ApproxMatern72Kernel(), ℓ)
+    GP_approx = GradientGP(approx_kernel, d + 1, 0)
 
-    ad_kernel = σ²*with_lengthscale(ADMatern72Kernel(), ℓ)
-    GP_ad = GradientGP(ad_kernel, d+1, 0)
+    ad_kernel = σ² * with_lengthscale(ADMatern72Kernel(), ℓ)
+    GP_ad = GradientGP(ad_kernel, d + 1, 0)
 
     @test AbstractBayesOpt.get_lengthscale(GP_ref)[1] ==
         AbstractBayesOpt.get_lengthscale(GP_approx)[1] ==
@@ -209,7 +243,7 @@ end # of Matern 5/2 tests
         @test isapprox(ad_kernel(x1, x2), reference_kernel(x1, x2); atol=1e-12)
 
         ### check hyperparameter scaling
-        ref_val = σ²*KernelFunctions.kappa(Matern72Kernel(), norm(x1 - x2)/ℓ)
+        ref_val = σ² * KernelFunctions.kappa(Matern72Kernel(), norm(x1 - x2) / ℓ)
         @test isapprox(approx_kernel(x1, x2), ref_val; atol=1e-12)
         @test isapprox(ad_kernel(x1, x2), ref_val; atol=1e-12)
 
@@ -217,7 +251,7 @@ end # of Matern 5/2 tests
         @test isapprox(approx_kernel(x1, x1), reference_kernel(x1, x1); atol=1e-12)
         @test isapprox(ad_kernel(x1, x1), reference_kernel(x1, x1); atol=1e-12)
 
-        ref_val = σ²*KernelFunctions.kappa(Matern72Kernel(), 0.0)
+        ref_val = σ² * KernelFunctions.kappa(Matern72Kernel(), 0.0)
         @test isapprox(approx_kernel(x1, x1), ref_val; atol=1e-12)
         @test isapprox(ad_kernel(x1, x1), ref_val; atol=1e-12)
 
@@ -235,9 +269,11 @@ end # of Matern 5/2 tests
 
         ## hyperparameter tests (over second variable to match above)
         ∇k_ref_val(x, y) =
-            σ²*ForwardDiff.derivative(
-                z -> KernelFunctions.kappa(Matern72Kernel(), z/ℓ), norm(x-y)
-            )*(y-x)/norm(x-y)
+            σ² *
+            ForwardDiff.derivative(
+                z -> KernelFunctions.kappa(Matern72Kernel(), z / ℓ), norm(x - y)
+            ) *
+            (y - x) / norm(x - y)
         ref_val = ∇k_ref_val(x1, x2)
 
         @test isapprox(∇k_ref(x1, x2), ref_val; atol=1e-12)
@@ -256,7 +292,7 @@ end # of Matern 5/2 tests
     @testset "Posteriors tests" begin
 
         # Check posterior mean derivatives
-        f(x) = sin(π*x[1])*cos(π*x[2])
+        f(x) = sin(π * x[1]) * cos(π * x[2])
         ∇f(x) = ForwardDiff.gradient(f, x)
         f_val_grad(x) = [f(x); ∇f(x)]
         y_∂y = [f_val_grad(x) for x in X]
