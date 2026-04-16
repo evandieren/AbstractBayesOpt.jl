@@ -174,7 +174,7 @@ end
         length_scale_only::Bool=false,
         num_restarts::Int=1,
         domain::Union{Nothing,AbstractDomain}=nothing,
-        ad_backend::Symbol=:finite
+        ad_backend::Symbol=:forward
     ) where {X,Y,T}
 
 Optimizes the hyperparameters of the surrogate model using Maximum Likelihood Estimation (MLE).
@@ -188,7 +188,7 @@ Arguments:
 - `mean::AbstractGPs.MeanFunction`: The mean function of the GP, defaults to ZeroMean().
 - `num_restarts::Int`: Number of random restarts for the optimization. If set to 1, uses the current parameters as the initial guess.
 - `domain::Union{Nothing,AbstractDomain}`: The domain of the input space, used to compute data-informed bounds for lengthscale.
-- `ad_backend::Symbol`: The automatic differentiation backend to use, defaults to :finite.
+- `ad_backend::Symbol`: The automatic differentiation backend to use, defaults to :forward.
 
 returns:
 - `model::AbstractSurrogate`: The updated surrogate model with optimized hyperparameters.
@@ -205,7 +205,7 @@ function optimize_hyperparameters(
     length_scale_only::Bool=false,
     num_restarts::Int=1,
     domain::Union{Nothing,AbstractDomain}=nothing,
-    ad_backend::Symbol=:finite
+    ad_backend::Symbol=:forward
 ) where {X,Y,T}
     best_nlml = Inf
     best_result = nothing
@@ -336,7 +336,8 @@ end
         standardize::Union{String,Nothing}="mean_scale",
         hyper_params::Union{String,Nothing}="all",
         num_restarts_HP::Int=1,
-        ad_backend::Symbol=:forward
+        ad_backend_HP::Symbol=:forward,
+        ad_backend_acq::Symbol=:forward
     )
 
 This function implements the EGO framework:
@@ -359,7 +360,9 @@ Arguments:
     - If "length_scale_only", only optimize the lengthscale.
     - If nothing, do not re-optimize hyperparameters.
 - `num_restarts_HP::Int`: Number of random restarts for hyperparameter optimization.
-- `ad_backend::Symbol`: The automatic differentiation backend to use for hyperparameter optimization.
+- `ad_backend_HP::Symbol`: The automatic differentiation backend to use for hyperparameter optimization.
+- `ad_backend_acq::Symbol`: The automatic differentiation backend to use for acquisition function optimization.
+
 
 returns:
 - `BO::BOStruct`: The updated Bayesian Optimization problem after optimization.
@@ -371,7 +374,8 @@ function optimize(
     standardize::Union{String,Nothing}="mean_scale",
     hyper_params::Union{String,Nothing}="all",
     num_restarts_HP::Int=1,
-    ad_backend::Symbol=:forward
+    ad_backend_HP::Symbol=:forward,
+    ad_backend_acq::Symbol=:forward
 )
     @argcheck hyper_params in ["all", "length_scale_only", nothing] "hyper_params must be one of: 'all', 'length_scale_only', or nothing."
 
@@ -406,7 +410,7 @@ function optimize(
                     scale_std=σ[1],
                     num_restarts=num_restarts_HP,
                     domain=BO.domain,
-                    ad_backend=ad_backend,
+                    ad_backend=ad_backend_HP,
                 )
             elseif hyper_params == "all"
                 out = optimize_hyperparameters(
@@ -418,7 +422,7 @@ function optimize(
                     scale_std=σ[1],
                     num_restarts=num_restarts_HP,
                     domain=BO.domain,
-                    ad_backend=ad_backend,
+                    ad_backend=ad_backend_HP,
                 )
             else
                 out = nothing
@@ -442,7 +446,7 @@ function optimize(
 
         @info "Iteration #$(i+1), current min val: $(_get_minimum(BO.model, BO.ys_non_std))"
 
-        x_cand = optimize_acquisition(BO.acq, BO.model, BO.domain)
+        x_cand = optimize_acquisition(BO.acq, BO.model, BO.domain, ad_backend=ad_backend_acq)
         x_cand = d == 1 ? first(x_cand) : x_cand
         @info "Acquisition optimized, new candidate point: $(x_cand)"
         push!(acq_list, BO.acq(BO.model, [x_cand])[1])
