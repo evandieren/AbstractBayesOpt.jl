@@ -36,6 +36,7 @@ function optimize_acquisition(
     domain::AbstractDomain;
     n_grid::Int=10_000,
     n_local::Int=100,
+    ad_backend::Symbol=:forward
 )
     # We will use BFGS for now
     best_acq = -Inf
@@ -46,7 +47,6 @@ function optimize_acquisition(
     )
     grid_points = [collect(grid_points[:, i]) for i in axes(grid_points, 2)]
 
-    # println("Grid points generated: ", grid_points[1:5])
     scores = acqf(surrogate, grid_points)
     indices_sorted = sortperm(scores; rev=true)
     top_points = grid_points[indices_sorted[1:min(n_local, length(indices_sorted))]]
@@ -60,6 +60,7 @@ function optimize_acquisition(
             initial_x,
             _get_box_optimizer(),
             Optim.Options(; g_tol=1e-5, f_abstol=2.2e-9, x_abstol=1e-4),
+            autodiff=ad_backend
         )
         # Check if the current run is better (lower negative acqf)
 
