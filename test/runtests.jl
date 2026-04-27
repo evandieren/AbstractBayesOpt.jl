@@ -1,6 +1,3 @@
-using Pkg
-Pkg.activate(dirname(@__DIR__))
-
 using AbstractBayesOpt
 
 using AbstractBayesOpt:

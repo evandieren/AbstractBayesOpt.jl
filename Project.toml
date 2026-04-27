@@ -1,6 +1,6 @@
 name = "AbstractBayesOpt"
 uuid = "735adf16-6ca3-4095-a89a-9a0ece110843"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Eliott Van Dieren"]
 
 [deps]

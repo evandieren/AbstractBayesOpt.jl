@@ -49,18 +49,22 @@ returns:
 (::IdentityOperator)(f, x) = f(x)
 
 """
-    _unitvec(x, i)
+    _unitvec(x::AbstractVector, i::Int)
 
 Construct a unit vector of the same type and length as `x` with a one in position `i`.
 
 Arguments:
-- `x`: A vector used to determine the length and element type.
+- `x::AbstractVector`: A vector used to determine the length and element type.
 - `i::Int`: The index of the non-zero entry.
 
 returns:
 - `e::Vector`: A unit vector with `e[i] = 1` and zeros elsewhere.
 """
-function _unitvec(x, i)
+function _unitvec(x::AbstractVector, i::Int)
+    1 <= i <= length(x) || throw(ArgumentError(
+        "index i=$i must satisfy 1 <= i <= length(x)=$(length(x))"
+    ))
+    
     e = zeros(eltype(x), length(x))
     e[i] = one(eltype(x))
     return e

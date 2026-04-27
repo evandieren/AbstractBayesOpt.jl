@@ -18,10 +18,10 @@ include("abstract.jl")
 export AbstractAcquisition, AbstractSurrogate, AbstractDomain
 
 # Surrogate models
+include("surrogates/surrogates_utils.jl")
 include("surrogates/StandardGP.jl")
 include("surrogates/GradientGP.jl")
 include("surrogates/LinearOperatorGP.jl")
-include("surrogates/surrogates_utils.jl")
 
 ## Models
 export StandardGP, GradientGP, LinearOperatorGP
