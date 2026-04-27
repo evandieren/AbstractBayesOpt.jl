@@ -20,10 +20,14 @@ export AbstractAcquisition, AbstractSurrogate, AbstractDomain
 # Surrogate models
 include("surrogates/StandardGP.jl")
 include("surrogates/GradientGP.jl")
+include("surrogates/LinearOperatorGP.jl")
 include("surrogates/surrogates_utils.jl")
 
 ## Models
-export StandardGP, GradientGP
+export StandardGP, GradientGP, LinearOperatorGP
+
+## Operators for LinearOperatorGP
+export IdentityOperator, PartialDerivative, LaplacianOperator
 
 ## Methods
 export posterior_mean, posterior_var, nlml
@@ -34,6 +38,9 @@ export ApproxMatern52Kernel, ADMatern52Kernel, ApproxMatern72Kernel, ADMatern72K
 
 ## Gradient kernel and mean functions
 export gradConstMean, gradKernel
+
+## LinearOperatorMean and LinearOperatorKernel structs
+export LinearOperatorMean, LinearOperatorKernel
 
 ## Surrogate utils
 export prep_input, unstandardized_mean_and_var
