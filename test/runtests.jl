@@ -10,7 +10,15 @@ using AbstractBayesOpt:
     get_mean_std,
     print_info,
     rescale_output,
-    lengthscale_bounds
+    lengthscale_bounds,
+    _unitvec,
+    _scalar_mean,
+    _build_noise,
+    _prep_input,
+    prep_output,
+    make_linear_operator_mean,
+    get_kernel_constructor
+
 
 using Test
 using AbstractGPs
