@@ -45,3 +45,19 @@ function extract_scale_and_lengthscale(kernel::Kernel)
 
     return (inner, scale, lengthscale)
 end
+
+function _prep_input(x::AbstractVector{X}, p::Int) where {X}
+    return KernelFunctions.MOInputIsotopicByOutputs(x, p)
+end
+
+function _prep_input(x::AbstractVector{<:Tuple{X,Int}}, p::Int) where {X}
+    return x
+end
+
+function _prep_input(x::Tuple{X,Int}, p::Int) where {X}
+    return [x]
+end
+
+function _prep_input(x::X, p::Int) where {X<:Real}
+    return _prep_input([x], p)
+end
